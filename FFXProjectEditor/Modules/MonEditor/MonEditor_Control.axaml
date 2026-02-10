@@ -274,7 +274,7 @@
 								</WrapPanel>
 								<WrapPanel>
 									<local:Property_Template Margin="5" Property_Label="Model Id" Property_Value="{Binding MonsterStatSheet.ModelId}" BorderWidth="200" ValueBorderWidth="50"/>
-									<local:Property_Template Margin="5" Property_Label="Model 2 Id" Property_Value="{Binding MonsterStatSheet.Model2Id}" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Sound Id" Property_Value="{Binding MonsterStatSheet.SoundId}" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 								<local:Property_Template Margin="5" HorizontalAlignment="Left" Property_Label="Ctb Icon Id" Property_Value="{Binding MonsterStatSheet.CtbIconId}" BorderWidth="200" ValueBorderWidth="50"/>
 							</StackPanel>
@@ -302,8 +302,8 @@
 									<local:Property_Template Margin="5" Property_Label="Zanmato Level" Property_Value="{Binding MonsterLoot.ZanmatoLevel}" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 								<WrapPanel>
-									<local:Property_Template Margin="5" Property_Label="Unk1" Property_Value="{Binding MonsterLoot.Unk1}" BorderWidth="200" ValueBorderWidth="50"/>
-									<local:Property_Template Margin="5" Property_Label="Unk2" Property_Value="{Binding MonsterLoot.Unk2}" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Gil Steal Amount (x100)" Property_Value="{Binding MonsterLoot.Unk1}" BorderWidth="250" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Monster Arena Price (unused)" Property_Value="{Binding MonsterLoot.Unk2}" BorderWidth="300" ValueBorderWidth="50"/>
 									<local:Property_Template Margin="5" Property_Label="Unk3" Property_Value="{Binding MonsterLoot.Unk3}" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 							</StackPanel>
