@@ -135,4 +135,6 @@ for project provenance and licensing information.
 
 ## Special Thanks
 
-The knowledge on the files was shared by the FFX community folks. Check out the [Fahrenheit project](https://github.com/peppy-enterprises/fahrenheit/tree/main) to learn more!
+The knowledge on the files was shared by the FFX community folks. Check out the [Fahrenheit project](https://github.com/peppy-enterprises/fahrenheit/tree/main) to learn more!  
+Big thanks to [Karifean/FFXDataParser](https://github.com/Karifean/FFXDataParser) and their knowledge of monster Battle Script structure.  
+Another big thanks to the [Cid's Salvage Ship](https://discord.gg/yAQc3ngwDF) discord community. They've been an enormous help with FFX modding. Check them out if you're interested.
