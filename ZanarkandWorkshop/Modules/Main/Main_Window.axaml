@@ -1,0 +1,124 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="FFXProjectEditor.Main_Window"
+		Title="Zanarkand Workshop v0.1.0"
+		Width="1280" Height="720"
+		MinWidth="1280" MinHeight="720"
+		WindowStartupLocation="CenterScreen">
+	<Window.Styles>
+		<Style Selector="MenuItem.flyoutEntry">
+			<!-- The submenu presenter supplies the single outer flyout border. -->
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="CornerRadius" Value="0"/>
+			<Setter Property="Margin" Value="0"/>
+			<Setter Property="Padding" Value="10,5"/>
+		</Style>
+		<Style Selector="MenuItem.topMenuEntry">
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="CornerRadius" Value="0"/>
+			<Setter Property="Margin" Value="2,1"/>
+			<Setter Property="Padding" Value="8,3"/>
+		</Style>
+	</Window.Styles>
+
+	<DockPanel>
+
+		<!-- TOP TOOLBAR -->
+		<Border DockPanel.Dock="Top" BorderBrush="#555555" BorderThickness="0,0,0,1">
+		<Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
+			<Menu Grid.Column="0">
+				<MenuItem Classes="topMenuEntry" Header="File">
+					<MenuItem Classes="flyoutEntry" Header="Open Project Folder..." Click="Button_ProjectPath"
+							  DragDrop.AllowDrop="True" ToolTip.Tip="Open an FFX master project folder"/>
+					<MenuItem Classes="flyoutEntry" x:Name="RecentProjectsMenu" Header="Recent Projects"/>
+					<Separator/>
+					<MenuItem Classes="flyoutEntry" Header="Exit" Click="MenuItem_Exit"/>
+				</MenuItem>
+				<MenuItem Classes="topMenuEntry" Header="Editors" PointerPressed="MenuItem_ClearProjectLoadStatus" IsEnabled="{Binding ProjService.IsProjectLoaded}">
+					<MenuItem Classes="flyoutEntry" Header="Monster Editor" Click="MenuItem_MonsterEditor"/>
+					<Separator/>
+					<MenuItem Classes="flyoutEntry" Header="Items" Click="MenuItem_Items" />
+					<MenuItem Classes="flyoutEntry" Header="Player &amp; Aeon Commands" Click="MenuItem_Commands" />
+					<MenuItem Classes="flyoutEntry" Header="Standard Monster Commands" Click="MenuItem_MonsterMagic1" />
+					<MenuItem Classes="flyoutEntry" Header="Boss Commands" Click="MenuItem_MonsterMagic2" />
+				</MenuItem>
+				<MenuItem Classes="topMenuEntry" Header="View">
+					<MenuItem x:Name="WindowSize1280MenuItem" Classes="flyoutEntry"
+							  Header="Window Size: 1280 × 720" ToggleType="CheckBox" IsChecked="True"
+							  Click="MenuItem_WindowSize1280"/>
+					<MenuItem x:Name="WindowSize1600MenuItem" Classes="flyoutEntry"
+							  Header="Window Size: 1600 × 900" ToggleType="CheckBox"
+							  Click="MenuItem_WindowSize1600"/>
+					<MenuItem x:Name="WindowSize1920MenuItem" Classes="flyoutEntry"
+							  Header="Window Size: 1920 × 1080" ToggleType="CheckBox"
+							  Click="MenuItem_WindowSize1920"/>
+				</MenuItem>
+				<MenuItem Classes="topMenuEntry" Header="Utilities" PointerPressed="MenuItem_ClearProjectLoadStatus"
+						  ToolTip.Tip="Live-game utilities do not require a Master folder and are available only while FFX is connected.">
+					<MenuItem Classes="flyoutEntry" Header="Requires FFX connection — no Master folder needed" IsEnabled="False"/>
+					<Separator/>
+					<MenuItem Classes="flyoutEntry" Header="Debug Menu" Click="MenuItem_DebugMenu" IsEnabled="{Binding ProcService.IsAlive}" />
+					<MenuItem Classes="flyoutEntry" Header="Battle Tracker" Click="MenuItem_BattleTracker" IsEnabled="{Binding ProcService.IsAlive}" />
+					<MenuItem Classes="flyoutEntry" Header="Inventory Tracker" Click="MenuItem_InventoryTracker" IsEnabled="{Binding ProcService.IsAlive}" />
+					<MenuItem Classes="flyoutEntry" Header="Arena Tracker" Click="MenuItem_ArenaTracker" IsEnabled="{Binding ProcService.IsAlive}" />
+					<MenuItem Header="TEST" Click="MenuItem_Test" IsVisible="False"></MenuItem>
+				</MenuItem>
+				<MenuItem Classes="topMenuEntry" Header="Recovery">
+					<MenuItem Classes="flyoutEntry" Header="Select Original Game Files..." Click="MenuItem_SetVanillaMaster"/>
+					<MenuItem Classes="flyoutEntry" Header="Verify Original Game Files" Click="MenuItem_ValidateVanillaMaster"/>
+					<Separator/>
+					<MenuItem Classes="flyoutEntry" x:Name="VanillaMasterStatusMenuItem" Header="Original Game Files: Not configured" IsEnabled="False"/>
+				</MenuItem>
+			</Menu>
+
+			<StackPanel Grid.Column="1" Margin="8,0" Orientation="Horizontal" VerticalAlignment="Center"
+						ToolTip.Tip="Automatically enabled when the running FFX game is detected. Required for live-memory tools.">
+				<Button Content="Help" Click="Button_EditorHelp" Padding="12,4"
+						ToolTip.Tip="Open a short guide to the available editors"/>
+				<Border Width="1" Height="20" Margin="10,0" Background="#555555"/>
+				<Label VerticalAlignment="Center">FFX Connected</Label>
+				<CheckBox IsChecked="{Binding ProcService.IsAlive}" IsEnabled="False"/>
+			</StackPanel>
+		</Grid>
+		</Border>
+
+		<!-- BOTTOM BORDER -->
+		<Border DockPanel.Dock="Bottom" Height="4" Background="#3A3A3A"/>
+
+		<!-- CONTENT -->
+		<ContentControl Name="ContentFrame">
+			<Border MaxWidth="620" Padding="36" Margin="24"
+					HorizontalAlignment="Center" VerticalAlignment="Center"
+					Background="#151515" BorderBrush="#555555" BorderThickness="1"
+					CornerRadius="6">
+				<StackPanel Spacing="14" HorizontalAlignment="Center">
+					<TextBlock Text="Zanarkand Workshop" FontSize="30" FontWeight="Bold"
+							   HorizontalAlignment="Center"/>
+					<TextBlock Text="v0.1.0" FontSize="12" Foreground="#999999"
+							   Margin="0,-10,0,0" HorizontalAlignment="Center"/>
+					<TextBlock Text="Comprehensive tools for editing FFX battle data"
+							   FontSize="17" Foreground="#CCCCCC" HorizontalAlignment="Center"/>
+					<Border Height="1" Background="#555555" Margin="0,4,0,6"/>
+					<TextBlock Text="Open a valid FFX master folder to begin editing."
+							   FontSize="15" TextAlignment="Center" HorizontalAlignment="Center"/>
+					<TextBlock Text="The selected folder should be the master folder containing the jppc and new_uspc game-data folders."
+							   Foreground="#AAAAAA" TextWrapping="Wrap" TextAlignment="Center"
+							   MaxWidth="520" HorizontalAlignment="Center"/>
+					<Button Content="Open Project Folder..." Click="Button_ProjectPath"
+							Margin="0,10,0,0" Padding="22,10" FontSize="16"
+							HorizontalAlignment="Center"/>
+					<TextBlock x:Name="ProjectLoadStatusText" MinHeight="20"
+							   FontWeight="Bold" TextWrapping="Wrap" TextAlignment="Center"
+							   HorizontalAlignment="Center"/>
+					<TextBlock Text="After the project loads, choose an editor from the menu above."
+							   Foreground="#888888" TextAlignment="Center" HorizontalAlignment="Center"/>
+				</StackPanel>
+			</Border>
+		</ContentControl>
+
+	</DockPanel>
+	
+</Window>

@@ -1,6 +1,17 @@
-/.vs
-/FFXProjectEditor/bin
-/FFXProjectEditor/obj
-/FFXProjectEditor/Properties
-/FFXProjectEditor/FFXProjectEditor.csproj.user
-/KhLib
+# Visual Studio and user-specific files
+.vs/
+*.user
+*.suo
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Local-only project data
+/ZanarkandWorkshop/Properties/
+/KhLib/
+
+# Release packages and diagnostic output
+/artifacts/
+*.log
+*.dmp

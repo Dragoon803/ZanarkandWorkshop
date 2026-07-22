@@ -1,0 +1,136 @@
+ZANARKAND WORKSHOP - MONSTER AI EDITOR FEATURES
+Stable Phase 6 Feature Inventory
+==============================================
+
+PROJECT STATUS
+--------------
+- Current milestone: Stable Phase 6
+- AI parsing, structured editing, script expansion, navigation, validation,
+  saving, and restoration are functional.
+- The editor has been tested against vanilla and modified monster files and
+  through multiple in-game behavior tests.
+
+AI PARSING AND TRANSLATION
+--------------------------
+- Reads the complete ATEL AI chunk from monster files.
+- Decodes individual ATEL instructions.
+- Combines related instructions into readable grouped logic statements.
+- Provides parser-style descriptions for known calls, conditions, properties,
+  targets, commands, jumps, variables, camera operations, motion values, and
+  other recognized parameters.
+- Uses friendly property and status names derived from the FFX Data Parser.
+- Resolves command IDs using command.bin, monmagic1.bin, monmagic2.bin, and
+  item.bin.
+
+STRUCTURED OPERAND EDITING
+--------------------------
+- Context-sensitive controls can edit known commands and attacks.
+- Supports target and character-group selection.
+- Supports variables, variable reads, and variable assignments.
+- Supports known character and stat properties.
+- Supports comparisons and conditional checks.
+- Supports random ranges.
+- Supports jump destinations.
+- Supports selectors such as Any/All and Lowest.
+- Supports numeric values and known function parameters.
+- Supports motion and monster-size float references.
+- Grouped statements expose multiple related parameters together when known.
+- Individual decoded instructions can be edited independently.
+- A separate manual operand editor remains available for raw values.
+
+STRUCTURAL AI EDITING
+---------------------
+- Copies complete grouped statements.
+- Pastes copied statements over statements of the same size.
+- Inserts copied statements before or after another statement.
+- Deletes complete statements.
+- Relocates affected script data and jump destinations after size changes.
+- Updates monster-file offsets when the AI chunk expands or contracts.
+- Supports continued editing after insertion, deletion, validation, and save.
+- Tested in game with replaced attacks, consecutive attacks, removed attacks,
+  copied checks, repeated insertion, and expanded monster files.
+
+WORKER, FUNCTION, AND JUMP NAVIGATION
+-------------------------------------
+- All Workers displays the complete AI.
+- Selecting w00, w01, or w02 scopes Grouped Logic, Decoded Instructions, the
+  AI hex chunk, and search results to that worker.
+- Function selection further scopes the views to a worker function.
+- Worker jump lists provide direct access to actual AI-chunk destinations.
+- Go to Jump navigates directly to a selected destination.
+- Jump destinations are highlighted in blue in the hex chunk.
+- Destination highlighting is reflected in Grouped Logic and Decoded
+  Instructions when a corresponding entry exists.
+- Worker, Grouped Logic, and Decoded Instruction selections use predictable
+  selection ownership and focus transfer.
+- The interface distinguishes script-relative offsets from absolute AI-chunk
+  offsets.
+
+HEX EDITING AND SEARCH
+----------------------
+- Displays and edits the complete formatted AI hex chunk.
+- Shows row offsets and a 00 through 0F column indicator.
+- Searches for individual bytes or multi-byte sequences.
+- Accepts compact or space-separated pasted hex.
+- Provides Find Previous and Find Next navigation.
+- Limits searches to the selected worker when worker scoping is active.
+- Supports byte-sequence replacement and replacement highlighting.
+- Synchronizes selections between raw bytes, grouped statements, and decoded
+  instructions.
+- Uses red for the active selection and blue for a jump destination.
+- Direct chunk interaction clears stale logical selections, jump highlights,
+  and related status fields.
+
+VALIDATION AND SAFETY
+---------------------
+- Manual hex editing remains fixed-length in the protected editing mode.
+- Structural size changes are performed through dedicated statement controls.
+- Manual changes temporarily disable decoded editing until validation rebuilds
+  the decoded views.
+- Detects malformed, incomplete, and partially deleted instructions.
+- Identifies and highlights a damaged instruction or statement after an unsafe
+  manual deletion.
+- Separates validation SUCCESS and ERROR indicators from ordinary messages.
+- Protects saving through the editor's validation state.
+- Keeps unknown operands manually editable without assigning an unsupported
+  meaning to them.
+- A future Full Control mode is planned for the polishing phase. It will remove
+  selected restrictions only after displaying a prominent risk warning.
+
+RESTORATION
+-----------
+- Restore Loaded AI returns the AI to the state captured when the monster was
+  opened.
+- Restore Backup AI returns the AI to the editor's original backup.
+- Revert Entire Monster to Vanilla restores the complete vanilla monster,
+  including AI, stats, elemental properties, AP, loot, and other monster data.
+- Destructive restoration actions use modal confirmation windows explaining
+  their scope.
+
+INTERFACE AND WORKFLOW
+----------------------
+- Grouped Logic and Decoded Instructions can be independently minimized.
+- Minimized-window preferences persist after closing and reopening the program.
+- Panel restoration preserves predictable selection ownership.
+- Workers and Complete AI Chunk have an adjustable vertical split.
+- Dedicated Message and Selection fields report editor state and context.
+- Headers, dropdowns, edit controls, and status areas are organized for AI
+  editing readability.
+
+STABLE PHASE 6 VERIFICATION
+---------------------------
+- Release build completed with zero errors.
+- 361 of 361 vanilla monsters passed the ATEL smoke test three consecutive
+  times.
+- 361 of 361 modified monsters passed the ATEL smoke test three consecutive
+  times.
+- No ATEL parse or hex round-trip failures were found.
+- Modified files with missing code-length headers were recovered consistently.
+- Structural changes, file expansion, saving, restoration, and altered combat
+  behavior have been verified through in-game testing.
+
+PLANNED NEXT STAGE
+------------------
+- Phase 7 will focus on interface and wording polish, documentation, broader
+  usability work, GitHub fork preparation, and the future optional Full Control
+  editing mode.

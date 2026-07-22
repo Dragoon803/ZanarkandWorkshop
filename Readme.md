@@ -1,19 +1,28 @@
-# FF X Project Editor
+# Zanarkand Workshop
 
-A multiplatform solution to edit the files from the game "Final Fantasy X".
+<p align="center">
+  <img src="ZanarkandWorkshop/Assets/ZanarkandWorkshop.png" alt="Zanarkand Workshop logo" width="560"/>
+</p>
+
+> **Unofficial fork:** This project is based on
+> [osdanova/FFXProjectEditor](https://github.com/osdanova/FFXProjectEditor),
+> originally created by osdanova. This fork is independently maintained and is
+> not affiliated with or endorsed by Square Enix.
+
+An unofficial Final Fantasy X modding toolkit for Windows. Zanarkand Workshop
+uses its own version numbering beginning at v0.1.0 and was derived from FFX
+Project Editor v1.2.
 
 If you only want to use the tools, simply open the app when the game is open and use them, no need to set anything up.
 
-* Tools are only compatible with the Steam version in Windows.
+* Tools are only compatible with the Windows Steam version.
 * Tools are compatible with [Untitled Project X](https://steamcommunity.com/sharedfiles/filedetails/?id=683802394)
 * To refresh a tool data it has to be reopened (Excluding the Battle Tracker)
 
 ## How to set it up
 
-Download the executable from the [Releases](https://github.com/osdanova/FFXProjectEditor/releases) section.
-
-* Windows: win-x64
-* Linux: linux-x64
+Download the latest Windows package from the Releases section of this fork,
+extract it, and run `ZanarkandWorkshop.exe`.
 
 Extract the game files using an extractor such as [VBF Browser](https://www.nexusmods.com/finalfantasy12/mods/3).
 
@@ -23,7 +32,9 @@ I recommend using the [External File Loader](https://www.nexusmods.com/finalfant
 
 ## How to use
 
-Click on "Select Project Folder" at the bottom left and load your master folder. The app autodetects when your game is open and it'll hook to it when it is (Bottom right checkbox)
+Click **Open Project Folder...** and select your master folder. The app detects
+the running game automatically; the **FFX Connected** indicator shows the
+connection status.
 
 <img src="ReadmeAssets/MainWindow.png" width="700"/>
 
@@ -92,6 +103,42 @@ Keep tabs on your arena captures.
 * .Net
 * Avalonia UI
 * MemorySharp (Compiled branch that supports x64 apps)
+
+## Building from source
+
+Requirements:
+
+* Windows
+* [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+
+From the repository root:
+
+```powershell
+dotnet restore .\ZanarkandWorkshop.sln
+dotnet build .\ZanarkandWorkshop.sln -c Release --no-restore
+```
+
+The executable is written to
+`ZanarkandWorkshop/bin/Release/net8.0/ZanarkandWorkshop.exe`.
+
+To create the ready-to-distribute, self-contained Windows ZIP used for GitHub
+Releases:
+
+```powershell
+.\scripts\build-release.ps1 -Version 0.1.0
+```
+
+The package is written to `artifacts/ZanarkandWorkshop-v0.1.0-win-x64.zip`.
+Pushing a version tag such as `v0.1.0` runs the same packaging process on
+GitHub and creates a draft release for review.
+
+## Project status
+
+Zanarkand Workshop is under active development. Back up modded game files before
+editing them and review the release notes before upgrading.
+
+See [CHANGELOG.md](CHANGELOG.md) for release history and [NOTICE.md](NOTICE.md)
+for project provenance and licensing information.
 
 ## Special Thanks
 

@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="FFXProjectEditor.MonEditorSelector_Control">
+
+
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="150" MinWidth="130" MaxWidth="360"/>
+			<ColumnDefinition Width="6"/>
+			<ColumnDefinition Width="*" MinWidth="700"/>
+		</Grid.ColumnDefinitions>
+
+		<DockPanel Grid.Column="0">
+			<Grid DockPanel.Dock="Bottom" Height="44">
+				<TextBox VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="6,0" Text="{Binding FilterText}" TextChanged="Filter_Changed"/>
+			</Grid>
+			<ListBox Grid.Column="0" Name="MonsterList" ItemsSource="{Binding DisplayedMonsters}" SelectionMode="Single" SelectionChanged="ListBox_SelectionChanged">
+				<ListBox.ItemTemplate>
+					<DataTemplate>
+						<Label Content="{Binding Name}"/>
+					</DataTemplate>
+				</ListBox.ItemTemplate>
+			</ListBox>
+		</DockPanel>
+
+		<GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"
+					  ResizeDirection="Columns" Background="#444444"
+					  ToolTip.Tip="Drag to resize the monster list"/>
+		
+		<ContentControl Grid.Column="2" Name="ContentFrame" />
+	</Grid>
+	
+</UserControl>

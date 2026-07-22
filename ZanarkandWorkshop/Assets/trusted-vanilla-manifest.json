@@ -1,0 +1,1833 @@
+﻿{
+    "manifestVersion":  1,
+    "referenceId":  "ffx-clean-master-reference-1",
+    "description":  "User-confirmed clean FFX Master recovery files",
+    "fileCount":  365,
+    "files":  [
+                  {
+                      "path":  "jppc/battle/mon/_m000/m000.bin",
+                      "size":  2136,
+                      "sha256":  "48f681798e3a1f04a2a3c119df6d1ee46741a034a5315e33e3fcfd51d00e9328"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m001/m001.bin",
+                      "size":  64568,
+                      "sha256":  "bcb74c25ec4dff6e25751e289d963b8fc55286213ce744960e0d51403a1357fd"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m002/m002.bin",
+                      "size":  64448,
+                      "sha256":  "2fd61e07488165bd80fec0811393925e15af78cd4e5ebf47262d176aaaa3d87d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m003/m003.bin",
+                      "size":  64572,
+                      "sha256":  "8228d64088adf4258b964a48cd81574d9e2f16aa14d39f7a375132c3d294cdfa"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m004/m004.bin",
+                      "size":  64648,
+                      "sha256":  "b19c6f58b4c524f81a302c42ab3484c0fd77d614cc58cdd7dda6b4bf78c2451f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m005/m005.bin",
+                      "size":  64556,
+                      "sha256":  "868ddb1f6bee85d293b682ba58b4d700fdf2c4e3bcd26963548e0a997e63ae0a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m006/m006.bin",
+                      "size":  69892,
+                      "sha256":  "8964e6dc20771aac5fd175e9ef8d934c3dbdd7b7111afaa7dbb027460d460b94"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m007/m007.bin",
+                      "size":  69836,
+                      "sha256":  "5c76d9e9877f7acc77439e2c39ac4c1d6fbd212a0f36324f81feab6f6eecc568"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m008/m008.bin",
+                      "size":  70072,
+                      "sha256":  "a9b2f74ceeb4d04b677ddf22982f8b127bd0e6d747f95458af327a307673b47f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m009/m009.bin",
+                      "size":  52104,
+                      "sha256":  "9f09aefd2cec5d676d47ab42fe18d47362709733057a9600e242115c7737aaa3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m010/m010.bin",
+                      "size":  51884,
+                      "sha256":  "8d884750d0cae6e0c33375469781ae279730c5b2abcebb99497e36ec5e3f67fc"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m011/m011.bin",
+                      "size":  51792,
+                      "sha256":  "2eabdcfd1482f2960cd0fd4631f50e1a152f8c29a987f27b5dad45beda09304d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m012/m012.bin",
+                      "size":  51860,
+                      "sha256":  "612f883b5a5b1a6813ffbec9b1988e672f963922c6d6c808a5afe026c54fa538"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m013/m013.bin",
+                      "size":  51860,
+                      "sha256":  "c071bb1ea474df9a11cd7a07db7f204a30397c7871abb1322c982d4f3c2549c9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m014/m014.bin",
+                      "size":  51924,
+                      "sha256":  "f9e2267e77a4b0303bd85f04bb938d5acf9ff4a29c3f931828bbc4dee521ea07"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m015/m015.bin",
+                      "size":  51916,
+                      "sha256":  "c3f9649d99d2b43cc18bbf6dda364c1be78e332bebee9b0ed5eec6842598dfd0"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m016/m016.bin",
+                      "size":  54820,
+                      "sha256":  "5b52a44e64e46c6345998cbaaa2d9730fb97ca07b71a92ba94a0384c12d89bcc"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m017/m017.bin",
+                      "size":  54396,
+                      "sha256":  "0cfd920e979744c6268536dca8c63665b51f2a60525b313697e4e3b9f6d03c50"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m018/m018.bin",
+                      "size":  54356,
+                      "sha256":  "2c257a1559c3d3b5e5208b0ebc2105e84c49695af0a6aba174f33c6c3bca10e2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m019/m019.bin",
+                      "size":  54480,
+                      "sha256":  "3faa79ee486672feeae0c6aca7d94f6a87cf444b30f5509ca8aeb21c0dc18990"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m020/m020.bin",
+                      "size":  54420,
+                      "sha256":  "958f075588b552dd777797e08191f8dc66758d94fa08e07217bcf9ebaa381959"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m021/m021.bin",
+                      "size":  64588,
+                      "sha256":  "7e9f13c3ca26da927d42077485c4e6c11ee7ed277f7be66860131381576dbf59"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m022/m022.bin",
+                      "size":  65164,
+                      "sha256":  "6ff0eb83d7a9cb2498c9702b8f68db0bfae23a14e51a901ee1c8883b051d663e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m023/m023.bin",
+                      "size":  64948,
+                      "sha256":  "bbe4ae09dd863959d55fc517aeffdf39cf3fc3305c17c26f4fb7b92ff9f8aa84"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m024/m024.bin",
+                      "size":  64980,
+                      "sha256":  "4f92af6bb5f1a98241fa5db5a68f2321e5f37bab84ed6b9e0bd06dc66c280f76"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m025/m025.bin",
+                      "size":  65040,
+                      "sha256":  "58c9c76b67386ea1de4b7cadc8a653c75df6155b43a2353373a8828d81830ca2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m026/m026.bin",
+                      "size":  65112,
+                      "sha256":  "ffee13a14982c47635c9e74da5bb6cda270b5800747723c41c4d039e2483615f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m027/m027.bin",
+                      "size":  65060,
+                      "sha256":  "a292378368cc5dfed732d4702b4d4631128739f15dfa88a0b72efe2ff7f760e8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m028/m028.bin",
+                      "size":  57304,
+                      "sha256":  "2f0146a5bcd27182c89e16e8a2da801a2916607e94dee937ef510a87b4339989"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m029/m029.bin",
+                      "size":  57080,
+                      "sha256":  "9d27ea70b150b156d5aa29e4f27d6625b20bda5e861b454572a2fab966c4fd0b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m030/m030.bin",
+                      "size":  57080,
+                      "sha256":  "7968eee3c1846e9215f4c5da057997d8ce1b0957a131d0ef2cf44fdbf3fab6c1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m031/m031.bin",
+                      "size":  43100,
+                      "sha256":  "70623fef360fd653773fcaa8b60110c712dfc4a29f6d7f9a3692d48be5e3a4d5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m032/m032.bin",
+                      "size":  42860,
+                      "sha256":  "311df769b0609318eb351caa0d6b26a5be690a87a15b52011134b7316fc3f072"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m033/m033.bin",
+                      "size":  42872,
+                      "sha256":  "a1dc9a3d6dcc1422bb32bbb1ca547a70cf3d88b18ed3854090105f14f03822c2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m034/m034.bin",
+                      "size":  42856,
+                      "sha256":  "b983fabc41b9ca2e1ad32b66a138e37201308d1df52c9c1891ea2ff0fab0fd00"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m035/m035.bin",
+                      "size":  34848,
+                      "sha256":  "fe53dc1f95044d0fc2575d9ddec50c986809866e45e3a0236e77cf9acdd45bec"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m036/m036.bin",
+                      "size":  34888,
+                      "sha256":  "3d375c7a5b7eb4b54ed4545a282d1bae2d52183a93b38cf9105dbd7e8de2a104"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m037/m037.bin",
+                      "size":  34988,
+                      "sha256":  "e184f1f444b1186072bfb6cb496a63225e769aeefe0df7d49d8059c460308090"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m038/m038.bin",
+                      "size":  35080,
+                      "sha256":  "b538cc1555c26b1a69c550b7da6bdf9c7e9428c650245f57efcce5bff7e3d334"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m039/m039.bin",
+                      "size":  29068,
+                      "sha256":  "ddce5b6adda3b609c98e7ff5801fd025a65d7b5d53fced3bd3a65a7d778e91ca"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m040/m040.bin",
+                      "size":  29112,
+                      "sha256":  "a939b1d82a72cd2858e4b846b3447b413b41bf7be289ae557b9a68ff50b945a6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m041/m041.bin",
+                      "size":  63572,
+                      "sha256":  "984a4c4587b2be693d65cb1eea04f10c7053f19f67a13e3cc0ebae31384eb84a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m042/m042.bin",
+                      "size":  63832,
+                      "sha256":  "1f3c33a725810975007d9fed1a32161b838aeb383650ad0c249aeb1d39d6afbd"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m043/m043.bin",
+                      "size":  64828,
+                      "sha256":  "f147bef6d3e25ae0e2d6a92ab9fc9bdafc7c2f2f93267926bbd97c43f422e83a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m044/m044.bin",
+                      "size":  62316,
+                      "sha256":  "9b974838d639be8c09b4cd7f5cbc2bccdce86e476eefa021d3ad4183d3c1f479"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m045/m045.bin",
+                      "size":  65288,
+                      "sha256":  "0587d427c33ab37b4652b5a92588ee3b3d71202a867dafa3745de411f5e09a22"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m046/m046.bin",
+                      "size":  75528,
+                      "sha256":  "0daef381292ae78b637ec0d5c4c82d089f3236e403013999faddadc364c88cfe"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m047/m047.bin",
+                      "size":  75212,
+                      "sha256":  "aeff6a8036d8ef118fb6ef210b78ba14b644fb664f918b715c6b817e77f2d71b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m048/m048.bin",
+                      "size":  67452,
+                      "sha256":  "d3742b1e0c5ef47bc08d2495e4460a707c1847dba0379b620e1abbaaeb12cfe2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m049/m049.bin",
+                      "size":  67644,
+                      "sha256":  "b24e6a7fd2c636c71da03c262f8d84116e9d7ad1016ef84ee8c5a62ae1eb52f2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m050/m050.bin",
+                      "size":  68744,
+                      "sha256":  "25e8fdb44f77bbc64683ae288bec00b1cc726395c8ab9acad8ce9f68aa0684e3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m051/m051.bin",
+                      "size":  41696,
+                      "sha256":  "d5b0d713a7a6b74d1686c01fd4bd29304f46b2294749462a760d4e83bc5fe9a5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m052/m052.bin",
+                      "size":  41684,
+                      "sha256":  "0bd43a65fbc6b25d1b32830678fdb31568f52515fc1cb93d54539c57a97b1748"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m053/m053.bin",
+                      "size":  50440,
+                      "sha256":  "b2a7ee37288a69a0dd69c3888707bbc8e74e89ba7e1fc0e6d0f2adc7a7730b2f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m054/m054.bin",
+                      "size":  50432,
+                      "sha256":  "9b02cbe2dba30d3304175ce176f601cfe73e0a0c7d9fe9580899269662277806"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m055/m055.bin",
+                      "size":  54624,
+                      "sha256":  "bed0f21d1b8296fb58e26eda2c57c8f157102ca0998c0f865e6c4c18c72c76f3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m056/m056.bin",
+                      "size":  54856,
+                      "sha256":  "fea1e99952139d6f4cb1c19322456ee292264238b5ad0251f67a9425c2409227"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m057/m057.bin",
+                      "size":  55100,
+                      "sha256":  "d1cbcafe306d944983f1184116de1c31dc06b6c764d4278802646c2d84c998e1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m058/m058.bin",
+                      "size":  44104,
+                      "sha256":  "a01b3542b02d9dbe2e8f78473590b046adc9e597a0df3d88824987c4cad81db8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m059/m059.bin",
+                      "size":  63720,
+                      "sha256":  "1dac7c7046ce0832fcf05f952d375b427481ac667747566f249b172030056c45"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m060/m060.bin",
+                      "size":  63172,
+                      "sha256":  "53172401133b97cce70c9269b64e5de5b595bb72fa0d230419ceb17c2b3ce189"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m061/m061.bin",
+                      "size":  63412,
+                      "sha256":  "c44ac149e746f84a9a15789b5a4fabdd126f85fc6ab95e5788d1f17c076ed727"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m062/m062.bin",
+                      "size":  63260,
+                      "sha256":  "79d5c3577385fddd652e94420a06a78097036dc3dfd6841ca6e33efbc069e51a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m063/m063.bin",
+                      "size":  63324,
+                      "sha256":  "044a642d21b8c2a573bec2d7ee18ce6209e8adea09a5351fa7eebb621b3e25cf"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m064/m064.bin",
+                      "size":  63788,
+                      "sha256":  "f02a35d1a370ed75b526c05b7591bcb0dc8f8b790315657c1f28c1fa975c067f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m065/m065.bin",
+                      "size":  64268,
+                      "sha256":  "06e0f24ccf6524a4d3d6a61657a52bde8accc2ed1233d034f3f857cb9ab25c3e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m066/m066.bin",
+                      "size":  69808,
+                      "sha256":  "21273d8aa5b2e6d4c2e743efb3fcf0bcb76006949451115126e7d0309edc7046"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m067/m067.bin",
+                      "size":  70336,
+                      "sha256":  "baec190d150a59c043bd1e4a576ac93a68236b800284ead365c732fbf410b728"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m068/m068.bin",
+                      "size":  65408,
+                      "sha256":  "401729c938555c6c6cb1a6d0b740f764a8bdb38078204a85591a2843c5cf6842"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m069/m069.bin",
+                      "size":  66632,
+                      "sha256":  "a8d21ca3e961958688a82ecb0e96271798b0bfe4bd49e9b639d4e124503d7207"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m070/m070.bin",
+                      "size":  65764,
+                      "sha256":  "505f762eedc84cf805ad379f5dec569463b538e69252fd78cba05c5e7c49960e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m071/m071.bin",
+                      "size":  65588,
+                      "sha256":  "b55c7cf44df40cecfd244d71ca8a6759aa01645c8917d7b1a6e37846cd951a55"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m072/m072.bin",
+                      "size":  66604,
+                      "sha256":  "c4806bcd2a40a08bfaaf073a8fc089903bdd5f007451578c42e3b0f5719c2ae8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m073/m073.bin",
+                      "size":  65736,
+                      "sha256":  "376ba557ac7b1e8846bac4074c2ddbfe306141518983393785fb63dc760207ac"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m074/m074.bin",
+                      "size":  65568,
+                      "sha256":  "2a6c062c880f39b2689d2f672f0707f0faf67cb0be37f93796dd7897868bf4bd"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m075/m075.bin",
+                      "size":  66588,
+                      "sha256":  "927a98f28f6feea82d83da56faa71be6941c84f107b039aeb8fb45704bf20d70"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m076/m076.bin",
+                      "size":  65716,
+                      "sha256":  "523236b83733e8fd3ec81df8cd6e7f54847efe7557235025f2429313d790c6da"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m077/m077.bin",
+                      "size":  64704,
+                      "sha256":  "1f5a149c1e265b1e9977c4e522f012620093a4d62ca600d4b578da88c20a0f1b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m078/m078.bin",
+                      "size":  52292,
+                      "sha256":  "d6a89a1b75b048f146f5a02710e5ac103f7318ef8a56f153d367b12441f31859"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m079/m079.bin",
+                      "size":  54180,
+                      "sha256":  "bfcc154c3314693d5adae38a6a41845d9eebe18052ea907246ef126c1ab9edf8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m080/m080.bin",
+                      "size":  64384,
+                      "sha256":  "9ea38581217cd534e1ba8191cc2ef1c15f3b03dae59a7cce165c1aa43c034e1a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m081/m081.bin",
+                      "size":  68952,
+                      "sha256":  "a2f5c98123d2e38ad3319346acf1adc7eb15ed6718873cd53f6af25757bf5463"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m082/m082.bin",
+                      "size":  33016,
+                      "sha256":  "6a78e876593195aca71f7bcd8fad36a9389cca4423f1a083acb6dbfbddd60457"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m083/m083.bin",
+                      "size":  29504,
+                      "sha256":  "adf24a300c1d3c0131b45c89a8747bc486c23d58061e6de21f7e3aa506d94245"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m084/m084.bin",
+                      "size":  61748,
+                      "sha256":  "8c7f084ebc3c0fbff390d1c2dbabea6f8a571881509157f4263dafc5ee6e9142"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m085/m085.bin",
+                      "size":  56108,
+                      "sha256":  "a82be689abf2628b8c4a80bcde7c0f1176ca4853a3fa0cdd9383be8a6be6c66c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m086/m086.bin",
+                      "size":  56748,
+                      "sha256":  "4ffb9fd5a5a517ec3d7265aa591f7567633bf0860c28f5de329746bd51ee5ab3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m087/m087.bin",
+                      "size":  62124,
+                      "sha256":  "6b511a69eb53548fdba6743d6242def9ffe858022f89ce0a7d2a85ac504c34a1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m088/m088.bin",
+                      "size":  62260,
+                      "sha256":  "5d779f3f7ac998955142eec97d586b4b0c5a61f46aaffc09dd8e987745fbf07a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m089/m089.bin",
+                      "size":  62272,
+                      "sha256":  "bb772563a49788b0dcddd8ead19aa3430b427a6c40d5e29c51631f533fec2dec"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m090/m090.bin",
+                      "size":  62324,
+                      "sha256":  "1dd9447e2e11f58757a9cc1a5c89c966d67be4dea01b9ee59842beff524a481c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m091/m091.bin",
+                      "size":  63848,
+                      "sha256":  "bae1cfec68900f596fead16cb5f8162df105f33555680f12dd1819fa7c3d0ac4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m092/m092.bin",
+                      "size":  63780,
+                      "sha256":  "10867f554e7a3fb41b4c711301511eeaad4fdb8b5beec6a6b95d51e9ec30da5c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m093/m093.bin",
+                      "size":  66708,
+                      "sha256":  "19d7491cef9f958fd5e0a29b295147beb318dbc7b4706d82db7af5d0f28096aa"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m094/m094.bin",
+                      "size":  63904,
+                      "sha256":  "e80f1ff990a90fb244b456b049bf2f748c7f97500b5801a85b1cbba870d023e1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m095/m095.bin",
+                      "size":  67136,
+                      "sha256":  "88f052046828ca95c5c9de72b88c12940c411dbe4e0924283e8122e0b4ef0ba4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m096/m096.bin",
+                      "size":  55668,
+                      "sha256":  "8891f4d2ec3283492699ad85894c4d4ccf75d71551ea4bd13121016ef0981db7"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m097/m097.bin",
+                      "size":  55620,
+                      "sha256":  "8498d8f9038cf68183cd6d5b861eb42ef35a92a04d1368a2cf45c0273e01d430"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m098/m098.bin",
+                      "size":  55656,
+                      "sha256":  "7e6c405c64250ce0eef04608427f02c253b8c60c6df8aab8bddd38a23d23d0ab"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m099/m099.bin",
+                      "size":  134464,
+                      "sha256":  "b2869a897697734b5248877b9a8a8bbd2506e307c70bd554ca8a7fed7c4c2a59"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m100/m100.bin",
+                      "size":  172128,
+                      "sha256":  "cda2805933de280e9c935f62e9e705cf6282d9775bf793ed9361a65594c52e2b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m101/m101.bin",
+                      "size":  115864,
+                      "sha256":  "e6820a1c2aefc8e2f29d6d461c7b1fbe66a93337cdbf978bbe0b7eef05b417b4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m102/m102.bin",
+                      "size":  159208,
+                      "sha256":  "6f2cbaad9880856a58264d598c40c6030e0f722f2473e8ad73f9f8f874bb09e1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m103/m103.bin",
+                      "size":  16372,
+                      "sha256":  "bfe80d3891298b6b16a8dff702cef0c1af80bcc16b2a9515b89d1b7f39c4b889"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m104/m104.bin",
+                      "size":  144400,
+                      "sha256":  "5d5a60cd9cf8a8cc133fb514fbfaed79e233a0bb0c33d1964fec96422d52684e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m105/m105.bin",
+                      "size":  157380,
+                      "sha256":  "6e88b0751628a771dc039fc524a34851c345c555c36cb7165dabe727ecff65c4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m106/m106.bin",
+                      "size":  11096,
+                      "sha256":  "9589c73a49d8857003d92d54edc1365da970b132bda85c6b17d372563f00bd82"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m107/m107.bin",
+                      "size":  56492,
+                      "sha256":  "5ff8ee2568c92c903a81094b68b997f826108349c707ed2419cd95358cced1f6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m108/m108.bin",
+                      "size":  54900,
+                      "sha256":  "fb2cddf13a3d056bd136cf6fccbc7a9d2d1182df6ae76ff9abeec705cc9ee13b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m109/m109.bin",
+                      "size":  170436,
+                      "sha256":  "4c322e4967721acbb25d88753a88675855285f5b6ce360e75e4c2faa576bbd23"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m110/m110.bin",
+                      "size":  187652,
+                      "sha256":  "27f3c887ac3d93f74bfe02c57e4e3033fb28e7558726d9e01ae35cd4446a7399"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m111/m111.bin",
+                      "size":  143372,
+                      "sha256":  "b21232ec0422f3804c23143eb56d6e77a975b2fa96ecb53a644c828e6fad3776"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m112/m112.bin",
+                      "size":  50624,
+                      "sha256":  "cdf595e5ba594475273e8952bbf201dbf5601a58b03a0ecf563d23dc1921f0d5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m113/m113.bin",
+                      "size":  130736,
+                      "sha256":  "fca33728da690bca67a1c4c0ad9bba54272a6d875a8ea41d3fd5b880c85a5cfe"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m114/m114.bin",
+                      "size":  124124,
+                      "sha256":  "2125e5398ca7f539cdcf27c33c329252f4c51ec0366ab6d16d74185377608026"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m115/m115.bin",
+                      "size":  30528,
+                      "sha256":  "9bf8b851113e1319056f89ae47eee1b6b517c1d314a44fddde94822077800de5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m116/m116.bin",
+                      "size":  2996,
+                      "sha256":  "f34e962d74f82796fc2eabac187597b0f432b421af29ae511c827c9504912d72"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m117/m117.bin",
+                      "size":  119456,
+                      "sha256":  "91bf9d287dd8d15346d2751604899e0a56a27f6a33df7e791e736e732b718497"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m118/m118.bin",
+                      "size":  117416,
+                      "sha256":  "0cb7d3f2103f5921ac86c48118b3151ad756885fac5a6e81437703ab071b4f62"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m119/m119.bin",
+                      "size":  150852,
+                      "sha256":  "386d62576b1239f23f92117b5190c36f28ecaac42662460ebc89250a01b9181c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m120/m120.bin",
+                      "size":  179112,
+                      "sha256":  "5c78e8ce36180acda5340fbfd5d509241be8a0f0a71e859d1600a1b4c530dbb5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m121/m121.bin",
+                      "size":  51336,
+                      "sha256":  "ffc476c9ed402bf7a4db60bfd43e1b74c4944c5d18296ab8ac72de888215df04"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m122/m122.bin",
+                      "size":  148928,
+                      "sha256":  "4835054d9015519f0075b8f1241a168ff82d01edbec95b2a284fc63d4d23977b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m123/m123.bin",
+                      "size":  3464,
+                      "sha256":  "46723b1c1bdc1f387d428c96eb161b6cf31c2c30b95751e59bc1b84ac758879c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m124/m124.bin",
+                      "size":  30016,
+                      "sha256":  "f4cd4e191f0ec406c3e4ea82feae4481a5e9ed8865f33ca1e5eac6a334d748ed"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m125/m125.bin",
+                      "size":  68048,
+                      "sha256":  "0b1dd8d97192516a8cb8c5d9a68a93db695737a60e6b7340e9639dfc0d81e6d5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m126/m126.bin",
+                      "size":  143304,
+                      "sha256":  "4b9164a9cc6beab34446de765e74b0a5682ad30d754a92edc24973e861b2deb3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m127/m127.bin",
+                      "size":  28592,
+                      "sha256":  "9f0737c57cb994110b5e363d9a674b53f13c45471f6eb4c8288adb59a2bc0f8d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m128/m128.bin",
+                      "size":  174300,
+                      "sha256":  "e79b5be5888f0d5f0af1906a26ec4db64981b29fe861489c60f513871881abad"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m129/m129.bin",
+                      "size":  90316,
+                      "sha256":  "c4f07c5729fb48d5f830a442585a79c47faf2c7701df815e2a2aafae89509383"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m130/m130.bin",
+                      "size":  48008,
+                      "sha256":  "dc63d6fdc506c7de95efe2a933949b9219b702a16749e981b809c4b225d56336"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m131/m131.bin",
+                      "size":  169876,
+                      "sha256":  "69b4e721dff3121175439e44311ee03511d6f5b7560c563aeaac2f0eaf0217b5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m132/m132.bin",
+                      "size":  115884,
+                      "sha256":  "879fede04890de4b8abbec85c7014ea49eb7837bb696aa4eccd601380ce43505"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m133/m133.bin",
+                      "size":  3200,
+                      "sha256":  "930ef86414379cf72ca372c56313daad9d60c9e199162a5e06429e5411de1d21"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m134/m134.bin",
+                      "size":  26504,
+                      "sha256":  "aa5023a6f7ce2492298458f5c57b88031d2f78ae268545397e758ac1decb6026"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m135/m135.bin",
+                      "size":  33156,
+                      "sha256":  "8cde1bda669f7acc131ffd279acb72c03d2ba6e3c8e4f98953e83b5f2de8422c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m136/m136.bin",
+                      "size":  123156,
+                      "sha256":  "8f5c55f29c72ba3b28f0755fca18e680666cac41f529fa14355bd69a4f57025c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m137/m137.bin",
+                      "size":  123188,
+                      "sha256":  "7ca82f22fc7d561e0d977f507014fd91159f5b06b3604d9dedaf67f979ebb894"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m138/m138.bin",
+                      "size":  37708,
+                      "sha256":  "81329ab3ecbffdd683bf6feed552290b32b8791b8934727d7b66d4fd6ca6faee"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m139/m139.bin",
+                      "size":  157916,
+                      "sha256":  "91ba4a2079197860b01b67373a9ecb09bd2ad81673983b178a3e86e0a8cc4cd8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m140/m140.bin",
+                      "size":  188184,
+                      "sha256":  "13e2725c8532001a8218f733a5fb59bc553e713f215729c87e9dade95d7e7af2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m141/m141.bin",
+                      "size":  4652,
+                      "sha256":  "b2e67460e0659cb9c62e7402b30ce0e6855d305cf4907066036abdefc8038bdc"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m142/m142.bin",
+                      "size":  155864,
+                      "sha256":  "ca99c45cf77272523e914a8c4326aefdbd845ed95faab9215b2a26a7359ada32"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m143/m143.bin",
+                      "size":  3404,
+                      "sha256":  "282fd96939f6dde14a76f8025dd449f282ccbe7ce699b3fb919650191625a113"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m144/m144.bin",
+                      "size":  2316,
+                      "sha256":  "7472439869f550609e7f9a1058fd68cc7c975088770b839bacf5dbd8fedb4a8c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m145/m145.bin",
+                      "size":  35860,
+                      "sha256":  "c4b3af19793726d75ee06e445c3c697bc28be633fe8211c1341b48be8624c253"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m146/m146.bin",
+                      "size":  6892,
+                      "sha256":  "9343ee973642bae64e31553e8489947c01268696c33dddb41c1506e0b6671897"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m147/m147.bin",
+                      "size":  38180,
+                      "sha256":  "f0653083681c8a401b74c4dc60c202d773777c224566b590e00d9669b39d642c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m148/m148.bin",
+                      "size":  35768,
+                      "sha256":  "2c242b6e37b1f7445015269f00542ef1ac249c32eb46d83bb4a5921f4abd6a45"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m149/m149.bin",
+                      "size":  2960,
+                      "sha256":  "8f0c138600aaddb7265e58709bb55bca7d08cf182cc6db1637d2ee4f8771ae6f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m150/m150.bin",
+                      "size":  4744,
+                      "sha256":  "b530e29c301df292ca8f3056fef63a920e63af4c6b1a5d10a89230f0d9cfe3c8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m151/m151.bin",
+                      "size":  62820,
+                      "sha256":  "922ff58fb9c3f38347a7d07d8bde46502ddc5e59bab39d8e31379aeeb1315dc1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m152/m152.bin",
+                      "size":  64076,
+                      "sha256":  "ce870389ea295ca531863cb482ae2fd170f6c4ed82e125882830b0856e6df3da"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m153/m153.bin",
+                      "size":  41032,
+                      "sha256":  "908b5fccacca745b5203d3071d166a2daffc0d0635be6e0b712db3661dfbdd1e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m154/m154.bin",
+                      "size":  4744,
+                      "sha256":  "f95cb1b159e293d36a31f14231b54f464259d59c03d7629240098c88a605bc81"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m155/m155.bin",
+                      "size":  63700,
+                      "sha256":  "5468c93536e9dc4570a87766d2ba72e904186f07019653aa9b2e55d319d46e2d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m156/m156.bin",
+                      "size":  64144,
+                      "sha256":  "457b0a3f543d1b564f018b2e7074ce507f36f4769b318cf81acf015316e8ca26"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m157/m157.bin",
+                      "size":  60828,
+                      "sha256":  "7b359b976a752b2eb8f94c95d2b7b0005753ec03ee97aebb532e4501ce1decb2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m158/m158.bin",
+                      "size":  188964,
+                      "sha256":  "ca0d51cf6d17bb0c8e73eec77e0ce2e99f791a8cc3b7571aa82eb870f83b7b4a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m159/m159.bin",
+                      "size":  3996,
+                      "sha256":  "41c06c949aeadcedd6dfa18b1c8d033fdcb37b775ca996d9b7cf48d78e180b1c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m160/m160.bin",
+                      "size":  3668,
+                      "sha256":  "5e6a3c27c3fef3b07c640da880483fb22c9349e1a84e450830ccb3bcac3b46d0"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m161/m161.bin",
+                      "size":  3164,
+                      "sha256":  "cec5525150aefa292dd6ec22df9f38f16df8ab4a87629e80ccb65890aef900f6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m162/m162.bin",
+                      "size":  2540,
+                      "sha256":  "27c258a7cbaa48adc3e3a945e7b3d0d73e306c1a5d549c85b66912c280246f76"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m163/m163.bin",
+                      "size":  52044,
+                      "sha256":  "d93925a4f0052090eca9b97e84f057e3dc3380f824c8f7840028f6e0efb3b2eb"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m164/m164.bin",
+                      "size":  52028,
+                      "sha256":  "80efbb354ca62bf3f1a6a85dfbd5a8a67181b864d45c5ecc638ace51c9d0fe9d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m165/m165.bin",
+                      "size":  42816,
+                      "sha256":  "72f87ce2d7289138a48f1b8b0e68ef96fa8d595e28c6c0f0028eee861014a6e4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m166/m166.bin",
+                      "size":  30960,
+                      "sha256":  "6c3e7bbb20fbc0e508637b74a87fd46c41cced82cd0b62c8c48abdb8585c386f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m167/m167.bin",
+                      "size":  33124,
+                      "sha256":  "923e900e34df57fc977cfe62cf2152e41a18de24086b57acbb65e2ab1edb201c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m168/m168.bin",
+                      "size":  57788,
+                      "sha256":  "4b98a70d2946d1920e74ff02e66112948e63fff0a4b37e14a5627646c7432ff6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m169/m169.bin",
+                      "size":  51084,
+                      "sha256":  "ad2a50143a407d0f0d6f01e8aa96fa7b95ed10cea9315a6ee42c3ec5e4fba7e5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m170/m170.bin",
+                      "size":  139544,
+                      "sha256":  "f8762a05dfec52327a6468a9af7d6661c578fdabfb72bd023d7ea24958d05a87"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m171/m171.bin",
+                      "size":  2540,
+                      "sha256":  "e4092fc39fc23f8b5ec418277a58916eec2f12d07a9374b1e43cdd8881502569"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m172/m172.bin",
+                      "size":  24936,
+                      "sha256":  "20c4b2158d73c4abaca8a4397006c881a1824f822f45b2031baeb4dfb2f622d8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m173/m173.bin",
+                      "size":  59336,
+                      "sha256":  "330709ff2fe58e94a3e3f950999dc61d9fab55300f5070f27ffa10f63cde1ce5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m174/m174.bin",
+                      "size":  59272,
+                      "sha256":  "2177ad24425f9a1f3c4719e44733b8789456b28034fe03f571235223475a2ed9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m175/m175.bin",
+                      "size":  8340,
+                      "sha256":  "0be8bfb4677ceb4b9179b38b553d778953afa2421db6ff1c0d4922706188c874"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m176/m176.bin",
+                      "size":  2820,
+                      "sha256":  "eceb676d1f0dd0f75688fd1a99440879468b90fba5dac941936dc188e9b5a0bf"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m177/m177.bin",
+                      "size":  2392,
+                      "sha256":  "0a7e050e947f8934bfc9482c8ebd49ab48c207b9486427b492d191f220d379c1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m178/m178.bin",
+                      "size":  56532,
+                      "sha256":  "6bc2346e38b32c0b90d4b263cc2cfe2a822b4149649609f96f1cbd2fa94cfd3f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m179/m179.bin",
+                      "size":  53388,
+                      "sha256":  "563e0bcd74b4f9ab932585d3906ecfec65d8aeda0a10bb39a0cf1536ccb57c8c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m180/m180.bin",
+                      "size":  47764,
+                      "sha256":  "412046b60cc35440df1b3099b3ba77703fc06307d5f34ea5230010a7aad5df17"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m181/m181.bin",
+                      "size":  37188,
+                      "sha256":  "f396bdfa6cf6a5ca2af058062f2955a1339317023aacf2f720f04fd831f35576"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m182/m182.bin",
+                      "size":  37496,
+                      "sha256":  "eafd81c31716e3709dfd49352e4b28fe21f057c01724c2af31e1102ed8b03014"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m183/m183.bin",
+                      "size":  36836,
+                      "sha256":  "2de0a03ac7eef70e34b9b8a0a40738f544d04462db981336561c740d25c1b215"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m184/m184.bin",
+                      "size":  37560,
+                      "sha256":  "57132954cc951a348d3e526e0b5473df5f3e283bacb59ae68b1d5d0d147d92e4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m185/m185.bin",
+                      "size":  64880,
+                      "sha256":  "764b1eb10d0f71bc18ae26b9627bf084b4faaae292892561cbfab09bf1066166"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m186/m186.bin",
+                      "size":  64924,
+                      "sha256":  "edc48c746cbe816c89a57a3da8032460880e5154ad0f518273c004c448028725"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m187/m187.bin",
+                      "size":  141304,
+                      "sha256":  "ba85346091818292e17708bd3c6376a5fcbd9856abcba3866afb6285c67216ed"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m188/m188.bin",
+                      "size":  59952,
+                      "sha256":  "5aaff86e96b577138496e7162cf49e255228a862ae078658453493744c42feb7"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m189/m189.bin",
+                      "size":  40692,
+                      "sha256":  "1c697271b8edf292342f7d555a6fd3ab8e2222a3ca7134a93718bba69c83ff2b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m190/m190.bin",
+                      "size":  40900,
+                      "sha256":  "e55bf55db3bc53cebc45fc8379c6e7a9a856eea1d3961848ef2a0ae60d9a7f50"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m191/m191.bin",
+                      "size":  63224,
+                      "sha256":  "92ce1d7ecd8e87d947a6e05d17eb6b6ef07b7cbacb589c503c4ef794635fe35d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m192/m192.bin",
+                      "size":  63208,
+                      "sha256":  "114577204ed2495588ed1bf15b9256b4005e240df188b8a5bceca9efcc2f6325"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m193/m193.bin",
+                      "size":  69080,
+                      "sha256":  "adac025c170b0d53c69a9e6548dea19f339ecd3529f1d03a2bd92342868e34e0"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m194/m194.bin",
+                      "size":  69056,
+                      "sha256":  "fc00ea41b8d92c3cce8c6c61f5a2c8d959ad816e247c59e2b2c7cccb96fb684d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m195/m195.bin",
+                      "size":  69456,
+                      "sha256":  "bcf26f72575fcb24b3a683c753e9df5501a04995d24e96fac214ec17411ba4fb"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m196/m196.bin",
+                      "size":  69384,
+                      "sha256":  "0be06d6f042040e92a8f2de5ccad6a9ccc6939efb05ac831e1b4db241e3b324c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m197/m197.bin",
+                      "size":  32188,
+                      "sha256":  "47bdc36743578251570f458ebc7e42b0637ed9f10072fed554c783b823538b2b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m198/m198.bin",
+                      "size":  32264,
+                      "sha256":  "8d1d27f7be327851938ce6d4c13497fe04845990890cf9b660ef9cea3f7352d6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m199/m199.bin",
+                      "size":  29420,
+                      "sha256":  "5f7cd0a2df0b77bbb8f58fa8661ff2a8dd40178a37179b11118b9696024e1af9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m200/m200.bin",
+                      "size":  29336,
+                      "sha256":  "a796afc277c7b7d93b92d33149c54a98931cd902aaf086797b5a38ad4e913ce6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m201/m201.bin",
+                      "size":  2112,
+                      "sha256":  "b4c0fb90c177704664e58a42a4c2806a9b1236a6cb377451d6ffa5f8488a012f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m202/m202.bin",
+                      "size":  67552,
+                      "sha256":  "8cc789a00961496076c146c8a167b8e7caf166dfc955bd957bc230c34808560f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m203/m203.bin",
+                      "size":  65736,
+                      "sha256":  "dbc6e72ba11d95ca23685f8f8a1447bba163a5b76b66095b87c65c539bfc1561"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m204/m204.bin",
+                      "size":  65736,
+                      "sha256":  "0074118236c947f75550e041ce6d1c0982cc76155baa855617409d73ca37d50c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m205/m205.bin",
+                      "size":  65736,
+                      "sha256":  "37470ccb4bbffe64f794dd1c71c0d6b19714e37c65bbd5da6ed71f7821bfd0d9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m206/m206.bin",
+                      "size":  65736,
+                      "sha256":  "c8cc449839e6d67c1a8e334268e372c19826e1352cb621e1c473cd52f715b4f7"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m207/m207.bin",
+                      "size":  29124,
+                      "sha256":  "0ab571fb6c4d9f41fa45ebb0a53664d782b4ca3667bc03963b5ddd64461d77a5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m208/m208.bin",
+                      "size":  30016,
+                      "sha256":  "040d11612ac1c4506d52f93be1a4bb5b50016178cc920d5d4d65117177e0b521"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m209/m209.bin",
+                      "size":  55280,
+                      "sha256":  "0fd38250339ddf8e8f49072c470913df21be3960383b6c6d65397c09583d5024"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m210/m210.bin",
+                      "size":  64208,
+                      "sha256":  "14b4262288fa487e9d15ca5da80b957f2821d15de7d5471387916a35963c59ff"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m211/m211.bin",
+                      "size":  8908,
+                      "sha256":  "40476cda21a7921648c6a3671dba3315f982e9dee57190d1534e5afadc3ed3e7"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m212/m212.bin",
+                      "size":  69872,
+                      "sha256":  "12827c6fb061cbc4215d8fa7aaec2ae96db132c4ba8b1fa955a50bbf9ad9849b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m213/m213.bin",
+                      "size":  25944,
+                      "sha256":  "eb4e3812a834a4f06a69c6d5207dbb53a9c389b5dcdeab886124303bfd577834"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m214/m214.bin",
+                      "size":  50788,
+                      "sha256":  "c063920d394efbd27f8998b0bfb3480c738bddda0d1ba73d37930e6257d766da"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m215/m215.bin",
+                      "size":  50876,
+                      "sha256":  "872208c1b7a6b846d3e1b806445672a92982751399afe330de1684eca4d9a1a1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m216/m216.bin",
+                      "size":  50740,
+                      "sha256":  "30483d5f2c234780af82be0cb958cbf7859ca5ce3f3a04a2d0c873b267152a3d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m217/m217.bin",
+                      "size":  61704,
+                      "sha256":  "158e163b683145df0877cc0d36af893f7a1dd7082e3eed2baed9820c0ade0d64"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m218/m218.bin",
+                      "size":  68488,
+                      "sha256":  "25d44f35a3a12800e01dc8b72c83a1855f8d7d736bb4af371b3c37821971d1bc"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m219/m219.bin",
+                      "size":  54948,
+                      "sha256":  "0ecbc4631eed7a296c5f33f9ddb693d2a9263b8db672c21ddb65e86221e12116"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m220/m220.bin",
+                      "size":  68912,
+                      "sha256":  "8ae8a634a6bf9540942e7fc05d42d162884df01d90a7ec5744e1c02b43a7ec62"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m221/m221.bin",
+                      "size":  28072,
+                      "sha256":  "75ebe72e41d7124c15afbb61be0853eb0bc9bf45d01031e76f7e55d7be87fab0"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m222/m222.bin",
+                      "size":  24888,
+                      "sha256":  "0fd38845776ed1c31ecd2671be8e7d980541eee5d702f0958485ff679259003f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m223/m223.bin",
+                      "size":  39292,
+                      "sha256":  "b9d0456118e28fa7c718c2b7a5a02a9a0b59a774c7d065d0e6d437b1f6614c8f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m224/m224.bin",
+                      "size":  39284,
+                      "sha256":  "a6ccf0975253a27e16759676bc90a24117de880421140a87820c29ded005d6f0"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m225/m225.bin",
+                      "size":  34920,
+                      "sha256":  "cfba98a065af4557f0ee8742bddd8677c6ff948cfa296901918c33add7368ea7"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m226/m226.bin",
+                      "size":  68840,
+                      "sha256":  "1ef68fbb2116ac4d6ad8e749b738c26b8fd26606c62024ae08af29821671d576"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m227/m227.bin",
+                      "size":  62060,
+                      "sha256":  "cb896990abaa89b6cc19323c04ef02ece053a66f050e8e914c70561a94786fe2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m228/m228.bin",
+                      "size":  54672,
+                      "sha256":  "7c364e91d4ec69ed6cf08962c88b3cc500884c2f242c8485989b09142434461e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m229/m229.bin",
+                      "size":  67864,
+                      "sha256":  "05b59a33cfdfb6b8d2ee47ce417dc47d5cfb999668d9695363da23cf8b85e0b8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m230/m230.bin",
+                      "size":  62316,
+                      "sha256":  "d64156594574a145e784d7df50c62ced7832a28e7d13db7e496c9ebcdc7fb3b3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m231/m231.bin",
+                      "size":  51980,
+                      "sha256":  "7e3b24f04dad5407b444ba0b445084263c6ebb703a46d56cc216ef7fa8dec29b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m232/m232.bin",
+                      "size":  54820,
+                      "sha256":  "3489df404f652b87b478df9b0859f3ad60807746c12bd2dcd46f368a792ae4e6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m233/m233.bin",
+                      "size":  57388,
+                      "sha256":  "df01eb052f004db5903be459b2fa817ec0eb185ff8ad87895d649443c6ebabb8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m234/m234.bin",
+                      "size":  29128,
+                      "sha256":  "f00b52a17f3e18a2fe67d36f1274cdd7f8e66a006a6d72ba7ff90f0fd959bedb"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m235/m235.bin",
+                      "size":  64472,
+                      "sha256":  "7a89253b7ca626c282a4f16d68bf33d8213a7a4916d43ed373df4818d6069194"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m236/m236.bin",
+                      "size":  64608,
+                      "sha256":  "826e40cd30a0d55be4aca31439022dda433c55db36006c9e3daabd1450b9c963"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m237/m237.bin",
+                      "size":  6204,
+                      "sha256":  "0cc6a611edfb3f59b0c1fa63ec7664cc02676fbcf1d71e0fdfea3108b3da2da3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m238/m238.bin",
+                      "size":  64936,
+                      "sha256":  "7e06f9aaf21ab5ee4a8ada376b6a4a1a786d8db362a3c7926bb1a53ef35ecdf8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m239/m239.bin",
+                      "size":  64724,
+                      "sha256":  "099b3ec6b1776c87ccf6c1bde78d4023064525b1d54c0614a9710184f21c5caa"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m240/m240.bin",
+                      "size":  64036,
+                      "sha256":  "536dafd8eba5ee17fa390a01948802c884d53afe9cec3729fd4ef599409ea946"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m241/m241.bin",
+                      "size":  54424,
+                      "sha256":  "84336d6b9bf40e068b4eddad670c6a63937b67fcb02d1bcd36fe8349eb15de14"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m242/m242.bin",
+                      "size":  34780,
+                      "sha256":  "cf142c29333d33c1c6748353cfe783d6106aee68f71bd659721b016b0c56dac2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m243/m243.bin",
+                      "size":  55280,
+                      "sha256":  "2145a00543ecf71488644878bb8da8c5eaf7517ae1aded5821e3a84281b0d831"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m244/m244.bin",
+                      "size":  61620,
+                      "sha256":  "98815fe71d5d0904c34dc265bccf634441737c9699656f2c2d536aa28ba59b09"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m245/m245.bin",
+                      "size":  64972,
+                      "sha256":  "b79fd27f63b8b327b1d9b447dc046e5acc29fb8fd9b5c9d79eafccb3f7da2e73"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m246/m246.bin",
+                      "size":  64388,
+                      "sha256":  "92e3526ab5d3d0e76b4708544d3f8b0ade600613eea4e8309ae6067caca59322"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m247/m247.bin",
+                      "size":  34856,
+                      "sha256":  "c51c977d80b852c85b3ca6dfe9390ed2fce2f4f6b9430f20ab4809fed23b0957"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m248/m248.bin",
+                      "size":  3428,
+                      "sha256":  "9839ecdfedc13cbc96a38047463bb3c2c425df6abb4dcc2c4afe33eb32e4a962"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m249/m249.bin",
+                      "size":  3424,
+                      "sha256":  "bc655bd8ab599a051e9980a48dafb0577e61eccf1d0818297ecb341b2ce760ad"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m250/m250.bin",
+                      "size":  2840,
+                      "sha256":  "1a710e874acf9a9183de0adabd2524d4c6720ccc819c61ce1e4ff26425a3670e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m251/m251.bin",
+                      "size":  25092,
+                      "sha256":  "94b2950fe1b467a2f61e808764011c6d9a8070c119edb0f2f079f1bdd5cce625"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m252/m252.bin",
+                      "size":  24996,
+                      "sha256":  "82ef62f0b43a49c6c1b60a81ed676c72f6f4037c642165a258636d8fc82a3c72"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m253/m253.bin",
+                      "size":  26660,
+                      "sha256":  "d2af555d9a3994ddea766e7dd0da6c703db8c23ec2ae3e7bf9ec0facf349d3df"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m254/m254.bin",
+                      "size":  52724,
+                      "sha256":  "e03383c3c740e4c5003de234dc61d6cbec4a8fd1b733241455f2fd7d562da5f5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m255/m255.bin",
+                      "size":  4812,
+                      "sha256":  "e62c7ec8d1c4b72d2cdce0a27b3a7338db05729bfd8958e2963760f069146ff3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m256/m256.bin",
+                      "size":  25236,
+                      "sha256":  "4c88233534206d4947c6b28e474c042356b92081e5b79e244ef4eaf3e2754f75"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m257/m257.bin",
+                      "size":  2120,
+                      "sha256":  "7e60826b1d791d15d787c98f0b299bd1640ee9e6cd381db4d31bb5c00b42d903"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m258/m258.bin",
+                      "size":  2756,
+                      "sha256":  "f8ea8746d9dd511bb1d82f219f672221ea22df61749cd8b85013d60165274762"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m259/m259.bin",
+                      "size":  3044,
+                      "sha256":  "dd04aaf53d72f86d3bf490eff9b739d4a89244296215b168bd9f87cc93dc5746"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m260/m260.bin",
+                      "size":  2120,
+                      "sha256":  "41237065b7f777ae269f750bd3a342ab7b2a156a8724a4ba7c29637485996594"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m261/m261.bin",
+                      "size":  2120,
+                      "sha256":  "b389a8fc4fdf02b2c112167bb61f8b55d9c9105a1c25edb6ce8bd2ebf0d11a88"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m262/m262.bin",
+                      "size":  2120,
+                      "sha256":  "a6cfe7e62f071f5752fe7abbeb3bf4efd770361fb1618098b3157261395155cd"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m263/m263.bin",
+                      "size":  2388,
+                      "sha256":  "254d08b1c3cc7d012ad3d3aa96ca5847150eba923c1b5e4050393d2c9949a16f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m264/m264.bin",
+                      "size":  2376,
+                      "sha256":  "f38889199ba0e9fe3970cd16b1c3856aefec003c79a2a3804360776e4e4cef5b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m265/m265.bin",
+                      "size":  57332,
+                      "sha256":  "a435a0aa75a27f5a5b91584f982ef94f5ac7253ff7910f83d7a24457de28d1d1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m266/m266.bin",
+                      "size":  12212,
+                      "sha256":  "3f4d04834426fc6985e81fa4ba60fdc3dae886c0834bff3505b8c194065516e0"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m267/m267.bin",
+                      "size":  2116,
+                      "sha256":  "71c94451f78b0c647713745fe077f0dce861acfaeef293f66eba384cc4f55d1f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m268/m268.bin",
+                      "size":  2116,
+                      "sha256":  "85efd750086071723e7ee2c5379677a9f744cc5962313ded07cef2443b64f0d2"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m269/m269.bin",
+                      "size":  2116,
+                      "sha256":  "18e02725196ddeb0846914db7f67a378f98cb9be8565db6b5b5af2240b1b90d3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m270/m270.bin",
+                      "size":  2116,
+                      "sha256":  "da79820fdb689a7f4f1277fc061481241e737bd91ddfc3a8b99667768b57a1b3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m271/m271.bin",
+                      "size":  2116,
+                      "sha256":  "e1b1b4a11f154174835f186e5029b07d7cc509f575dd1e0e610d1cee4738ecf5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m272/m272.bin",
+                      "size":  3120,
+                      "sha256":  "59dba7f0e051842a92a39d27bd1367e63f27b80eb920ec79f69f4e0718b94ecb"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m273/m273.bin",
+                      "size":  2848,
+                      "sha256":  "8a127d6ebecfeedea204085642b153c6d44f3e844ba442eafb3b87ad8eb16dd5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m274/m274.bin",
+                      "size":  2436,
+                      "sha256":  "a8897d38a47ff64b491dc44fb3fff2696704842f6984017b56ed3588af762e45"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m275/m275.bin",
+                      "size":  2420,
+                      "sha256":  "708dd82d2c1417b226d67fd6096c37961ebf6844580717e2ef3f325392152efe"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m276/m276.bin",
+                      "size":  171652,
+                      "sha256":  "7b23c18bfe88ae162e0a8562603d89e3e2e635d75ca957ffc93259d84ed82d83"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m277/m277.bin",
+                      "size":  158248,
+                      "sha256":  "2ad9d3b911f6cf16fd27baec70fcb3f1e912d92ec2a6c81e90df96fd80111fb3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m278/m278.bin",
+                      "size":  15728,
+                      "sha256":  "1ca3462f96d4f3bf7a40b3952dce37ec518bc2484fdd3d024854e1a47b0330d5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m279/m279.bin",
+                      "size":  142232,
+                      "sha256":  "64708399e36c7e28773c4c9f9b3eb2719f68eba655f1e3803926f9e9f4da69c0"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m280/m280.bin",
+                      "size":  119100,
+                      "sha256":  "0ace2ec8a93ed84337e38a2ffbcc2899234738f449dbd9ffde661a1f6974bfa8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m281/m281.bin",
+                      "size":  52412,
+                      "sha256":  "4dddfdf904b9621ebff51bafd6629f3f4b5d9bef11287cd47bf569ff587994a4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m282/m282.bin",
+                      "size":  174148,
+                      "sha256":  "4dcee314acd6e043fa0545669bd5f41500cd085746d2b7e2f48de388777b106f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m283/m283.bin",
+                      "size":  177492,
+                      "sha256":  "3f8397a526c90cf438e7b5b88c6ef316c071ba45ae202866eed90a5f10dc954c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m284/m284.bin",
+                      "size":  52884,
+                      "sha256":  "920ea2ba065c08286e038362f6740d400928fc0d1620120c196b8ad226841f8c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m285/m285.bin",
+                      "size":  44372,
+                      "sha256":  "63f9faee5fc83b5c741f798d12cad5d019614063ce3c6d83c663ae026a28eb05"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m286/m286.bin",
+                      "size":  31716,
+                      "sha256":  "25fcfa71424996f6e49ffa7f1e3943095ef6c343bdb239484e13355c5380f0aa"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m287/m287.bin",
+                      "size":  33268,
+                      "sha256":  "85cf3e3fa83f7e253c13d1def3df99b8104ef176112b35ce98cd5c5b25b2c591"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m288/m288.bin",
+                      "size":  51476,
+                      "sha256":  "059881a8e9cb21642de4f2c96e9c1afc699fa07e1aca440738df3a58a7a1566d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m289/m289.bin",
+                      "size":  52772,
+                      "sha256":  "baec400317f6b5197d4c3c9615acc61a7426f25128265dee318b712ce2a8947e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m290/m290.bin",
+                      "size":  56276,
+                      "sha256":  "8465ac3ee0ddd912be8f55cbac0c9fc26ee3ac0da3cbc9470074cb859195d0ad"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m291/m291.bin",
+                      "size":  47892,
+                      "sha256":  "8bd602dd16793c4e9e9ffec227166e5299507f062b767dde4d1301429a77d15a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m292/m292.bin",
+                      "size":  3444,
+                      "sha256":  "3eca3da3e46817c9b05f89aee2f98d4d217d49b6ad393e267dd0e22afeaeb4d5"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m293/m293.bin",
+                      "size":  69764,
+                      "sha256":  "23e2de03ff15e84f54251984077ebb29bba4da70c9f914a8462b2656f6e2d8de"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m294/m294.bin",
+                      "size":  4308,
+                      "sha256":  "a3f2bbb61e880e994141e8a193382311383ad58f9672b75c6f6a567387fb7b29"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m295/m295.bin",
+                      "size":  54328,
+                      "sha256":  "f2da2253c4c8a8f8dbe0e225d02332141d9a00f3f0a825f48d796af7839c36df"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m296/m296.bin",
+                      "size":  64876,
+                      "sha256":  "78caec59c36b8d6cf978cd549f622ba496d7722ce8c0b069a14dfd1f0392f548"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m297/m297.bin",
+                      "size":  56788,
+                      "sha256":  "d4c03801b65931bf90d8721599119603808270a6b37f1a531a7bfac776a227f6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m298/m298.bin",
+                      "size":  43268,
+                      "sha256":  "a293d5ac61eaba09dae83a38970d0fdedc0b8a2aefb9c9c24de7ed98f4651411"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m299/m299.bin",
+                      "size":  34820,
+                      "sha256":  "b6106414273ea31302c1c524e61a24159afb2a192368e5a135c0ea7e2dd2794c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m300/m300.bin",
+                      "size":  64584,
+                      "sha256":  "93dd0cbd22c0243133120a03345df9695c057703bf0a3705d6b867621d722b9a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m301/m301.bin",
+                      "size":  74712,
+                      "sha256":  "4917450e0d998b91e254ece9b120643db0f28f6ad5c900cbd16c00d3fda09074"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m302/m302.bin",
+                      "size":  54616,
+                      "sha256":  "d2839df537b6789c4675eb4047cc923c91a0f6c0a2812ab8263fde7e1b6c92e4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m303/m303.bin",
+                      "size":  62804,
+                      "sha256":  "349f5c04be49c2f6af65df9b6eeaa1fe5d78853d4106f2fb10c46180422ab515"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m304/m304.bin",
+                      "size":  63644,
+                      "sha256":  "504bbc3f7957f99a27477f4c7c6453012b4d0cd91188d340885ef4779423fc74"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m305/m305.bin",
+                      "size":  69092,
+                      "sha256":  "d7c8cd472f506ffe37e7598443b355420342015c84307ab129c219b8f0bda4e9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m306/m306.bin",
+                      "size":  32812,
+                      "sha256":  "150e7c5dcfaa392ce0495d31d179f9cd4c00adde74e475605157b74488da0109"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m307/m307.bin",
+                      "size":  55896,
+                      "sha256":  "b5ee722f49f862c923828a352dfe63e89c1f8d3de30db32bfb794617e9d005cc"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m308/m308.bin",
+                      "size":  61688,
+                      "sha256":  "4be906dde5b3e3fc54ef13867cc8624c6d63c052bbced784633dea5f9cd54615"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m309/m309.bin",
+                      "size":  61960,
+                      "sha256":  "29c954f02b10eb897d7e89093bf7b381d46383d18db02e55681b0075045e9326"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m310/m310.bin",
+                      "size":  36884,
+                      "sha256":  "8640da9c1962c0a730be3788b054ac0186e84ee7a63ec8fc4736dee932ad42db"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m311/m311.bin",
+                      "size":  64392,
+                      "sha256":  "3619dec840bffff8b7be8b25d110097e83df1f6b8aa5327251d6f025ca6b1801"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m312/m312.bin",
+                      "size":  59428,
+                      "sha256":  "8c5ad02ee0a9d538b7b26787faaa8b894adc39f4c865343db310e8195a6434d9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m313/m313.bin",
+                      "size":  68328,
+                      "sha256":  "69964acad5aa3810d38ede36786fa6102f9000928d2addcccca1b35a413b6f88"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m314/m314.bin",
+                      "size":  28888,
+                      "sha256":  "19abd4fa06f359bd0c2e0c48eceaf8bffd6d0081a7dabf3894b6734efc1749c3"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m315/m315.bin",
+                      "size":  63684,
+                      "sha256":  "a3e0a0c8db30152d9eee755c9276cf84b4bb26f03d37d700b6e100357bd8287f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m316/m316.bin",
+                      "size":  50664,
+                      "sha256":  "4d9035748231d83548a096bcc64014abf9b5feb86eec70c969d1959ae2bcc600"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m317/m317.bin",
+                      "size":  39000,
+                      "sha256":  "fd30998cabd955c673136b0e1f8432767c9c0f9a054817f6d5c07789f8c0c436"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m318/m318.bin",
+                      "size":  61524,
+                      "sha256":  "c50dcb720c858ff955775f456b7433b2dadfd582eb21032794953b39f61cedd4"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m319/m319.bin",
+                      "size":  67516,
+                      "sha256":  "5397e344c1845a540de85f65aa2367b724b5f39652c47e8f36a15341a2c55c01"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m320/m320.bin",
+                      "size":  53652,
+                      "sha256":  "c9c6bc5356bf2207b8143b54d8c5c387509f7edf1909f30807b9f5f898671dcb"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m321/m321.bin",
+                      "size":  59636,
+                      "sha256":  "2a3f84efc040e9450b18b9e937511f8988518e72e726f21181f8d3fc7a930a0d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m322/m322.bin",
+                      "size":  63476,
+                      "sha256":  "b9e583ab2a28c80313cdd70b61932a367a143bffb07d2cfdf3a19394456f2392"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m323/m323.bin",
+                      "size":  39652,
+                      "sha256":  "e7a3730d22548394d1a8ad8176a2b05951a8b8fcc2f6f4fba7386010151e6726"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m324/m324.bin",
+                      "size":  53920,
+                      "sha256":  "6d7de165b6177ebf832e5c17638e12cc3836fe0c508b4035f4c8f908b3ec7baa"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m325/m325.bin",
+                      "size":  35816,
+                      "sha256":  "d95267d0ca220644766710fb873bfca04a88d269af8e07e306572812208130e9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m326/m326.bin",
+                      "size":  60708,
+                      "sha256":  "f639259b466964970fb21a6a2f32f0e1ca60b633241525662bf90fcb13a27d12"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m327/m327.bin",
+                      "size":  60744,
+                      "sha256":  "4d8c233644520c378ac4903fc7c454862fde2b651a27ce01c9eadcd3e95fca62"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m328/m328.bin",
+                      "size":  28320,
+                      "sha256":  "da20a2f2e93ad9ec30e4579eb4c0f9cf99be4634ef8317a9b048bbdcb4e4ebfc"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m329/m329.bin",
+                      "size":  63232,
+                      "sha256":  "8d8520c18ba68210a0ab9b87fd29ef1539cf2fddd3232f911efcb0ae7291f67a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m330/m330.bin",
+                      "size":  73524,
+                      "sha256":  "540653d27e24b06ee80494bf5007503b44016cd4a88a2445a2c87c9d3c9a976d"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m331/m331.bin",
+                      "size":  66992,
+                      "sha256":  "424247de3e4240ccc2c2e57c3b42f93066bc73a18e16a3cea5b2f08c8aee5a07"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m332/m332.bin",
+                      "size":  61460,
+                      "sha256":  "add1fa488c92c8b1b54566a045b9e43a8709c9744bf9b07cf8e0ff22633148b6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m333/m333.bin",
+                      "size":  68276,
+                      "sha256":  "747851fc7af24e1f14459e30f7921cb5dde275ec3b697742d693f1af56325f79"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m334/m334.bin",
+                      "size":  51368,
+                      "sha256":  "c6cb278e3f593c27ffb48b0d0d7b1805c878ff8e4e08c0f90244e182260ce58f"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m335/m335.bin",
+                      "size":  51384,
+                      "sha256":  "9299517ad91d1d8dd15371b3cc9fa020105d62ee2d0f3cab618c4efd40503a54"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m336/m336.bin",
+                      "size":  42472,
+                      "sha256":  "9bdb668ed05e6152a50c999a357ef73acc421a4341274557bc14fa7c18b47635"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m337/m337.bin",
+                      "size":  30232,
+                      "sha256":  "f8f8637d47f7554c2af8793780b6552e80e429c69caa5be9d9f00f820868b9d9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m338/m338.bin",
+                      "size":  32440,
+                      "sha256":  "d3a9c7cb22fd1280959d93f604f4654b024506e562f0fd2374097633dccf3ddb"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m339/m339.bin",
+                      "size":  57272,
+                      "sha256":  "1d3b8051c375c19907153fd93a0161abb375a25b76cc13d7b682727a05743714"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m340/m340.bin",
+                      "size":  50840,
+                      "sha256":  "82da17d4590f7f56fc1ac5a0e0f201dcdd871d0c8229ba5ccd82209d7e9a0aa1"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m341/m341.bin",
+                      "size":  55592,
+                      "sha256":  "53cac21ec69e0cf3574c84f6887f2f97010e31fe270bd6ee2bd79f0d1c16cb16"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m342/m342.bin",
+                      "size":  53176,
+                      "sha256":  "58012d664bea8aed64e957839390e382b230ab24fa500579216befeee420fbe6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m343/m343.bin",
+                      "size":  47912,
+                      "sha256":  "db183406e824b85df5db6bafa7acc36318811ee8ede55db8bea1755843a5297e"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m344/m344.bin",
+                      "size":  147076,
+                      "sha256":  "54ebc070c880f89bb627cb0c4d5cf6b60fc5c42842b2881563d47798211a9f7b"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m345/m345.bin",
+                      "size":  20824,
+                      "sha256":  "52d063e2b6be8f7cc48b70752be3b69580a5b00bc6ea35e761c946d14c307407"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m346/m346.bin",
+                      "size":  20756,
+                      "sha256":  "4435d1290182726b2ecd8564bdf1dbaee4968fe08d073d97f1ab431138169877"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m347/m347.bin",
+                      "size":  69312,
+                      "sha256":  "80d114cccd5733dec283143936a3c9b9fa3836caf91b312e2f0f79887228c9f6"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m348/m348.bin",
+                      "size":  69312,
+                      "sha256":  "827f7a81902db44e31e1b80a4de515b7eb6c166642222e9dc6d17bcca2069068"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m349/m349.bin",
+                      "size":  69312,
+                      "sha256":  "cd1e5fdebea6521df23a8f1c66227dcb4eae91c886b8d2c9df32793333fa22e8"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m350/m350.bin",
+                      "size":  69312,
+                      "sha256":  "882f4914c6796cd77df75bea1da4702e906c4bc777f795066dc2456a371e5194"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m351/m351.bin",
+                      "size":  69312,
+                      "sha256":  "1d7fc15a52102a3af503ada498beb569437402b74cea7d3bbbaab80621179ce9"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m352/m352.bin",
+                      "size":  69312,
+                      "sha256":  "1452fe46710a6bb947555253d4544d5b2fb9183e9b90be727e4c78c5a8136186"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m353/m353.bin",
+                      "size":  69312,
+                      "sha256":  "0cfdbe1a9f07d8d080f773192da04e6fb2a79a47ac03b44ccb33e5cc4b43c59c"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m354/m354.bin",
+                      "size":  69312,
+                      "sha256":  "6a655b12f4276fa953fed87a5d71479d47c50a8909e85b2634ea564c785663ff"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m355/m355.bin",
+                      "size":  69312,
+                      "sha256":  "cdca6179b5e4ce986be9d44e689b2ccb4429ba145838ffa49ad22f60ada36948"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m356/m356.bin",
+                      "size":  69312,
+                      "sha256":  "f4b19ec0262f1ac14a7d968837e29100da07a29a57f81f4c89da98a061175502"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m357/m357.bin",
+                      "size":  69308,
+                      "sha256":  "cf0a09fe5161e0fd96d9fd25768bf5cbe6f7fcb63376520f653e124609c98a5a"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m358/m358.bin",
+                      "size":  69308,
+                      "sha256":  "660756e26ccef2d0519d9db5c13ec9232fc076d41555d14efa59546037e5dbe7"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m359/m359.bin",
+                      "size":  69308,
+                      "sha256":  "3f518b51c62cf9c1b47c7a37bdd127aed200a505a69a61d460bcb1a8fb7766ad"
+                  },
+                  {
+                      "path":  "jppc/battle/mon/_m360/m360.bin",
+                      "size":  69308,
+                      "sha256":  "fd8704413e91d4ac9aebdb54a73a987c910a203591400153033a4e6d29d0101f"
+                  },
+                  {
+                      "path":  "new_uspc/battle/kernel/command.bin",
+                      "size":  44558,
+                      "sha256":  "ce1c294f83597676dc9f6a50d0803ffd963660d55c64634ada068ffcd2e67d8f"
+                  },
+                  {
+                      "path":  "new_uspc/battle/kernel/monmagic1.bin",
+                      "size":  31060,
+                      "sha256":  "50d673772d0e2733e375c038a4fdb3e29d244177139556e79d3951399187383a"
+                  },
+                  {
+                      "path":  "new_uspc/battle/kernel/monmagic2.bin",
+                      "size":  25924,
+                      "sha256":  "80d1727193b77f17de9ee2a8c1b0ce240584f11c70ffd9b9b21e394cdf3d32ab"
+                  },
+                  {
+                      "path":  "new_uspc/battle/kernel/item.bin",
+                      "size":  16572,
+                      "sha256":  "4bd0b9d6bb9d57fdcc08185d03d76165c9bb772320e127d46225fae42a36ead3"
+                  }
+              ]
+}

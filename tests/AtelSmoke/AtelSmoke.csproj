@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelScriptDocument.cs" Link="AtelScriptDocument.cs" />
+    <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelOpcodeNames.cs" Link="AtelOpcodeNames.cs" />
+    <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelDecompiler.cs" Link="AtelDecompiler.cs" />
+    <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelStatProperties.cs" Link="AtelStatProperties.cs" />
+  </ItemGroup>
+</Project>
