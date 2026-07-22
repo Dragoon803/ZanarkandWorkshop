@@ -1,7 +1,7 @@
 # Zanarkand Workshop
 
 <p align="center">
-  <img src="ZanarkandWorkshop/ZanarkandWorkshop/Assets/ZanarkandWorkshop.png" alt="Zanarkand Workshop logo" width="560"/>
+  <img src="ZanarkandWorkshop/Assets/ZanarkandWorkshop.png" alt="Zanarkand Workshop logo" width="560"/>
 </p>
 
 > **Forked with permission from original author:** This project is based on
