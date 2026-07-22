@@ -4,7 +4,7 @@
   <img src="ZanarkandWorkshop/Assets/ZanarkandWorkshop.png" alt="Zanarkand Workshop logo" width="560"/>
 </p>
 
-> **Unofficial fork:** This project is based on
+> **Forked with permission from original author:** This project is based on
 > [osdanova/FFXProjectEditor](https://github.com/osdanova/FFXProjectEditor),
 > originally created by osdanova. This fork is independently maintained and is
 > not affiliated with or endorsed by Square Enix.
