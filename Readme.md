@@ -1,7 +1,7 @@
 # Zanarkand Workshop
 
 <p align="center">
-  <img src="ZanarkandWorkshop/Assets/ZanarkandWorkshop.png" alt="Zanarkand Workshop logo" width="560"/>
+  <img src="ZanarkandWorkshop/ZanarkandWorkshop/Assets/ZanarkandWorkshop.png" alt="Zanarkand Workshop logo" width="560"/>
 </p>
 
 > **Forked with permission from original author:** This project is based on
@@ -38,7 +38,7 @@ Click **Open Project Folder...** and select your master folder. The app detects
 the running game automatically; the **FFX Connected** indicator shows the
 connection status.
 
-<img src="ReadmeAssets/WelcomeScreen.png" alt="Zanarkand Workshop welcome screen" width="900"/>
+<img src="ZanarkandWorkshop/ReadmeAssets/WelcomeScreen.png" alt="Zanarkand Workshop welcome screen" width="900"/>
 
 ## File Editors
 
@@ -51,9 +51,9 @@ connection status.
 Edit stats, elemental affinities, status resistences, loot drops, etc.  
 Battle Script editor capable of changing attack used, the target of those attacks, and much more.
 
-<img src="ReadmeAssets/BattleScriptEditor.png" alt="Zanarkand Workshop Battle Script Editor" width="900"/>
-<img src="ReadmeAssets/MonEditorStatus.png" alt="Zanarkand Workshop Monster Status Editor" width="900"/>
-<img src="ReadmeAssets/MonEditorLoot.png" alt="Zanarkand Workshop Monster Loot Editor" width="900"/>
+<img src="ZanarkandWorkshop/ReadmeAssets/BattleScriptEditor.png" alt="Zanarkand Workshop Battle Script Editor" width="900"/>
+<img src="ZanarkandWorkshop/ReadmeAssets/MonEditorStatus.png" alt="Zanarkand Workshop Monster Status Editor" width="900"/>
+<img src="ZanarkandWorkshop/ReadmeAssets/MonEditorLoot.png" alt="Zanarkand Workshop Monster Loot Editor" width="900"/>
 
 ### Items / Player & Aeon Commands / Standard Monster Commands/ Boss Commands
 
