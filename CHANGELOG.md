@@ -2,7 +2,7 @@
 
 All notable changes to Zanarkand Workshop will be documented here.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-07-22
 
 ### Added
 
