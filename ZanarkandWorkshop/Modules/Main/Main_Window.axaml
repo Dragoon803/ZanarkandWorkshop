@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="FFXProjectEditor.Main_Window"
-		Title="Zanarkand Workshop v0.1.0"
+		Title="Zanarkand Workshop v0.2.0"
 		Width="1280" Height="720"
 		MinWidth="1280" MinHeight="720"
 		WindowStartupLocation="CenterScreen">
@@ -66,9 +66,13 @@
 					<MenuItem Classes="flyoutEntry" Header="Arena Tracker" Click="MenuItem_ArenaTracker" IsEnabled="{Binding ProcService.IsAlive}" />
 					<MenuItem Header="TEST" Click="MenuItem_Test" IsVisible="False"></MenuItem>
 				</MenuItem>
-				<MenuItem Classes="topMenuEntry" Header="Recovery">
+				<MenuItem Classes="topMenuEntry" Header="Recovery" SubmenuOpened="MenuItem_RecoveryOpened">
 					<MenuItem Classes="flyoutEntry" Header="Select Original Game Files..." Click="MenuItem_SetVanillaMaster"/>
 					<MenuItem Classes="flyoutEntry" Header="Verify Original Game Files" Click="MenuItem_ValidateVanillaMaster"/>
+					<Separator/>
+					<MenuItem Classes="flyoutEntry" x:Name="RestoreCurrentEditorMenuItem"
+							  Header="Restore Original in Current Editor" Click="MenuItem_RestoreCurrentEditor" IsEnabled="False"
+							  ToolTip.Tip="Restore the complete monster, Items, or Commands file currently open"/>
 					<Separator/>
 					<MenuItem Classes="flyoutEntry" x:Name="VanillaMasterStatusMenuItem" Header="Original Game Files: Not configured" IsEnabled="False"/>
 				</MenuItem>
@@ -97,7 +101,7 @@
 				<StackPanel Spacing="14" HorizontalAlignment="Center">
 					<TextBlock Text="Zanarkand Workshop" FontSize="30" FontWeight="Bold"
 							   HorizontalAlignment="Center"/>
-					<TextBlock Text="v0.1.0" FontSize="12" Foreground="#999999"
+					<TextBlock Text="v0.2.0" FontSize="12" Foreground="#999999"
 							   Margin="0,-10,0,0" HorizontalAlignment="Center"/>
 					<TextBlock Text="Comprehensive tools for editing FFX battle data"
 							   FontSize="17" Foreground="#CCCCCC" HorizontalAlignment="Center"/>

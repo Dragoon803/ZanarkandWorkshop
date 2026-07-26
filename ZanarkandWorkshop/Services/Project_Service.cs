@@ -65,6 +65,16 @@ namespace FFXProjectEditor.Services
         public string Path_KernelMonMagic2Us => Path.Combine(Path_KernelUs, "monmagic2.bin");
         public string Path_Mon => Path.Combine(ProjectPath, "jppc", "battle", "mon");
 
+        public string GetPathKernelMonsterUs(int monsterId)
+        {
+            CheckProject();
+            if (monsterId < 0 || monsterId > 365)
+                throw new System.Exception("[Project_Service] Invalid kernel monster id");
+
+            int split = monsterId <= 100 ? 1 : monsterId <= 180 ? 2 : 3;
+            return Path.Combine(Path_KernelUs, $"monster{split}.bin");
+        }
+
         public string GetPathMon(int monsterId)
         {
             CheckProject();

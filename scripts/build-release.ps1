@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "0.1.0"
+    [string]$Version = "0.2.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,6 +8,7 @@ $artifactsDirectory = Join-Path $repositoryRoot "artifacts"
 $packageName = "ZanarkandWorkshop-v$Version-win-x64"
 $publishDirectory = Join-Path $artifactsDirectory $packageName
 $archivePath = Join-Path $artifactsDirectory "$packageName.zip"
+$checksumPath = "$archivePath.sha256"
 
 if (Test-Path -LiteralPath $publishDirectory) {
     Remove-Item -LiteralPath $publishDirectory -Recurse -Force
@@ -15,6 +16,10 @@ if (Test-Path -LiteralPath $publishDirectory) {
 
 if (Test-Path -LiteralPath $archivePath) {
     Remove-Item -LiteralPath $archivePath -Force
+}
+
+if (Test-Path -LiteralPath $checksumPath) {
+    Remove-Item -LiteralPath $checksumPath -Force
 }
 
 New-Item -ItemType Directory -Path $publishDirectory -Force | Out-Null
@@ -39,7 +44,18 @@ Get-ChildItem -LiteralPath $publishDirectory -Filter "*.pdb" |
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "Readme.md") -Destination $publishDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "CHANGELOG.md") -Destination $publishDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "NOTICE.md") -Destination $publishDirectory
+Copy-Item -LiteralPath (Join-Path $repositoryRoot "ReadmeAssets") `
+    -Destination (Join-Path $publishDirectory "ReadmeAssets") -Recurse
+$packagedBrandDirectory = Join-Path $publishDirectory "ZanarkandWorkshop\Assets"
+New-Item -ItemType Directory -Path $packagedBrandDirectory -Force | Out-Null
+Copy-Item -LiteralPath (Join-Path $repositoryRoot "ZanarkandWorkshop\Assets\ZanarkandWorkshop.png") `
+    -Destination $packagedBrandDirectory
 
 Compress-Archive -Path (Join-Path $publishDirectory "*") -DestinationPath $archivePath
 
+$checksum = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
+"$checksum  $([System.IO.Path]::GetFileName($archivePath))" |
+    Set-Content -LiteralPath $checksumPath -Encoding ascii
+
 Write-Host "Release package created: $archivePath"
+Write-Host "SHA-256 checksum created: $checksumPath"

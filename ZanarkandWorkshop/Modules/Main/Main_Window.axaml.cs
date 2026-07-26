@@ -90,6 +90,32 @@ public partial class Main_Window : Window
 		RefreshVanillaMasterStatus();
 	}
 
+	private async void MenuItem_RestoreCurrentEditor(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+	{
+		if (ContentFrame.Content is KernelCommands_Control kernelEditor)
+		{
+			await kernelEditor.RestoreOriginalAsync(this);
+			return;
+		}
+		if (ContentFrame.Content is MonEditorSelector_Control monsterSelector)
+		{
+			if (monsterSelector.ActiveMonsterEditor is MonEditor_Control monsterEditor)
+			{
+				await monsterEditor.RestoreOriginalAsync(this);
+			}
+		}
+	}
+
+	private void MenuItem_RecoveryOpened(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+	{
+		RestoreCurrentEditorMenuItem.IsEnabled =
+			ContentFrame.Content is KernelCommands_Control ||
+			ContentFrame.Content is MonEditorSelector_Control
+			{
+				ActiveMonsterEditor: not null
+			};
+	}
+
 	private void RefreshVanillaMasterStatus()
 	{
 		VanillaReference_Service.ValidationResult validation =

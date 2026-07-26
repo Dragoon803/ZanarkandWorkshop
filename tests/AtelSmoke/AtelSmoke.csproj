@@ -10,5 +10,7 @@
     <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelOpcodeNames.cs" Link="AtelOpcodeNames.cs" />
     <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelDecompiler.cs" Link="AtelDecompiler.cs" />
     <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelStatProperties.cs" Link="AtelStatProperties.cs" />
+    <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Atel\AtelByteRange.cs" Link="AtelByteRange.cs" />
+    <Compile Include="..\..\ZanarkandWorkshop\FfxLib\Dictionaries\Monster_Dictionary.cs" Link="Monster_Dictionary.cs" />
   </ItemGroup>
 </Project>

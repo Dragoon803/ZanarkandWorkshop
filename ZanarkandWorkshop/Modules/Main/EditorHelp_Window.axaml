@@ -51,6 +51,30 @@
 
                     <Border Height="1" Background="#555555"/>
 
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="General text editing" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="These rules apply to every editable game-text field in Zanarkand Workshop, including monster names, Sensor and Scan text, item text, and command names and descriptions."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+
+                        <TextBlock Text="Cyan text" FontWeight="SemiBold" Foreground="#70D7E8"/>
+                        <TextBlock Text="Use [cyan] before the text and [/cyan] after it. For example, [cyan]Fire[/cyan] stores Fire with the game’s cyan formatting. The markers are editor notation: the game displays the word in cyan, not the brackets."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+
+                        <TextBlock Text="Line breaks" FontWeight="SemiBold" Foreground="#70D7E8"/>
+                        <TextBlock Text="Press Enter in a multiline field to insert a game line break. Line wrapping visible in the editor does not create a line break unless you press Enter."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+
+                        <TextBlock Text="Characters and validation" FontWeight="SemiBold" Foreground="#70D7E8"/>
+                        <TextBlock Text="Game text uses its own limited character table rather than Unicode. If a character cannot be encoded, Save reports an error instead of writing damaged text. Replace unsupported smart quotes, symbols, or accented characters with a supported equivalent."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+
+                        <TextBlock Text="Formatting safety" FontWeight="SemiBold" Foreground="#70D7E8"/>
+                        <TextBlock Text="Keep formatting markers paired and correctly ordered: [cyan]text[/cyan]. Markers are case-insensitive, but the documented lowercase form is recommended. Review multiline text in game because the game controls the final box width and pagination."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+                    </StackPanel>
+
+                    <Border Height="1" Background="#555555"/>
+
                     <StackPanel Spacing="4">
                         <TextBlock Text="Project and connection requirements" FontSize="18" FontWeight="Bold"/>
                         <TextBlock Text="Editors require a valid FFX Master folder. Utilities do not require a Master folder; they work directly with the running game and are available only while FFX is connected."
