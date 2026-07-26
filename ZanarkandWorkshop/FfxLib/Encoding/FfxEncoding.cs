@@ -115,6 +115,95 @@ namespace FFXProjectEditor.Utils.Encoding
         }
 
         /*
+         * Encode editable, human-readable text back into an FFX text script.
+         * Text boxes use CRLF/LF line endings while the game uses control code 0x03.
+         */
+        public static byte[] EncodeTextScript(string text, Dictionary<char, byte> encoder)
+        {
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
+            if (encoder == null)
+                throw new ArgumentNullException(nameof(encoder));
+
+            List<byte> result = new();
+            string normalizedText = text.Replace("\r\n", "\n").Replace('\r', '\n');
+            for (int index = 0; index < normalizedText.Length; index++)
+            {
+                if (normalizedText.AsSpan(index).StartsWith("[cyan]", StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Add(C_FORMAT);
+                    result.Add(177);
+                    index += "[cyan]".Length - 1;
+                    continue;
+                }
+
+                if (normalizedText.AsSpan(index).StartsWith("[/cyan]", StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Add(C_FORMAT);
+                    result.Add(65);
+                    index += "[/cyan]".Length - 1;
+                    continue;
+                }
+
+                char character = normalizedText[index];
+                if (character == '\n')
+                {
+                    result.Add(C_NEW_LINE);
+                }
+                else if (encoder.TryGetValue(character, out byte encodedCharacter))
+                {
+                    result.Add(encodedCharacter);
+                }
+                else
+                {
+                    throw new Exception("FfxEncoding.EncodeTextScript: Invalid char for given encoder: " + character);
+                }
+            }
+
+            return result.ToArray();
+        }
+
+        /*
+         * Decode a text script for editing. Supported formatting is represented by
+         * visible markup so opening and saving an existing entry does not discard it.
+         */
+        public static string DecodeEditableTextScript(byte[] byteScript, Dictionary<byte, char> decoder)
+        {
+            TextScript script = DecodeScript(byteScript);
+            string result = "";
+
+            foreach (TextScript.TextCommand command in script.Commands)
+            {
+                if (!command.IsControlCode)
+                {
+                    result += DecodeString(command, decoder);
+                    continue;
+                }
+
+                if (command.ControlCode == C_NEW_LINE)
+                {
+                    result += Environment.NewLine;
+                }
+                else if (command.ControlCode == C_FORMAT && command.ByteArray.Length > 0)
+                {
+                    result += command.ByteArray[0] switch
+                    {
+                        177 => "[cyan]",
+                        65 => "[/cyan]",
+                        _ => ""
+                    };
+                }
+                else if (command.ControlCode == C_CHAR_NAME && command.ByteArray.Length > 0 &&
+                         CharacterNameCodes.TryGetValue(command.ByteArray[0], out string characterName))
+                {
+                    result += characterName;
+                }
+            }
+
+            return result;
+        }
+
+        /*
          * Given a text file it finds and returns the script (as a byte array) located at the given offset
          */
         public static byte[] GetScriptBytesFromTextFile(byte[] textFile, int scriptOffset)

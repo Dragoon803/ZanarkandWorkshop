@@ -21,6 +21,8 @@ namespace FFXProjectEditor.Modules.MonEditor
         public AtelScriptDocument? AiDocument { get; private set; }
         private readonly byte[] _originalAiBytes;
         private readonly byte[] _originalWorkerBytes;
+        private readonly int _monsterId;
+        private bool _usesLocalizedMonsterText;
         private readonly Stack<AiUndoSnapshot> _aiUndoHistory = new();
         private readonly Stack<AiUndoSnapshot> _aiRedoHistory = new();
         private sealed record AiUndoSnapshot(byte[] AiBytes, byte[] WorkerBytes, string Description,
@@ -48,7 +50,9 @@ namespace FFXProjectEditor.Modules.MonEditor
             MonsterFile = monsterFile;
             MonsterPath = monsterPath;
             SelectorDM = selectorDM;
+            _monsterId = ParseMonsterId(monsterPath);
             MonsterStatSheet = MonsterStatSheet_Wrapper.Wrap(MonsterFile.StatSheetFile);
+            _usesLocalizedMonsterText = LoadLocalizedTextIntoWrapper();
             MonsterLoot = MonsterLoot_Wrapper.Wrap(MonsterFile.LootFile);
             _originalAiBytes = MonsterFile.AiFile == null ? [] : (byte[])MonsterFile.AiFile.Clone();
             _originalWorkerBytes = MonsterFile.WorkerFile == null ? [] : (byte[])MonsterFile.WorkerFile.Clone();
@@ -114,6 +118,23 @@ namespace FFXProjectEditor.Modules.MonEditor
             if (AiDocument == null) return;
             _aiUndoHistory.Push(CaptureAiSnapshot(description, selectionKind, scriptOffset));
             _aiRedoHistory.Clear();
+        }
+
+        public void ApplyAiHexTransactional(string description, string? selectionKind, int? scriptOffset)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            AiUndoSnapshot before = CaptureAiSnapshot(description, selectionKind, scriptOffset);
+            try
+            {
+                ApplyAiHex();
+                _aiUndoHistory.Push(before);
+                _aiRedoHistory.Clear();
+            }
+            catch
+            {
+                RestoreAiSnapshot(before);
+                throw;
+            }
         }
 
         public void ClearAiRedoHistory() => _aiRedoHistory.Clear();
@@ -236,6 +257,7 @@ namespace FFXProjectEditor.Modules.MonEditor
 
             MonsterFile = vanilla;
             MonsterStatSheet = MonsterStatSheet_Wrapper.Wrap(vanilla.StatSheetFile);
+            _usesLocalizedMonsterText = LoadLocalizedTextIntoWrapper();
             MonsterLoot = MonsterLoot_Wrapper.Wrap(vanilla.LootFile);
             AiDocument = vanillaAi;
             AiHex = vanillaAi.ToHexEditorText();
@@ -281,6 +303,16 @@ namespace FFXProjectEditor.Modules.MonEditor
             string structuralResult = "";
             if (editedBytes.Length == AiDocument.Bytes.Length)
             {
+                AtelScriptDocument staged = AtelScriptDocument.Read(editedBytes, MonsterFile.WorkerFile);
+                int[] existingReturns = AiDocument.Instructions
+                    .Where(instruction => instruction.Opcode == 0x3C)
+                    .Select(instruction => instruction.Offset).ToArray();
+                int[] editedReturns = staged.Instructions
+                    .Where(instruction => instruction.Opcode == 0x3C)
+                    .Select(instruction => instruction.Offset).ToArray();
+                if (!existingReturns.SequenceEqual(editedReturns))
+                    throw new InvalidOperationException(
+                        "Manual hex changes cannot add, remove, or move RETURN (3C). Edit the surrounding instructions while leaving each RETURN in place.");
                 AiDocument.ReplaceBytes(editedBytes);
             }
             else if (editedBytes.Length < AiDocument.Bytes.Length)
@@ -420,6 +452,29 @@ namespace FFXProjectEditor.Modules.MonEditor
             return edited;
         }
 
+        public void ChangeWorkerJumpDestination(int workerIndex, int jumpIndex, int destinationOffset)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            AiDocument.SetWorkerJumpDestination(workerIndex, jumpIndex, destinationOffset);
+            MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
+            AiHex = AiDocument.ToHexEditorText();
+            int chunkOffset = checked(AiDocument.ScriptCodeOffset + destinationOffset);
+            AiStatus = $"Changed worker w{workerIndex:X2} jump j{jumpIndex:X2} destination to script offset " +
+                $"0x{destinationOffset:X4} (Battle Script offset 0x{chunkOffset:X}). Press Save to write this change to disk.";
+        }
+
+        public int AddWorkerJump(int workerIndex, int destinationOffset)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            int jumpIndex = AiDocument.AddWorkerJump(workerIndex, destinationOffset);
+            MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
+            AiHex = AiDocument.ToHexEditorText();
+            int chunkOffset = checked(AiDocument.ScriptCodeOffset + destinationOffset);
+            AiStatus = $"Added worker w{workerIndex:X2} jump j{jumpIndex:X2} targeting script offset " +
+                $"0x{destinationOffset:X4} (Battle Script offset 0x{chunkOffset:X}). Press Save to write this change to disk.";
+            return jumpIndex;
+        }
+
         internal static ushort ParseOperandText(string operandText)
         {
             if (string.IsNullOrWhiteSpace(operandText)) throw new InvalidOperationException("Enter an operand value.");
@@ -464,11 +519,13 @@ namespace FFXProjectEditor.Modules.MonEditor
             return edited;
         }
 
-        public AtelStatement InsertStatement(int insertionOffset, byte[] statementBytes, int sourceOffset)
+        public AtelStatement InsertStatement(int insertionOffset, byte[] statementBytes, int sourceOffset,
+            bool preserveFunctionEntryAtInsertion = false)
         {
             if (AiDocument == null) throw new InvalidOperationException(AiStatus);
             int oldLength = AiDocument.Bytes.Length;
-            AtelStatement inserted = AiDocument.InsertStatementBytes(insertionOffset, statementBytes);
+            AtelStatement inserted = AiDocument.InsertStatementBytes(insertionOffset, statementBytes,
+                preserveFunctionEntryAtInsertion);
             MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
             AiHex = AiDocument.ToHexEditorText();
             int growth = AiDocument.Bytes.Length - oldLength;
@@ -477,13 +534,112 @@ namespace FFXProjectEditor.Modules.MonEditor
             return inserted;
         }
 
+        public AtelStatement InsertStatementRange(int insertionOffset, byte[] rangeBytes, int sourceOffset,
+            int workerIndex, IReadOnlyList<AtelRangeBranch> internalBranches,
+            IReadOnlyList<AtelRangeFloat>? floatReferences = null,
+            bool preserveFunctionEntryAtInsertion = false,
+            bool preserveUnresolvedFloatIndices = false,
+            bool preserveUnresolvedBranchIndices = false)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            int oldLength = AiDocument.Bytes.Length;
+            AtelStatement inserted = AiDocument.InsertStatementRangeBytes(insertionOffset, rangeBytes,
+                workerIndex, internalBranches, floatReferences, preserveFunctionEntryAtInsertion,
+                preserveUnresolvedFloatIndices, preserveUnresolvedBranchIndices);
+            MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
+            AiHex = AiDocument.ToHexEditorText();
+            int growth = AiDocument.Bytes.Length - oldLength;
+            string storage = growth == 0 ? "existing alignment padding was used" :
+                $"the post-code ATEL region grew by {growth} byte(s)";
+            AiStatus = $"Inserted {rangeBytes.Length} byte(s) copied from Battle Logic range at script offset " +
+                $"0x{sourceOffset:X4} at script offset 0x{insertionOffset:X4}; {internalBranches.Count} internal " +
+                $"branch(es) and {floatReferences?.Count ?? 0} float reference(s) were remapped, {storage}, and code offsets were rebuilt.";
+            return inserted;
+        }
+
+        public AtelStatement ReplaceStatementRange(int replacementStart, int replacementEnd,
+            byte[] rangeBytes, int sourceOffset, int workerIndex,
+            IReadOnlyList<AtelRangeBranch> internalBranches,
+            IReadOnlyList<AtelRangeFloat>? floatReferences = null,
+            bool preserveUnresolvedFloatIndices = false,
+            bool allowUnsafeDestinationEntries = false,
+            bool preserveUnresolvedBranchIndices = false)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            int oldLength = AiDocument.Bytes.Length;
+            int removedLength = replacementEnd - replacementStart;
+            AtelStatement replaced = AiDocument.ReplaceStatementRangeBytes(replacementStart,
+                replacementEnd, rangeBytes, workerIndex, internalBranches, floatReferences,
+                preserveUnresolvedFloatIndices, allowUnsafeDestinationEntries,
+                preserveUnresolvedBranchIndices);
+            MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
+            AiHex = AiDocument.ToHexEditorText();
+            int growth = AiDocument.Bytes.Length - oldLength;
+            string storage = growth == 0 ? "the existing ATEL allocation was retained" :
+                $"the post-code ATEL region grew by {growth} byte(s)";
+            AiStatus = $"Replaced {removedLength} byte(s) of Battle Logic at script offset " +
+                $"0x{replacementStart:X4} with {rangeBytes.Length} byte(s) copied from script offset " +
+                $"0x{sourceOffset:X4}; {internalBranches.Count} internal branch(es) and " +
+                $"{floatReferences?.Count ?? 0} float reference(s) were remapped, " +
+                $"{storage}, and code offsets were rebuilt.";
+            return replaced;
+        }
+
+        public (byte[] Bytes, string Preview, int FunctionStart) PreviewManualCodeBeforeReturn(
+            int workerIndex, int functionIndex, string hexText)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            AtelWorker worker = AiDocument.Workers.FirstOrDefault(item => item.Index == workerIndex)
+                ?? throw new InvalidOperationException($"Worker w{workerIndex:X2} does not exist.");
+            if (functionIndex < 0 || functionIndex >= worker.FunctionOffsets.Count)
+                throw new InvalidOperationException("Select a specific function first.");
+            int functionStart = worker.FunctionOffsets[functionIndex];
+            int functionEnd = AiDocument.Workers.SelectMany(item => item.FunctionOffsets)
+                .Where(offset => offset > functionStart).DefaultIfEmpty(AiDocument.ScriptCodeLength).Min();
+            AtelInstruction? onlyInstruction = AiDocument.Instructions.FirstOrDefault(item => item.Offset == functionStart);
+            if (functionEnd != functionStart + 1 || onlyInstruction?.Opcode != 0x3C)
+                throw new InvalidOperationException("Manual insertion is available only for a function consisting of a single RETURN (3C).");
+
+            byte[] bytes = AtelScriptDocument.ParseHexEditorText(hexText);
+            if (bytes.Length == 0) throw new InvalidOperationException("Enter one or more instruction bytes.");
+            ValidateManualInsertedInstructions(functionStart, bytes);
+            var preview = new List<string>();
+            for (int cursor = 0; cursor < bytes.Length;)
+            {
+                int length = (bytes[cursor] & 0x80) != 0 ? 3 : 1;
+                byte[] instructionBytes = bytes.AsSpan(cursor, length).ToArray();
+                var instruction = new AtelInstruction(functionStart + cursor, bytes[cursor], instructionBytes);
+                preview.Add(instruction.CompactDisplay);
+                cursor += length;
+            }
+            return (bytes, string.Join(Environment.NewLine, preview), functionStart);
+        }
+
+        public AtelStatement InsertManualCodeBeforeReturn(int workerIndex, int functionIndex, string hexText)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            (byte[] bytes, _, int functionStart) = PreviewManualCodeBeforeReturn(workerIndex, functionIndex, hexText);
+            AtelStatement inserted = AiDocument.InsertStatementBytes(functionStart, bytes,
+                preserveFunctionEntryAtInsertion: true);
+            MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
+            AiHex = AiDocument.ToHexEditorText();
+            AiStatus = $"Inserted {bytes.Length} manual code byte(s) before RETURN in w{workerIndex:X2}:f{functionIndex:X2}. " +
+                "The function entry was preserved. Press Save to write this change to disk.";
+            return inserted;
+        }
+
         public int DeleteStatement(int statementOffset)
         {
             if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            AtelStatement statement = AiDocument.Statements.FirstOrDefault(item => item.Offset == statementOffset)
+                ?? throw new InvalidOperationException($"No statement starts at script offset 0x{statementOffset:X4}.");
+            bool preservedReturn = statement.Instructions.Any(item => item.Opcode == 0x3C);
             int removedLength = AiDocument.DeleteStatement(statementOffset);
             MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
             AiHex = AiDocument.ToHexEditorText();
-            AiStatus = $"Deleted the {removedLength}-byte statement at script offset 0x{statementOffset:X4}; later code offsets were rebuilt. Press Save to write this change to disk.";
+            AiStatus = preservedReturn
+                ? $"Deleted {removedLength} editable byte(s) at script offset 0x{statementOffset:X4} and preserved RETURN (3C); later code offsets were rebuilt. Press Save to write this change to disk."
+                : $"Deleted the {removedLength}-byte statement at script offset 0x{statementOffset:X4}; jump-table destinations were retained and later code offsets were rebuilt. Press Save to write this change to disk.";
             return removedLength;
         }
 
@@ -585,18 +741,116 @@ namespace FFXProjectEditor.Modules.MonEditor
         public void Save()
         {
             ApplyAiHex();
-            MonsterFile.StatSheetFile = MonsterStatSheet.Unwrap();
+            Monster_StatSheet editedSheet = MonsterStatSheet.Unwrap();
+            string kernelPath = Project_Service.Instance.GetPathKernelMonsterUs(_monsterId);
+            byte[]? rebuiltKernel = null;
+            Monster_StatSheet? kernelSheet = null;
+            if (_usesLocalizedMonsterText && File.Exists(kernelPath))
+            {
+                Monster_KernelFile kernelFile = Monster_KernelFile.Read(File.ReadAllBytes(kernelPath));
+                kernelSheet = kernelFile.GetGlobalEntry(_monsterId);
+                CopyLocalizedText(editedSheet, kernelSheet);
+                rebuiltKernel = kernelFile.Write();
+
+                // mXXX.bin is the Japanese gameplay package. Update its stats,
+                // but retain its local Japanese scripts when the localized
+                // kernel text is available.
+                CopyText(MonsterFile.StatSheetFile, editedSheet);
+            }
+            else
+            {
+                // A project without the localized split remains fully usable:
+                // the displayed Japanese text came from mXXX.bin and is saved
+                // back into that same self-contained file.
+                _usesLocalizedMonsterText = false;
+            }
+            MonsterFile.StatSheetFile = editedSheet;
             MonsterFile.LootFile = MonsterLoot.Unwrap();
 
             byte[] rebuilt = MonsterFile.Write();
             Monster_File roundTrip = Monster_File.Read(rebuilt);
             AtelScriptDocument.Read(roundTrip.AiFile, roundTrip.WorkerFile);
+            if (rebuiltKernel != null && kernelSheet != null)
+            {
+                Monster_KernelFile kernelRoundTrip = Monster_KernelFile.Read(rebuiltKernel);
+                Monster_StatSheet verifiedText = kernelRoundTrip.GetGlobalEntry(_monsterId);
+                if (!verifiedText.NameScriptBytes.SequenceEqual(kernelSheet.NameScriptBytes) ||
+                    !verifiedText.SensorScriptBytes.SequenceEqual(kernelSheet.SensorScriptBytes) ||
+                    !verifiedText.ScanScriptBytes.SequenceEqual(kernelSheet.ScanScriptBytes))
+                    throw new InvalidDataException("Localized monster text failed round-trip verification.");
+            }
 
             string backupPath = MonsterPath + ".bak";
             if (!File.Exists(backupPath))
                 File.Copy(MonsterPath, backupPath);
             File.WriteAllBytes(MonsterPath, rebuilt);
-            AiStatus = $"Saved and verified. Original backup: {backupPath}";
+            if (rebuiltKernel != null)
+            {
+                string kernelBackupPath = kernelPath + ".bak";
+                if (!File.Exists(kernelBackupPath))
+                    File.Copy(kernelPath, kernelBackupPath);
+                File.WriteAllBytes(kernelPath, rebuiltKernel);
+                AiStatus = $"Saved and verified m{_monsterId:000} plus English monster text. " +
+                    $"Original backups: {backupPath}; {kernelBackupPath}";
+            }
+            else
+            {
+                AiStatus = $"Localized monster file was not present. Saved and verified m{_monsterId:000}, " +
+                    $"including its local Name, Sensor, and Scan text. Original backup: {backupPath}";
+            }
+        }
+
+        private bool LoadLocalizedTextIntoWrapper()
+        {
+            string path = Project_Service.Instance.GetPathKernelMonsterUs(_monsterId);
+            if (!File.Exists(path))
+            {
+                MonsterStatSheet.UseEnglishText = false;
+                return false;
+            }
+
+            Monster_KernelFile kernel = Monster_KernelFile.Read(File.ReadAllBytes(path));
+            Monster_StatSheet localized = kernel.GetGlobalEntry(_monsterId);
+            MonsterStatSheet.UseEnglishText = true;
+            MonsterStatSheet.NameScriptBytes = (byte[])localized.NameScriptBytes.Clone();
+            MonsterStatSheet.SensorScriptBytes = (byte[])localized.SensorScriptBytes.Clone();
+            MonsterStatSheet.ScanScriptBytes = (byte[])localized.ScanScriptBytes.Clone();
+            MonsterStatSheet.NameScriptId = localized.NameScriptId;
+            MonsterStatSheet.SensorScriptId = localized.SensorScriptId;
+            MonsterStatSheet.ScanScriptId = localized.ScanScriptId;
+            return true;
+        }
+
+        private static void CopyText(Monster_StatSheet source, Monster_StatSheet destination)
+        {
+            destination.NameScriptBytes = (byte[])source.NameScriptBytes.Clone();
+            destination.SensorScriptBytes = (byte[])source.SensorScriptBytes.Clone();
+            destination.UnusedText1ScriptBytes = (byte[])source.UnusedText1ScriptBytes.Clone();
+            destination.ScanScriptBytes = (byte[])source.ScanScriptBytes.Clone();
+            destination.UnusedText2ScriptBytes = (byte[])source.UnusedText2ScriptBytes.Clone();
+            destination.NameScriptId = source.NameScriptId;
+            destination.SensorScriptId = source.SensorScriptId;
+            destination.UnusedText1ScriptId = source.UnusedText1ScriptId;
+            destination.ScanScriptId = source.ScanScriptId;
+            destination.UnusedText2ScriptId = source.UnusedText2ScriptId;
+        }
+
+        private static void CopyLocalizedText(Monster_StatSheet source, Monster_StatSheet destination)
+        {
+            destination.NameScriptBytes = (byte[])source.NameScriptBytes.Clone();
+            destination.SensorScriptBytes = (byte[])source.SensorScriptBytes.Clone();
+            destination.ScanScriptBytes = (byte[])source.ScanScriptBytes.Clone();
+            destination.NameScriptId = source.NameScriptId;
+            destination.SensorScriptId = source.SensorScriptId;
+            destination.ScanScriptId = source.ScanScriptId;
+        }
+
+        private static int ParseMonsterId(string monsterPath)
+        {
+            string name = Path.GetFileNameWithoutExtension(monsterPath);
+            if (name.Length == 4 && name[0] == 'm' && int.TryParse(name.AsSpan(1), out int id))
+                return id;
+            throw new InvalidDataException($"Cannot determine monster ID from path: {monsterPath}");
         }
     }
 }

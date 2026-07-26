@@ -52,18 +52,19 @@
 		<!-- Bottom bar -->
 		<ContentControl Grid.Row="1" MinHeight="50">
 			<Grid ColumnDefinitions="*,Auto" Margin="20,4">
-				<Button Grid.Column="0" HorizontalAlignment="Left" Margin="0,2,6,2" Click="Button_RevertVanillaMonster" Background="#6B2525" ToolTip.Tip="Restore the entire monster using your verified Original Game Files, then save it immediately. This replaces all monster data, including stats, loot, and the Battle Script.">Restore Original</Button>
+				<Button x:Name="AiRevertButton" Grid.Column="0" HorizontalAlignment="Left" Margin="0,2,6,2" Click="Button_RestoreOriginalAi" Background="#6B2525" ToolTip.Tip="Discard all Battle Script changes made since this monster was opened, then save the restored script.">Revert</Button>
 				<WrapPanel Grid.Column="1" Classes="compactLower" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-					<Button Margin="0,2,6,2" Click="Button_RestoreOriginalAi" Background="#6B2525" ToolTip.Tip="Discard all Battle Script changes made since this monster was opened, then save the restored script.">Revert</Button>
-					<Button Margin="0,2,6,2" Click="Button_UndoAi" ToolTip.Tip="Undo the most recent Battle Script editing action from this monster's current session">Undo</Button>
-					<Button Margin="0,2,6,2" Click="Button_RedoAi" ToolTip.Tip="Redo the most recently undone Battle Script editing action from this monster's current session">Redo</Button>
+					<Button x:Name="AiUndoButton" Margin="0,2,6,2" Click="Button_UndoAi" ToolTip.Tip="Undo the most recent Battle Script editing action from this monster's current session">Undo</Button>
+					<Button x:Name="AiRedoButton" Margin="0,2,6,2" Click="Button_RedoAi" ToolTip.Tip="Redo the most recently undone Battle Script editing action from this monster's current session">Redo</Button>
 					<Button Margin="8,2,0,2" Click="Button_Save" BorderThickness="1" BorderBrush="AliceBlue" CornerRadius="5">Save</Button>
 				</WrapPanel>
 			</Grid>
 		</ContentControl>
 
 		<!-- Editor -->
-		<TabControl Grid.Row="0" MinHeight="0" SelectedIndex="{Binding SelectorDM.SelectedTab}">
+		<TabControl x:Name="MonsterEditorTabs" Grid.Row="0" MinHeight="0"
+					SelectedIndex="{Binding SelectorDM.SelectedTab}"
+					SelectionChanged="MonsterEditorTabs_SelectionChanged">
 
 			<!-- STATUS -->
 			<TabItem Header="Status">
@@ -73,11 +74,11 @@
 						<Expander Header="Info" IsExpanded="{Binding SelectorDM.InfoExpanded}" HorizontalAlignment="Stretch">
 							<StackPanel Orientation="Vertical">
 								<Label>Name</Label>
-								<TextBox IsReadOnly="True" Text="{Binding MonsterStatSheet.Name}"></TextBox>
+								<TextBox Text="{Binding MonsterStatSheet.Name}"></TextBox>
 								<Label>Sensor</Label>
-								<TextBox IsReadOnly="True" Text="{Binding MonsterStatSheet.Sensor}"></TextBox>
+								<TextBox Text="{Binding MonsterStatSheet.Sensor}" AcceptsReturn="True" TextWrapping="Wrap"></TextBox>
 								<Label>Scan</Label>
-								<TextBox IsReadOnly="True" Text="{Binding MonsterStatSheet.Scan}"></TextBox>
+								<TextBox Text="{Binding MonsterStatSheet.Scan}" AcceptsReturn="True" TextWrapping="Wrap"></TextBox>
 							</StackPanel>
 						</Expander>
 
@@ -666,8 +667,8 @@
 										<CheckBox x:Name="AiHideStatements" Grid.Column="3" Margin="4,0,0,0" VerticalAlignment="Center" Content="Hide" Checked="AiStatementVisibility_Changed" Unchecked="AiStatementVisibility_Changed"/>
 									</Grid>
 								</Border>
-								<ListBox x:Name="AiStatementList" Grid.Row="1" MinHeight="85" ItemsSource="{Binding AiStatements}" FontFamily="Consolas" SelectionChanged="AiStatement_SelectionChanged" Tapped="AiStatement_Tapped" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
-									<ListBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding OffsetDisplay}"/><Border Background="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationBrushConverter}}"><TextBlock Text="{Binding FirstByteDisplay}" Foreground="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationForegroundConverter}}"/></Border><TextBlock Text="{Binding RemainingBytesDisplay}" Foreground="#70B7FF"/><TextBlock Text="{Binding Translation}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+								<ListBox x:Name="AiStatementList" Grid.Row="1" MinHeight="85" ItemsSource="{Binding AiStatements}" FontFamily="Consolas" SelectionMode="Multiple" SelectionChanged="AiStatement_SelectionChanged" Tapped="AiStatement_Tapped" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+									<ListBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding OffsetDisplay}"/><Border Background="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationBrushConverter}}"><TextBlock Text="{Binding FirstByteDisplay}" Foreground="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationForegroundConverter}}"/></Border><TextBlock Text="{Binding RemainingBytesDisplay}" Foreground="#70B7FF"/><TextBlock Text="{Binding ChangeTranslationPrefix}"/><Border Background="#62F5A7"><TextBlock Text="{Binding ChangeTranslationToken}" Foreground="#101010"/></Border><TextBlock Text="{Binding ChangeTranslationSuffix}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
 								</ListBox>
 								</Grid>
 								<GridSplitter x:Name="AiLogicSplitter" Grid.Row="1" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Center"
@@ -680,13 +681,24 @@
 									</Grid>
 								</Border>
 								<ListBox x:Name="AiInstructionList" Grid.Row="1" MinHeight="85" ItemsSource="{Binding AiInstructions}" FontFamily="Consolas" SelectionMode="Multiple" SelectionChanged="AiInstruction_SelectionChanged" Tapped="AiInstruction_Tapped" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
-									<ListBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding OffsetDisplay}"/><Border Background="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationBrushConverter}}"><TextBlock Text="{Binding FirstByteDisplay}" Foreground="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationForegroundConverter}}"/></Border><TextBlock Text="{Binding RemainingBytesDisplay}" Foreground="#70B7FF"/><TextBlock Text="{Binding CompactSemanticDisplay}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+									<ListBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><TextBlock Text="{Binding OffsetDisplay}"/><Border Background="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationBrushConverter}}"><TextBlock Text="{Binding FirstByteDisplay}" Foreground="{Binding IsJumpDestination, Converter={StaticResource JumpDestinationForegroundConverter}}"/></Border><TextBlock Text="{Binding RemainingBytesDisplay}" Foreground="#70B7FF"/><TextBlock Text="{Binding ChangeSemanticPrefix}"/><Border Background="#62F5A7"><TextBlock Text="{Binding ChangeSemanticToken}" Foreground="#101010"/></Border><TextBlock Text="{Binding ChangeSemanticSuffix}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
 								</ListBox>
 								</Grid>
 							</Grid>
 						</Border>
 						<Border Grid.Column="0" Grid.Row="2" Margin="0,0,5,0" BorderBrush="Gray" BorderThickness="1" Padding="5" MinWidth="480" MinHeight="150">
-						<Grid RowDefinitions="Auto,Auto,*"><Border Grid.Row="0" Background="#111111" BorderBrush="#D95252" BorderThickness="0,0,0,3" Padding="7,5"><TextBlock FontSize="15" FontWeight="Bold">Complete Battle Script (Hex)</TextBlock></Border>
+						<Grid RowDefinitions="Auto,Auto,*"><Border Grid.Row="0" Background="#111111" BorderBrush="#D95252" BorderThickness="0,0,0,3" Padding="7,4">
+							<Grid ColumnDefinitions="*,Auto,Auto">
+								<TextBlock Grid.Column="0" FontSize="15" FontWeight="Bold" VerticalAlignment="Center">Complete Battle Script (Hex)</TextBlock>
+								<Button x:Name="AiRestoreRejectedHexButton" Grid.Column="1" Margin="0,0,7,0"
+										HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="13" Padding="9,3"
+										IsVisible="False" Click="Button_RestoreRejectedAiHex"
+										ToolTip.Tip="Restore the most recent manual hex edit that was rejected during validation.">Restore Rejected Edit</Button>
+								<Button x:Name="AiApplyHexButton" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"
+										FontSize="13" Padding="9,3" IsEnabled="False" Click="Button_ValidateAi"
+										ToolTip.Tip="Apply edits made directly in the hex view and refresh Battle Logic and Script Instructions. This does not save the monster file.">Apply Hex Changes</Button>
+							</Grid>
+						</Border>
 							<Border Grid.Row="1" Background="#111111" ClipToBounds="True" Padding="4,2">
 								<TextBlock x:Name="AiHexColumnHeader" FontFamily="Consolas" Foreground="#70B7FF" Text="         00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F"/>
 							</Border>
@@ -695,6 +707,16 @@
 									 IsInactiveSelectionHighlightEnabled="True" ClearSelectionOnLostFocus="False"
 									 SelectionBrush="#B94A48" SelectionForegroundBrush="White"
 									 ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+								<TextBox x:Name="AiChangeContextText" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
+									 IsReadOnly="True" IsHitTestVisible="False" Background="Transparent" Foreground="Transparent"
+									 IsInactiveSelectionHighlightEnabled="True" ClearSelectionOnLostFocus="False"
+									 SelectionBrush="#62F5A7" SelectionForegroundBrush="#101010"
+									 ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Hidden"/>
+								<TextBox x:Name="AiExactChangeText" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
+									 IsReadOnly="True" IsHitTestVisible="False" Background="Transparent" Foreground="Transparent"
+									 IsInactiveSelectionHighlightEnabled="True" ClearSelectionOnLostFocus="False"
+									 SelectionBrush="#B94A48" SelectionForegroundBrush="White"
+									 ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollBarVisibility="Hidden"/>
 								<TextBox x:Name="AiJumpDestinationText" AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
 									 IsReadOnly="True" IsHitTestVisible="False" Background="Transparent" Foreground="Transparent"
 									 IsInactiveSelectionHighlightEnabled="True" ClearSelectionOnLostFocus="False"
@@ -710,6 +732,7 @@
 									<Grid x:Name="AiEditorPanel" RowDefinitions="Auto,Auto,Auto">
 										<WrapPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Stretch">
 											<WrapPanel x:Name="AiWorkerEditorPanel" Orientation="Horizontal" IsVisible="False">
+												<WrapPanel x:Name="AiWorkerJumpNavigationPanel" Orientation="Horizontal">
 												<StackPanel Width="240" Margin="4,0">
 													<TextBlock Margin="0,0,0,3">Function:</TextBlock>
 													<ComboBox x:Name="AiFunctionOptions" Width="240" Height="28" MinWidth="0" SelectionChanged="AiFunction_SelectionChanged" HorizontalAlignment="Stretch">
@@ -722,11 +745,31 @@
 														<ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Display}"/></DataTemplate></ComboBox.ItemTemplate>
 													</ComboBox>
 												</StackPanel>
-												<Button x:Name="AiWorkerJumpButton" Width="90" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_GoToWorkerJump">Go to Jump</Button>
+											<Button x:Name="AiWorkerJumpButton" Width="90" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_GoToWorkerJump">Go to Jump</Button>
+											<Button x:Name="AiChangeWorkerJumpButton" Width="150" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_BeginWorkerJumpDestination" ToolTip.Tip="Enter destination-picking mode for the selected jump-table entry.">Choose Destination</Button>
+											<Button x:Name="AiAddWorkerJumpButton" Width="100" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_BeginAddWorkerJump" ToolTip.Tip="Append a jump-table entry to this worker and choose its destination.">Add Jump</Button>
+											<StackPanel x:Name="AiReturnOnlyManualInsertPanel" Margin="8,0,4,0" HorizontalAlignment="Left" IsVisible="False">
+												<TextBlock Margin="0,0,0,3">Manual code (hex):</TextBlock>
+												<StackPanel Orientation="Horizontal" Spacing="6">
+													<TextBox x:Name="AiReturnOnlyManualCodeText" Width="210" Height="28" Watermark="AE 01 00 B5 10 70" FontFamily="Consolas"/>
+													<Button Height="28" Padding="12,2" Click="Button_InsertManualCodeBeforeReturn">Insert Before RETURN</Button>
+												</StackPanel>
+											</StackPanel>
+												</WrapPanel>
+											<StackPanel x:Name="AiJumpDestinationPicker" Orientation="Horizontal" Margin="8,18,4,0" Spacing="6" IsVisible="False">
+												<TextBlock x:Name="AiJumpDestinationPickerText" Width="300" VerticalAlignment="Center" Foreground="#FFB35C" TextWrapping="Wrap"/>
+												<Button x:Name="AiApplyJumpDestinationButton" Width="72" Height="28" Click="Button_ApplyWorkerJumpDestination" IsEnabled="False">Apply</Button>
+												<Button Width="72" Height="28" Click="Button_CancelWorkerJumpDestination">Cancel</Button>
+											</StackPanel>
 											</WrapPanel>
-											<StackPanel Width="190" Margin="4,0" IsVisible="{Binding IsVisible, ElementName=AiMeaningOptions}">
+											<StackPanel x:Name="AiReferenceTypeEditor" Width="190" Margin="4,0" IsVisible="False">
+												<TextBlock x:Name="AiReferenceTypeLabel" Margin="0,0,0,3" HorizontalAlignment="Left">Reference type:</TextBlock>
+												<ComboBox x:Name="AiReferenceTypeOptions" Width="190" HorizontalAlignment="Stretch"
+														  SelectionChanged="AiReferenceType_SelectionChanged"/>
+											</StackPanel>
+											<StackPanel x:Name="AiMeaningEditorPanel" Width="260" Margin="4,0" IsVisible="{Binding IsVisible, ElementName=AiMeaningOptions}">
 												<TextBlock x:Name="AiMeaningLabel" Margin="0,0,0,3" HorizontalAlignment="Left" IsVisible="False">Target:</TextBlock>
-												<ComboBox x:Name="AiMeaningOptions" Width="190" HorizontalAlignment="Stretch" IsVisible="False" SelectionChanged="AiMeaning_SelectionChanged" DropDownOpened="AiMeaning_DropDownOpened"/>
+												<ComboBox x:Name="AiMeaningOptions" Width="260" HorizontalAlignment="Stretch" IsVisible="False" SelectionChanged="AiMeaning_SelectionChanged" DropDownOpened="AiMeaning_DropDownOpened"/>
 											</StackPanel>
 											<Button x:Name="AiInstructionJumpButton" Width="105" Margin="4,20,4,0" HorizontalAlignment="Left" Click="Button_JumpToDestination" IsVisible="False">Go to Jump</Button>
 											<StackPanel x:Name="AiManualOperandEditor" Width="190" Margin="4,0" Orientation="Vertical" HorizontalAlignment="Left" IsVisible="False">
@@ -765,19 +808,30 @@
 								</WrapPanel>
 							</Border>
 						</TabItem>
-						<TabItem Header="Messages">
-							<Border BorderBrush="#666666" BorderThickness="1" Background="#111111" Padding="10,7">
-								<Grid ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
-									<TextBlock x:Name="AiValidationResultText" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontWeight="Bold" FontSize="16"/>
-									<TextBlock Grid.Column="1" Margin="0,0,9,0" VerticalAlignment="Center" FontWeight="Bold" FontSize="16">Message:</TextBlock>
-									<TextBlock x:Name="AiStatusText" Grid.Column="2" VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold" Text="{Binding AiStatus}" TextWrapping="Wrap"/>
-									<TextBlock x:Name="AiSelectedInstructionText" IsVisible="False" Text=""/>
-								</Grid>
-							</Border>
-						</TabItem>
 					</TabControl>
-					<Button Grid.Row="2" ZIndex="11" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="385,14,0,0"
-							Click="Button_ValidateAi">Check Data Validity</Button>
+					<StackPanel Grid.Row="2" ZIndex="12" Margin="248,21,12,0"
+								HorizontalAlignment="Left" VerticalAlignment="Top">
+						<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+							<Border x:Name="AiMessagesAttentionIndicator" BorderThickness="0,0,0,2"
+									BorderBrush="Transparent" Padding="0,0,0,2">
+								<TextBlock VerticalAlignment="Center" FontSize="15">Messages</TextBlock>
+							</Border>
+							<Border x:Name="AiMessageBanner" Margin="9,0,0,0" Padding="7,2" CornerRadius="3" Background="Transparent">
+								<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+									<TextBlock x:Name="AiMessageIcon" Margin="0,0,5,0" VerticalAlignment="Center" FontWeight="Bold" FontSize="14"/>
+									<TextBlock x:Name="AiValidationResultText" Margin="0,0,7,0" VerticalAlignment="Center" FontWeight="Bold" FontSize="13"/>
+									<TextBlock x:Name="AiStatusText" MaxWidth="680" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold"
+											   Text="{Binding AiStatus}" TextTrimming="CharacterEllipsis"
+											   ToolTip.Tip="{Binding Text, ElementName=AiStatusText}"/>
+									<Button x:Name="AiMessageDetailsButton" Margin="4,0,0,0" Padding="2,0" FontSize="12"
+											Foreground="#70B7FF" Background="Transparent" BorderThickness="0"
+											Cursor="Hand" IsVisible="False" Click="Button_ShowMessageDetails"
+											ToolTip.Tip="Open a full explanation in a separate window.">click here for more details</Button>
+									<TextBlock x:Name="AiSelectedInstructionText" IsVisible="False" Text=""/>
+								</StackPanel>
+							</Border>
+						</StackPanel>
+					</StackPanel>
 					<StackPanel x:Name="AiSelectionApplyActions" Classes="compactLower" Grid.Row="2" ZIndex="10"
 								Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="5" Margin="0,9,12,0">
 						<Button Click="Button_ApplyMeaning" IsVisible="{Binding IsVisible, ElementName=AiMeaningOptions}">Apply Dropdown Change</Button>

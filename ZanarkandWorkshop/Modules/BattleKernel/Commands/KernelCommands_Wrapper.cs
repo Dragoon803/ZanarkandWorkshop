@@ -5,20 +5,26 @@ using FFXProjectEditor.FfxLib.Dictionaries;
 using FFXProjectEditor.Utils;
 using FFXProjectEditor.Utils.Encoding;
 using System;
+using System.Linq;
 using static FFXProjectEditor.FfxLib.Ability.Ability_Command;
 
 namespace FFXProjectEditor.Modules.BattleKernel.Commands
 {
     internal partial class KernelCommands_Wrapper : ObservableObject
     {
+        // UsageFlags contains presentation/camera bits that are not yet exposed by
+        // the editor. Preserve the complete byte so saving an unrelated command
+        // property cannot silently clear those unknown bits.
+        private UsageFlags preservedUsageFlags;
+
         [ObservableProperty] public int index;
         [ObservableProperty] public short anim1Id;
         [ObservableProperty] public short anim2Id;
         [ObservableProperty] public byte iconId;
         [ObservableProperty] public byte casterAnimId;
         [ObservableProperty] public bool flagMenuMainMenu;
-        [ObservableProperty] public bool flagMenuOpenCommandMenu;
-        [ObservableProperty] public bool flagMenuOpenSpecialMenu;
+        [ObservableProperty] public bool flagMenuCategoryF4;
+        [ObservableProperty] public bool flagMenuOpensSubMenu;
         [ObservableProperty] public byte subSubMenuCategorization;
         [ObservableProperty] public byte subMenuCategorization;
         [ObservableProperty] public Character_Enum characterUser;
@@ -26,11 +32,13 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public bool flagTargetEnemies;
         [ObservableProperty] public bool flagTargetMulti;
         [ObservableProperty] public bool flagTargetSelfOnly;
-        [ObservableProperty] public bool flagTargetUnk10;
+        [ObservableProperty] public bool flagTargetUnkF5;
         [ObservableProperty] public bool flagTargetEitherTeam;
         [ObservableProperty] public bool flagTargetDead;
-        [ObservableProperty] public bool flagTargetLongRange;
-        [ObservableProperty] public byte targetsAllowed; // Apparently
+        [ObservableProperty] public bool flagTargetUnkF8;
+        [ObservableProperty] public bool flagUsageLongRange;
+        [ObservableProperty] public bool flagUsageUnkF2;
+        [ObservableProperty] public bool flagUsageUsesCursor;
         [ObservableProperty] public bool flagMisc1UseOutsideCombat;
         [ObservableProperty] public bool flagMisc1UseInCombat;
         [ObservableProperty] public bool flagMisc1DisplayMoveName;
@@ -58,7 +66,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public bool flagMisc4ShowSpellcastAura;
         [ObservableProperty] public bool flagMisc4RunOffScreen;
         [ObservableProperty] public bool flagMisc4CopycatEnabled;
-        [ObservableProperty] public bool flagMisc4Unk20;
+        [ObservableProperty] public bool flagMisc4AnimationF6;
         [ObservableProperty] public bool flagMisc4AeonOverdrive;
         [ObservableProperty] public bool flagMisc4Bribe;
         [ObservableProperty] public bool flagDamagePhysical;
@@ -102,7 +110,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public bool flagStatusDistillPower;
         [ObservableProperty] public bool flagStatusDistillMana;
         [ObservableProperty] public bool flagStatusDistillSpeed;
-        [ObservableProperty] public bool flagStatusDistillUnused;
+        [ObservableProperty] public bool flagStatusDistillMove;
         [ObservableProperty] public bool flagStatusDistillAbility;
         [ObservableProperty] public bool flagStatusShield;
         [ObservableProperty] public bool flagStatusBoost;
@@ -125,7 +133,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
 
         [ObservableProperty] public bool flagSpecialBuffDoubleHp;
         [ObservableProperty] public bool flagSpecialBuffDoubleMp;
-        [ObservableProperty] public bool flagSpecialBuffMpCost0;
+        [ObservableProperty] public bool flagSpecialBuffSpellspring;
         [ObservableProperty] public bool flagSpecialBuffDmg9999;
         [ObservableProperty] public bool flagSpecialBuffAlwaysCrit;
         [ObservableProperty] public bool flagSpecialBuffOverdrive150;
@@ -143,12 +151,40 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public ushort descriptionScriptId;
         [ObservableProperty] public ushort unusedText2ScriptId;
 
-        public string Name => FfxEncoding.DecodeScript(nameScriptBytes).GetString(FfxEncoding.UsDecoder);
-        public string Description => FfxEncoding.DecodeScript(descriptionScriptBytes).GetString(FfxEncoding.UsDecoder);
+        public string Name
+        {
+            get => FfxEncoding.DecodeEditableTextScript(NameScriptBytes, FfxEncoding.UsDecoder);
+            set
+            {
+                byte[] encoded = FfxEncoding.EncodeTextScript(value ?? "", FfxEncoding.UsEncoder);
+                if (NameScriptBytes.SequenceEqual(encoded))
+                    return;
+
+                NameScriptBytes = encoded;
+                OnPropertyChanged();
+            }
+        }
+
+        public string Description
+        {
+            get => FfxEncoding.DecodeEditableTextScript(DescriptionScriptBytes, FfxEncoding.UsDecoder);
+            set
+            {
+                byte[] encoded = FfxEncoding.EncodeTextScript(value ?? "", FfxEncoding.UsEncoder);
+                if (DescriptionScriptBytes.SequenceEqual(encoded))
+                    return;
+
+                DescriptionScriptBytes = encoded;
+                OnPropertyChanged();
+            }
+        }
 
         public static KernelCommands_Wrapper Wrap(Ability_Command command)
         {
-            KernelCommands_Wrapper wrapper = new();
+            KernelCommands_Wrapper wrapper = new()
+            {
+                preservedUsageFlags = command.UsageFlgs
+            };
 
             PropertyUtil.CopyProperties(command, wrapper);
 
@@ -156,7 +192,10 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         }
         public Ability_Command Unwrap()
         {
-            Ability_Command command = new();
+            Ability_Command command = new()
+            {
+                UsageFlgs = preservedUsageFlags
+            };
 
             PropertyUtil.CopyProperties(this, command);
 

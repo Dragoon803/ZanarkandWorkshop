@@ -3,11 +3,20 @@ using FFXProjectEditor.FfxLib.Common;
 using FFXProjectEditor.FfxLib.Monster;
 using FFXProjectEditor.Utils;
 using FFXProjectEditor.Utils.Encoding;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FFXProjectEditor.Modules.MonEditor
 {
     internal partial class MonsterStatSheet_Wrapper : ObservableObject
     {
+        private static readonly Dictionary<char, byte> JpEncoder =
+            FfxEncoding.JpDecoder
+                .GroupBy(pair => pair.Value)
+                .ToDictionary(group => group.Key, group => group.First().Key);
+
+        public bool UseEnglishText { get; set; }
+
         // Stats
         [ObservableProperty] public uint hp;
         [ObservableProperty] public uint mp;
@@ -136,9 +145,39 @@ namespace FFXProjectEditor.Modules.MonEditor
         [ObservableProperty] public ushort scanScriptId;
         [ObservableProperty] public ushort unusedText2ScriptId;
 
-        string Name => FfxEncoding.DecodeScript(nameScriptBytes).GetString(FfxEncoding.JpDecoder);
-        string Sensor => FfxEncoding.DecodeScript(sensorScriptBytes).GetString(FfxEncoding.JpDecoder);
-        string Scan => FfxEncoding.DecodeScript(scanScriptBytes).GetString(FfxEncoding.JpDecoder);
+        public string Name
+        {
+            get => FfxEncoding.DecodeEditableTextScript(NameScriptBytes, TextDecoder);
+            set => SetText(ref nameScriptBytes, value, nameof(NameScriptBytes));
+        }
+
+        public string Sensor
+        {
+            get => FfxEncoding.DecodeEditableTextScript(SensorScriptBytes, TextDecoder);
+            set => SetText(ref sensorScriptBytes, value, nameof(SensorScriptBytes));
+        }
+
+        public string Scan
+        {
+            get => FfxEncoding.DecodeEditableTextScript(ScanScriptBytes, TextDecoder);
+            set => SetText(ref scanScriptBytes, value, nameof(ScanScriptBytes));
+        }
+
+        private Dictionary<byte, char> TextDecoder =>
+            UseEnglishText ? FfxEncoding.UsDecoder : FfxEncoding.JpDecoder;
+
+        private Dictionary<char, byte> TextEncoder =>
+            UseEnglishText ? FfxEncoding.UsEncoder : JpEncoder;
+
+        private void SetText(ref byte[] target, string? value, string bytePropertyName)
+        {
+            byte[] encoded = FfxEncoding.EncodeTextScript(value ?? "", TextEncoder);
+            if (target.SequenceEqual(encoded))
+                return;
+
+            target = encoded;
+            OnPropertyChanged(bytePropertyName);
+        }
 
         public static MonsterStatSheet_Wrapper Wrap(Monster_StatSheet sheet)
         {

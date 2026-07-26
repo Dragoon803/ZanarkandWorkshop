@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FFXProjectEditor.FfxLib.Dictionaries;
 
 namespace FFXProjectEditor.FfxLib.Atel;
 
@@ -419,8 +420,22 @@ internal static class AtelDecompiler
     private static string FormatBattleCharacter(string value)
     {
         if (value.Contains("variable[", StringComparison.OrdinalIgnoreCase)) return value;
-        if (!TryReadValue(value, out ushort character) || !BattleCharacters.TryGetValue(character, out string? name)) return value;
-        return $"{name} [0x{character:X4}]";
+        if (!TryReadValue(value, out ushort character)) return value;
+        if (BattleCharacters.TryGetValue(character, out string? name))
+            return $"{name} [0x{character:X4}]";
+
+        // ATEL encodes a lookup by monster-file/type ID as 0x1000 | monsterId.
+        // For example, m141 uses 0x107C to address m124 (Seymour (Macalania)).
+        if ((character & 0xF000) == 0x1000)
+        {
+            ushort monsterId = (ushort)(character & 0x0FFF);
+            string monsterName = Monster_Dictionary.Instance.TryGetValue((short)monsterId, out string? resolvedName)
+                ? $" ({resolvedName})"
+                : string.Empty;
+            return $"MonsterType=m{monsterId}{monsterName} [0x{character:X4}]";
+        }
+
+        return value;
     }
 
     private static CallInfo C(string name, params string[] parameters) => new(name, parameters);

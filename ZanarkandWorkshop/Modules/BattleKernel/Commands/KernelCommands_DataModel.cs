@@ -3,6 +3,7 @@ using FFXProjectEditor.Converters;
 using FFXProjectEditor.FfxLib.Ability;
 using FFXProjectEditor.FfxLib.Memory;
 using FFXProjectEditor.Services;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -33,16 +34,24 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public bool showAttackData = false;
         [ObservableProperty] public bool showElement = false;
         [ObservableProperty] public bool showStatus = false;
+        [ObservableProperty] public bool showStatusTemporary = false;
         [ObservableProperty] public bool showStatusSpecial = false;
-        [ObservableProperty] public bool showBuffs = false;
+        [ObservableProperty] public bool showStatBuffs = false;
+        [ObservableProperty] public bool showMixBuffs = false;
         [ObservableProperty] public bool showExtra = false;
+        [ObservableProperty] public bool showItemPreview = false;
+        [ObservableProperty] public string recoveryStatus = "";
 
         public List<string> CharacterOptions => new Character_Converter().Options.Values.ToList();
         public List<string> HitCalcTypeOptions => new HitCalcType_Converter().Options.Values.ToList();
         public List<string> DamageFormulaOptions => new DamageFormula_Converter().Options.Values.ToList();
 
-        bool IsExtraEnabled => HasExtraInfo();
+        public bool IsExtraEnabled => HasExtraInfo();
+        public bool IsItemPreviewEnabled => CommandFileType == CommandFile_enum.Item;
+        public bool ShowMenuExtra => ShowMenu && IsExtraEnabled;
         string FilterText { get; set; } = "";
+
+        partial void OnShowMenuChanged(bool value) => OnPropertyChanged(nameof(ShowMenuExtra));
 
         public KernelCommands_DataModel(CommandFile_enum commandFileType)
         {
@@ -59,6 +68,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             byte[] byteFile = File.ReadAllBytes(GetFilePath());
             CommandsList = Ability_Command.ReadList(byteFile, HasExtraInfo());
 
+            LoadedCommands.Clear();
             for (int i = 0; i < CommandsList.Count; i++)
             {
                 KernelCommands_Wrapper wrapper = KernelCommands_Wrapper.Wrap(CommandsList[i]);
@@ -84,14 +94,32 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
 
         public void Save()
         {
-            List<Ability_Command> commandList = new();
-            for (int i = 0; i < LoadedCommands.Count; i++)
-            {
-                Ability_Command command = LoadedCommands[i].Unwrap();
-                commandList.Add(command);
-            }
+            string path = GetFilePath();
+            byte[] rebuilt = BuildFile();
+            _ = Ability_Command.ReadList(rebuilt, HasExtraInfo());
+            CreateBackupIfNeeded(path);
+            File.WriteAllBytes(path, rebuilt);
+            RecoveryStatus = $"Saved and verified. Original project backup: {path}.bak";
+        }
 
-            File.WriteAllBytes(GetFilePath(), BuildFile());
+        public void RestoreOriginalAndSave(string originalPath)
+        {
+            if (!File.Exists(originalPath))
+                throw new InvalidOperationException($"Original file was not found: {originalPath}");
+
+            byte[] originalBytes = File.ReadAllBytes(originalPath);
+            List<Ability_Command> verified = Ability_Command.ReadList(originalBytes, HasExtraInfo());
+            if (verified.Count == 0)
+                throw new InvalidDataException("The original file contains no readable entries.");
+
+            string projectPath = GetFilePath();
+            CreateBackupIfNeeded(projectPath);
+            File.WriteAllBytes(projectPath, originalBytes);
+
+            LoadCommands();
+            ApplyFilter();
+            RecoveryStatus = $"Restored {GetEditorName()} from verified Original Game Files. " +
+                $"Previous project file: {projectPath}.bak";
         }
         public void LoadInGame()
         {
@@ -151,6 +179,22 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             }
 
             throw new System.Exception("[KernelCommands_DataModel] File type not selected");
+        }
+
+        public string GetEditorName() => CommandFileType switch
+        {
+            CommandFile_enum.Command => "Player & Aeon Commands",
+            CommandFile_enum.Item => "Items",
+            CommandFile_enum.MonMagic1 => "Standard Monster Commands",
+            CommandFile_enum.MonMagic2 => "Boss Commands",
+            _ => "Kernel editor"
+        };
+
+        private static void CreateBackupIfNeeded(string path)
+        {
+            string backupPath = path + ".bak";
+            if (!File.Exists(backupPath))
+                File.Copy(path, backupPath);
         }
 
         public bool HasExtraInfo()

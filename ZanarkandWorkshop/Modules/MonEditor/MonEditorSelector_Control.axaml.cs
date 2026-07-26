@@ -16,6 +16,8 @@ public partial class MonEditorSelector_Control : UserControl
         InitializeComponent();
     }
 
+    public MonEditor_Control? ActiveMonsterEditor => ContentFrame.Content as MonEditor_Control;
+
     private async void ListBox_SelectionChanged(object? sender, Avalonia.Controls.SelectionChangedEventArgs e)
     {
 		if (_restoringSelection) return;

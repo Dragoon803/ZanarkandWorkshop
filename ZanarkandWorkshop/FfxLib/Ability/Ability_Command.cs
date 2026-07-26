@@ -12,10 +12,14 @@ using static FFXProjectEditor.FfxLib.Ability.Ability_Structs;
 namespace FFXProjectEditor.FfxLib.Ability
 {
     /*
-     * Length: 96
-     * Command: Has extra
-     * Item: Has extra
-     * MonMagic: Doesn't have extra
+     * Fahrenheit layout:
+     * - Command: 0x5C bytes
+     * - PCommandData: 0x04 bytes
+     * - command.bin/item.bin records: 0x60 bytes (Command + PCommandData)
+     * - monmagic records: Command only
+     *
+     * flags_misc is the uint beginning at Command offset 0x1C. The four
+     * byte-sized enums below map to its bits 0-7, 8-15, 16-23, and 24-31.
      */
     public class Ability_Command
     {
@@ -28,7 +32,7 @@ namespace FFXProjectEditor.FfxLib.Ability
         [Data] public byte SubMenuCategorization { get; set; }
         [Data] public Character_Enum CharacterUser { get; set; }
         [Data] public TargetFlags TargetFlgs { get; set; }
-        [Data] public byte TargetsAllowed { get; set; } // Apparently
+        [Data] public UsageFlags UsageFlgs { get; set; }
         [Data] public Misc1Flags Misc1Flgs { get; set; }
         [Data] public Misc2Flags Misc2Flgs { get; set; }
         [Data] public Misc3Flags Misc3Flgs { get; set; }
@@ -69,24 +73,24 @@ namespace FFXProjectEditor.FfxLib.Ability
         [Flags]
         public enum MenuFlags : byte
         {
-            MainMenu = 0x01,
-            OpenCommandMenu = 0x08,
-            OpenSpecialMenu = 0x10,
+            TopLevelInMenu = 1 << 0,
+            CategoryF4     = 1 << 3,
+            OpensSubMenu   = 1 << 4,
         }
         public bool FlagMenuMainMenu
         {
-            get => BitFlag_Util.IsFlagSet(MenuFlgs, MenuFlags.MainMenu);
-            set => MenuFlgs = BitFlag_Util.SetFlag(MenuFlgs, MenuFlags.MainMenu, value);
+            get => BitFlag_Util.IsFlagSet(MenuFlgs, MenuFlags.TopLevelInMenu);
+            set => MenuFlgs = BitFlag_Util.SetFlag(MenuFlgs, MenuFlags.TopLevelInMenu, value);
         }
-        public bool FlagMenuOpenCommandMenu
+        public bool FlagMenuCategoryF4
         {
-            get => BitFlag_Util.IsFlagSet(MenuFlgs, MenuFlags.OpenCommandMenu);
-            set => MenuFlgs = BitFlag_Util.SetFlag(MenuFlgs, MenuFlags.OpenCommandMenu, value);
+            get => BitFlag_Util.IsFlagSet(MenuFlgs, MenuFlags.CategoryF4);
+            set => MenuFlgs = BitFlag_Util.SetFlag(MenuFlgs, MenuFlags.CategoryF4, value);
         }
-        public bool FlagMenuOpenSpecialMenu
+        public bool FlagMenuOpensSubMenu
         {
-            get => BitFlag_Util.IsFlagSet(MenuFlgs, MenuFlags.OpenSpecialMenu);
-            set => MenuFlgs = BitFlag_Util.SetFlag(MenuFlgs, MenuFlags.OpenSpecialMenu, value);
+            get => BitFlag_Util.IsFlagSet(MenuFlgs, MenuFlags.OpensSubMenu);
+            set => MenuFlgs = BitFlag_Util.SetFlag(MenuFlgs, MenuFlags.OpensSubMenu, value);
         }
 
         [Flags]
@@ -96,10 +100,10 @@ namespace FFXProjectEditor.FfxLib.Ability
             Enemies     = 1 << 1,
             Multi       = 1 << 2,
             SelfOnly    = 1 << 3,
-            Unk10       = 1 << 4,
+            UnkF5       = 1 << 4,
             EitherTeam  = 1 << 5,
             Dead        = 1 << 6,
-            LongRange   = 1 << 7,
+            UnkF8       = 1 << 7,
         }
         public bool FlagTargetEnabled
         {
@@ -121,10 +125,10 @@ namespace FFXProjectEditor.FfxLib.Ability
             get => BitFlag_Util.IsFlagSet(TargetFlgs, TargetFlags.SelfOnly);
             set => TargetFlgs = BitFlag_Util.SetFlag(TargetFlgs, TargetFlags.SelfOnly, value);
         }
-        public bool FlagTargetUnk10
+        public bool FlagTargetUnkF5
         {
-            get => BitFlag_Util.IsFlagSet(TargetFlgs, TargetFlags.Unk10);
-            set => TargetFlgs = BitFlag_Util.SetFlag(TargetFlgs, TargetFlags.Unk10, value);
+            get => BitFlag_Util.IsFlagSet(TargetFlgs, TargetFlags.UnkF5);
+            set => TargetFlgs = BitFlag_Util.SetFlag(TargetFlgs, TargetFlags.UnkF5, value);
         }
         public bool FlagTargetEitherTeam
         {
@@ -136,18 +140,41 @@ namespace FFXProjectEditor.FfxLib.Ability
             get => BitFlag_Util.IsFlagSet(TargetFlgs, TargetFlags.Dead);
             set => TargetFlgs = BitFlag_Util.SetFlag(TargetFlgs, TargetFlags.Dead, value);
         }
-        public bool FlagTargetLongRange
+        public bool FlagTargetUnkF8
         {
-            get => BitFlag_Util.IsFlagSet(TargetFlgs, TargetFlags.LongRange);
-            set => TargetFlgs = BitFlag_Util.SetFlag(TargetFlgs, TargetFlags.LongRange, value);
+            get => BitFlag_Util.IsFlagSet(TargetFlgs, TargetFlags.UnkF8);
+            set => TargetFlgs = BitFlag_Util.SetFlag(TargetFlgs, TargetFlags.UnkF8, value);
+        }
+
+        [Flags]
+        public enum UsageFlags : byte
+        {
+            LongRange  = 1 << 0,
+            UnkF2      = 1 << 1,
+            UsesCursor = 1 << 2,
+        }
+        public bool FlagUsageLongRange
+        {
+            get => BitFlag_Util.IsFlagSet(UsageFlgs, UsageFlags.LongRange);
+            set => UsageFlgs = BitFlag_Util.SetFlag(UsageFlgs, UsageFlags.LongRange, value);
+        }
+        public bool FlagUsageUnkF2
+        {
+            get => BitFlag_Util.IsFlagSet(UsageFlgs, UsageFlags.UnkF2);
+            set => UsageFlgs = BitFlag_Util.SetFlag(UsageFlgs, UsageFlags.UnkF2, value);
+        }
+        public bool FlagUsageUsesCursor
+        {
+            get => BitFlag_Util.IsFlagSet(UsageFlgs, UsageFlags.UsesCursor);
+            set => UsageFlgs = BitFlag_Util.SetFlag(UsageFlgs, UsageFlags.UsesCursor, value);
         }
 
         [Flags]
         public enum Misc1Flags : byte
         {
             UseOutsideCombat    = 1 << 0,
-            UseInCombat         = 1 << 2,
-            DisplayMoveName     = 1 << 3,
+            UseInCombat         = 1 << 1,
+            DisplayMoveName     = 1 << 2,
             AffectedByDarkness  = 1 << 6,
             AffectedByReflect   = 1 << 7,
         }
@@ -205,9 +232,9 @@ namespace FFXProjectEditor.FfxLib.Ability
         {
             AbsorbDamage    = 1 << 0,
             StealItem       = 1 << 1,
-            MenuUse         = 1 << 2,
-            MenuRight       = 1 << 3,
-            MenuLeft        = 1 << 4,
+            MenuUse         = 1 << 2, // Fahrenheit: is_in_use_menu (flags_misc bit 10)
+            MenuRight       = 1 << 3, // Fahrenheit: is_in_sub_menu (flags_misc bit 11)
+            MenuLeft        = 1 << 4, // Fahrenheit: is_in_trigger_menu (flags_misc bit 12)
             DelayS          = 1 << 5,
             DelayL          = 1 << 6,
             RandomTargets   = 1 << 7,
@@ -314,7 +341,7 @@ namespace FFXProjectEditor.FfxLib.Ability
             ShowSpellcastAura   = 1 << 2,
             RunOffScreen        = 1 << 3,
             CopycatEnabled      = 1 << 4,
-            Unk20               = 1 << 5,
+            AnimationF6         = 1 << 5,
             AeonOverdrive       = 1 << 6,
             Bribe               = 1 << 7,
         }
@@ -343,10 +370,10 @@ namespace FFXProjectEditor.FfxLib.Ability
             get => BitFlag_Util.IsFlagSet(Misc4Flgs, Misc4Flags.CopycatEnabled);
             set => Misc4Flgs = BitFlag_Util.SetFlag(Misc4Flgs, Misc4Flags.CopycatEnabled, value);
         }
-        public bool FlagMisc4Unk20
+        public bool FlagMisc4AnimationF6
         {
-            get => BitFlag_Util.IsFlagSet(Misc4Flgs, Misc4Flags.Unk20);
-            set => Misc4Flgs = BitFlag_Util.SetFlag(Misc4Flgs, Misc4Flags.Unk20, value);
+            get => BitFlag_Util.IsFlagSet(Misc4Flgs, Misc4Flags.AnimationF6);
+            set => Misc4Flgs = BitFlag_Util.SetFlag(Misc4Flgs, Misc4Flags.AnimationF6, value);
         }
         public bool FlagMisc4AeonOverdrive
         {
@@ -472,7 +499,7 @@ namespace FFXProjectEditor.FfxLib.Ability
             DistillPower    = 1 << 1,
             DistillMana     = 1 << 2,
             DistillSpeed    = 1 << 3,
-            DistillUnused   = 1 << 4,
+            DistillMove     = 1 << 4,
             DistillAbility  = 1 << 5,
             Shield          = 1 << 6,
             Boost           = 1 << 7,
@@ -504,10 +531,10 @@ namespace FFXProjectEditor.FfxLib.Ability
             get => BitFlag_Util.IsFlagSet(StatusFlgs, StatusFlags.DistillSpeed);
             set => StatusFlgs = BitFlag_Util.SetFlag(StatusFlgs, StatusFlags.DistillSpeed, value);
         }
-        public bool FlagStatusDistillUnused
+        public bool FlagStatusDistillMove
         {
-            get => BitFlag_Util.IsFlagSet(StatusFlgs, StatusFlags.DistillUnused);
-            set => StatusFlgs = BitFlag_Util.SetFlag(StatusFlgs, StatusFlags.DistillUnused, value);
+            get => BitFlag_Util.IsFlagSet(StatusFlgs, StatusFlags.DistillMove);
+            set => StatusFlgs = BitFlag_Util.SetFlag(StatusFlgs, StatusFlags.DistillMove, value);
         }
         public bool FlagStatusDistillAbility
         {
@@ -606,7 +633,7 @@ namespace FFXProjectEditor.FfxLib.Ability
         {
             DoubleHp     = 1 << 0,
             DoubleMp     = 1 << 1,
-            MpCost0      = 1 << 2,
+            Spellspring  = 1 << 2,
             dmg_9999     = 1 << 3,
             AlwaysCrit   = 1 << 4,
             Overdrive150 = 1 << 5,
@@ -622,10 +649,10 @@ namespace FFXProjectEditor.FfxLib.Ability
             get => BitFlag_Util.IsFlagSet(SpecialBuffFlgs, SpecialBuffFlags.DoubleMp);
             set => SpecialBuffFlgs = BitFlag_Util.SetFlag(SpecialBuffFlgs, SpecialBuffFlags.DoubleMp, value);
         }
-        public bool FlagSpecialBuffMpCost0
+        public bool FlagSpecialBuffSpellspring
         {
-            get => BitFlag_Util.IsFlagSet(SpecialBuffFlgs, SpecialBuffFlags.MpCost0);
-            set => SpecialBuffFlgs = BitFlag_Util.SetFlag(SpecialBuffFlgs, SpecialBuffFlags.MpCost0, value);
+            get => BitFlag_Util.IsFlagSet(SpecialBuffFlgs, SpecialBuffFlags.Spellspring);
+            set => SpecialBuffFlgs = BitFlag_Util.SetFlag(SpecialBuffFlgs, SpecialBuffFlags.Spellspring, value);
         }
         public bool FlagSpecialBuffDmg9999
         {
@@ -716,8 +743,8 @@ namespace FFXProjectEditor.FfxLib.Ability
         {
             [Data] public byte OrderingIndexInMenu { get; set; }
             [Data] public sbyte SphereTypeForSphereGrid { get; set; }
-            [Data] public byte Unk1 { get; set; }
-            [Data] public byte Unk2 { get; set; }
+            [Data] public byte Reserved1 { get; set; }
+            [Data] public byte Reserved2 { get; set; }
         }
 
         public static Ability_Command ReadSingle(byte[] byteFile, bool hasExtraInfo)

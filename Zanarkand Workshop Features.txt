@@ -1,10 +1,10 @@
 ZANARKAND WORKSHOP - MONSTER AI EDITOR FEATURES
-Stable Phase 6 Feature Inventory
+v0.2.0 Feature Inventory
 ==============================================
 
 PROJECT STATUS
 --------------
-- Current milestone: Stable Phase 6
+- Current milestone: v0.2.0
 - AI parsing, structured editing, script expansion, navigation, validation,
   saving, and restoration are functional.
 - The editor has been tested against vanilla and modified monster files and

@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: dotnet build .\ZanarkandWorkshop.sln -c Release --no-restore
 
+      - name: Command flag round-trip check
+        run: dotnet run --project .\tests\CommandFlagsSmoke\CommandFlagsSmoke.csproj -c Release --no-build --no-restore
+
   package:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
@@ -57,4 +60,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $archive = Get-ChildItem -LiteralPath .\artifacts -Filter '*.zip' | Select-Object -First 1
-          gh release create "${{ github.ref_name }}" $archive.FullName --draft --generate-notes --title "Zanarkand Workshop ${{ github.ref_name }}"
+          $checksum = Get-Item -LiteralPath "$($archive.FullName).sha256"
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          $notes = ".\RELEASE_NOTES_v$version.md"
+          $arguments = @(
+            "release", "create", "${{ github.ref_name }}",
+            $archive.FullName, $checksum.FullName,
+            "--draft",
+            "--title", "Zanarkand Workshop ${{ github.ref_name }}"
+          )
+          if (Test-Path -LiteralPath $notes) {
+            $arguments += @("--notes-file", $notes)
+          } else {
+            $arguments += "--generate-notes"
+          }
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw "gh release create failed with exit code $LASTEXITCODE."
+          }

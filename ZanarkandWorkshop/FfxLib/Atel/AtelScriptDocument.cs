@@ -223,6 +223,105 @@ public sealed class AtelScriptDocument
         return Instructions.First(i => i.Offset == scriptOffset);
     }
 
+    public void SetWorkerJumpDestination(int workerIndex, int jumpIndex, int destinationOffset)
+    {
+        AtelWorker worker = Workers.FirstOrDefault(item => item.Index == workerIndex)
+            ?? throw new InvalidOperationException($"Worker w{workerIndex:X2} does not exist.");
+        if (jumpIndex < 0 || jumpIndex >= worker.JumpOffsets.Count)
+            throw new InvalidOperationException($"Jump j{jumpIndex:X2} does not exist in worker w{workerIndex:X2}.");
+        ValidateWorkerJumpDestination(workerIndex, destinationOffset);
+
+        byte[] edited = (byte[])Bytes.Clone();
+        int entryOffset = checked(worker.JumpTableOffset + jumpIndex * 4);
+        RequireRange(edited, entryOffset, 4, $"worker w{workerIndex:X2} jump j{jumpIndex:X2}");
+        WriteInt32(edited, entryOffset, destinationOffset);
+        ReplaceBytes(edited);
+
+        AtelWorker validatedWorker = Workers.First(item => item.Index == workerIndex);
+        if (validatedWorker.JumpOffsets[jumpIndex] != destinationOffset)
+            throw new InvalidOperationException("The rebuilt ATEL jump table did not preserve the new destination.");
+    }
+
+    public int AddWorkerJump(int workerIndex, int destinationOffset)
+    {
+        AtelWorker worker = Workers.FirstOrDefault(item => item.Index == workerIndex)
+            ?? throw new InvalidOperationException($"Worker w{workerIndex:X2} does not exist.");
+        if (worker.JumpCount == 0)
+        {
+            ValidateWorkerJumpDestination(workerIndex, destinationOffset);
+            byte[] allocated = new byte[checked(Bytes.Length + 4)];
+            Array.Copy(Bytes, allocated, Bytes.Length);
+            int tableOffset = Bytes.Length;
+            WriteInt32(allocated, tableOffset, destinationOffset);
+            WriteUInt16(allocated, worker.HeaderOffset + 0x0A, 1);
+            WriteInt32(allocated, worker.HeaderOffset + 0x24, tableOffset);
+
+            AtelScriptDocument allocatedDocument = Read(allocated, BattleWorkerMappingBytes);
+            AtelWorker allocatedWorker = allocatedDocument.Workers.First(item => item.Index == workerIndex);
+            if (allocatedWorker.JumpCount != 1 || allocatedWorker.JumpTableOffset != tableOffset ||
+                allocatedWorker.JumpOffsets[0] != destinationOffset)
+                throw new InvalidOperationException(
+                    "The allocated ATEL jump table did not preserve its first destination.");
+            Bytes = allocatedDocument.Bytes;
+            ScriptCodeLength = allocatedDocument.ScriptCodeLength;
+            Workers = allocatedDocument.Workers;
+            Instructions = allocatedDocument.Instructions;
+            Statements = AtelDecompiler.Translate(Instructions, CommandNameResolver, ResolveFloatConstant);
+            return 0;
+        }
+        if (worker.JumpCount >= ushort.MaxValue)
+            throw new InvalidOperationException($"Worker w{workerIndex:X2}'s jump table cannot contain any more entries.");
+        ValidateWorkerJumpDestination(workerIndex, destinationOffset);
+
+        int tableLength = checked(worker.JumpCount * 4);
+        RequireRange(Bytes, worker.JumpTableOffset, tableLength, $"worker w{workerIndex:X2} jump table");
+        int insertionOffset = checked(worker.JumpTableOffset + tableLength);
+        bool overlapsAnotherTable = Workers.Where(item => item.Index != workerIndex).Any(item =>
+            (item.FunctionCount > 0 && RangesOverlap(worker.JumpTableOffset, insertionOffset,
+                item.FunctionTableOffset, checked(item.FunctionTableOffset + item.FunctionCount * 4))) ||
+            (item.JumpCount > 0 && RangesOverlap(worker.JumpTableOffset, insertionOffset,
+                item.JumpTableOffset, checked(item.JumpTableOffset + item.JumpCount * 4))));
+        if (overlapsAnotherTable)
+            throw new InvalidOperationException("This worker's jump table shares storage with another offset table, so it cannot be expanded safely.");
+
+        byte[] edited = new byte[checked(Bytes.Length + 4)];
+        Array.Copy(Bytes, 0, edited, 0, insertionOffset);
+        WriteInt32(edited, insertionOffset, destinationOffset);
+        Array.Copy(Bytes, insertionOffset, edited, insertionOffset + 4, Bytes.Length - insertionOffset);
+        RelocateAbsolutePointers(edited, insertionOffset, 4);
+
+        int relocatedHeaderOffset = RelocatedOffset(worker.HeaderOffset, insertionOffset, 4);
+        WriteUInt16(edited, relocatedHeaderOffset + 0x0A, checked((ushort)(worker.JumpCount + 1)));
+
+        AtelScriptDocument validated = Read(edited, BattleWorkerMappingBytes);
+        AtelWorker validatedWorker = validated.Workers.First(item => item.Index == workerIndex);
+        int newIndex = worker.JumpCount;
+        if (validatedWorker.JumpCount != worker.JumpCount + 1 ||
+            validatedWorker.JumpOffsets.Count <= newIndex || validatedWorker.JumpOffsets[newIndex] != destinationOffset)
+            throw new InvalidOperationException("The expanded ATEL jump table did not preserve the new entry.");
+
+        Bytes = validated.Bytes;
+        ScriptCodeLength = validated.ScriptCodeLength;
+        Workers = validated.Workers;
+        Instructions = validated.Instructions;
+        Statements = AtelDecompiler.Translate(Instructions, CommandNameResolver, ResolveFloatConstant);
+        return newIndex;
+    }
+
+    private void ValidateWorkerJumpDestination(int workerIndex, int destinationOffset)
+    {
+        if (destinationOffset < 0 || destinationOffset >= ScriptCodeLength ||
+            Instructions.All(instruction => instruction.Offset != destinationOffset))
+            throw new InvalidOperationException($"Script offset 0x{destinationOffset:X4} is not an instruction boundary.");
+        int destinationWorker = GetWorkerIndexForCodeOffset(destinationOffset);
+        if (destinationWorker != workerIndex)
+            throw new InvalidOperationException(
+                $"Script offset 0x{destinationOffset:X4} belongs to worker w{destinationWorker:X2}, not worker w{workerIndex:X2}.");
+    }
+
+    private static bool RangesOverlap(int firstStart, int firstEnd, int secondStart, int secondEnd) =>
+        firstStart < secondEnd && secondStart < firstEnd;
+
     public byte[] GetStatementBytes(int statementOffset)
     {
         AtelStatement statement = Statements.FirstOrDefault(item => item.Offset == statementOffset)
@@ -258,7 +357,8 @@ public sealed class AtelScriptDocument
         return Statements.First(item => item.Offset == statementOffset);
     }
 
-    public AtelStatement InsertStatementBytes(int insertionOffset, byte[] insertedBytes)
+    public AtelStatement InsertStatementBytes(int insertionOffset, byte[] insertedBytes,
+        bool preserveFunctionEntryAtInsertion = false)
     {
         if (insertedBytes == null || insertedBytes.Length == 0)
             throw new InvalidOperationException("The copied statement is empty.");
@@ -292,7 +392,7 @@ public sealed class AtelScriptDocument
         foreach (AtelWorker worker in Workers)
         {
             ShiftOffsetTable(edited, RelocatedOffset(worker.FunctionTableOffset, nextDataOffset, relocationAmount),
-                worker.FunctionOffsets, insertionOffset, insertedBytes.Length);
+                worker.FunctionOffsets, insertionOffset, insertedBytes.Length, preserveFunctionEntryAtInsertion);
             ShiftOffsetTable(edited, RelocatedOffset(worker.JumpTableOffset, nextDataOffset, relocationAmount),
                 worker.JumpOffsets, insertionOffset, insertedBytes.Length);
         }
@@ -310,54 +410,356 @@ public sealed class AtelScriptDocument
             ?? throw new InvalidOperationException("The inserted bytes did not decode as a complete statement.");
     }
 
+    public AtelStatement InsertStatementRangeBytes(int insertionOffset, byte[] insertedBytes,
+        int workerIndex, IReadOnlyList<AtelRangeBranch> internalBranches,
+        IReadOnlyList<AtelRangeFloat>? floatReferences = null,
+        bool preserveFunctionEntryAtInsertion = false,
+        bool preserveUnresolvedFloatIndices = false,
+        bool preserveUnresolvedBranchIndices = false)
+    {
+        if (internalBranches == null)
+            throw new ArgumentNullException(nameof(internalBranches));
+
+        // Stage every structural mutation on a separate document. A range can require
+        // several new jump-table entries and operand rewrites, so the live document
+        // must remain untouched if any one of those operations is refused.
+        AtelScriptDocument staged = Read(Bytes, BattleWorkerMappingBytes);
+        staged.CommandNameResolver = CommandNameResolver;
+        byte[] portableBytes = PreparePortableRangeBytes(staged, insertedBytes,
+            floatReferences ?? [], preserveUnresolvedFloatIndices);
+        staged.InsertStatementBytes(insertionOffset, portableBytes, preserveFunctionEntryAtInsertion);
+
+        var remappedJumpIndices = new Dictionary<int, ushort>();
+        foreach (AtelRangeBranch branch in internalBranches)
+        {
+            if (branch.RelativeInstructionOffset < 0 ||
+                branch.RelativeInstructionOffset + 3 > insertedBytes.Length)
+                throw new InvalidOperationException("A copied branch lies outside the copied instruction range.");
+            if (branch.RelativeDestinationOffset < 0 ||
+                branch.RelativeDestinationOffset >= insertedBytes.Length)
+                throw new InvalidOperationException("A copied branch destination lies outside the copied logic range.");
+
+            if (!remappedJumpIndices.TryGetValue(branch.RelativeDestinationOffset, out ushort jumpIndex))
+            {
+                int destinationOffset = checked(insertionOffset + branch.RelativeDestinationOffset);
+                try
+                {
+                    jumpIndex = checked((ushort)staged.AddWorkerJump(workerIndex, destinationOffset));
+                }
+                catch (InvalidOperationException) when (preserveUnresolvedBranchIndices)
+                {
+                    // Keep the source operand in the portable bytes. The caller has explicitly
+                    // accepted that this unresolved branch will require manual correction.
+                    continue;
+                }
+                remappedJumpIndices.Add(branch.RelativeDestinationOffset, jumpIndex);
+            }
+
+            staged.ReplaceInstructionOperand(
+                checked(insertionOffset + branch.RelativeInstructionOffset), jumpIndex);
+        }
+
+        Bytes = staged.Bytes;
+        ScriptCodeLength = staged.ScriptCodeLength;
+        Workers = staged.Workers;
+        Instructions = staged.Instructions;
+        Statements = staged.Statements;
+        return Statements.FirstOrDefault(item => item.Offset == insertionOffset)
+            ?? throw new InvalidOperationException("The inserted bytes did not decode as a complete statement.");
+    }
+
+    public AtelStatement ReplaceStatementRangeBytes(int replacementStart, int replacementEnd,
+        byte[] replacementBytes, int workerIndex, IReadOnlyList<AtelRangeBranch> internalBranches,
+        IReadOnlyList<AtelRangeFloat>? floatReferences = null,
+        bool preserveUnresolvedFloatIndices = false,
+        bool allowUnsafeDestinationEntries = false,
+        bool preserveUnresolvedBranchIndices = false)
+    {
+        if (replacementBytes == null || replacementBytes.Length == 0)
+            throw new InvalidOperationException("The copied Battle Logic range is empty.");
+        if (internalBranches == null)
+            throw new ArgumentNullException(nameof(internalBranches));
+
+        AtelScriptDocument staged = Read(Bytes, BattleWorkerMappingBytes);
+        staged.CommandNameResolver = CommandNameResolver;
+        byte[] portableBytes = PreparePortableRangeBytes(staged, replacementBytes,
+            floatReferences ?? [], preserveUnresolvedFloatIndices);
+        staged.ReplaceStatementRangeCore(replacementStart, replacementEnd, portableBytes,
+            allowUnsafeDestinationEntries);
+
+        var remappedJumpIndices = new Dictionary<int, ushort>();
+        foreach (AtelRangeBranch branch in internalBranches)
+        {
+            if (branch.RelativeInstructionOffset < 0 ||
+                branch.RelativeInstructionOffset + 3 > replacementBytes.Length)
+                throw new InvalidOperationException("A copied branch lies outside the copied instruction range.");
+            if (branch.RelativeDestinationOffset < 0 ||
+                branch.RelativeDestinationOffset >= replacementBytes.Length)
+                throw new InvalidOperationException("A copied branch destination lies outside the copied logic range.");
+
+            if (!remappedJumpIndices.TryGetValue(branch.RelativeDestinationOffset, out ushort jumpIndex))
+            {
+                try
+                {
+                    int branchInstructionOffset =
+                        checked(replacementStart + branch.RelativeInstructionOffset);
+                    int branchWorkerIndex =
+                        staged.GetWorkerIndexForCodeOffset(branchInstructionOffset);
+                    jumpIndex = checked((ushort)staged.AddWorkerJump(branchWorkerIndex,
+                        checked(replacementStart + branch.RelativeDestinationOffset)));
+                }
+                catch (InvalidOperationException) when (preserveUnresolvedBranchIndices)
+                {
+                    // Preserve the original jump operand for manual correction.
+                    continue;
+                }
+                remappedJumpIndices.Add(branch.RelativeDestinationOffset, jumpIndex);
+            }
+            staged.ReplaceInstructionOperand(
+                checked(replacementStart + branch.RelativeInstructionOffset), jumpIndex);
+        }
+
+        Bytes = staged.Bytes;
+        ScriptCodeLength = staged.ScriptCodeLength;
+        Workers = staged.Workers;
+        Instructions = staged.Instructions;
+        Statements = staged.Statements;
+        return Statements.FirstOrDefault(item => item.Offset == replacementStart)
+            ?? throw new InvalidOperationException("The replacement bytes did not decode as complete Battle Logic.");
+    }
+
+    private static byte[] PreparePortableRangeBytes(AtelScriptDocument staged, byte[] sourceBytes,
+        IReadOnlyList<AtelRangeFloat> floatReferences, bool preserveUnresolvedFloatIndices)
+    {
+        byte[] portableBytes = sourceBytes.ToArray();
+        if (floatReferences.Count == 0) return portableBytes;
+
+        int floatCount = staged.Workers.Count == 0 ? 0 :
+            staged.Workers.Min(worker => worker.FloatConstantBits.Count);
+        var usedIndices = staged.Instructions.Where(instruction => instruction.Opcode == 0xAF)
+            .Select(instruction => instruction.Operand).ToHashSet();
+        var valueIndices = new Dictionary<int, ushort>();
+
+        foreach (AtelRangeFloat reference in floatReferences)
+        {
+            if (reference.RelativeInstructionOffset < 0 ||
+                reference.RelativeInstructionOffset + 3 > portableBytes.Length ||
+                portableBytes[reference.RelativeInstructionOffset] != 0xAF)
+                throw new InvalidOperationException(
+                    "A copied float reference lies outside the copied instruction range.");
+
+            if (!valueIndices.TryGetValue(reference.ValueBits, out ushort destinationIndex))
+            {
+                int matching = -1;
+                AtelWorker? firstWorker = staged.Workers.FirstOrDefault();
+                if (firstWorker != null)
+                {
+                    for (int index = 0; index < firstWorker.FloatConstantBits.Count; index++)
+                    {
+                        if (firstWorker.FloatConstantBits[index] == reference.ValueBits)
+                        {
+                            matching = index;
+                            break;
+                        }
+                    }
+                }
+
+                if (matching >= 0)
+                    destinationIndex = checked((ushort)matching);
+                else
+                {
+                    int unused = Enumerable.Range(0, floatCount)
+                        .FirstOrDefault(index => !usedIndices.Contains((ushort)index), -1);
+                    if (unused < 0)
+                    {
+                        if (preserveUnresolvedFloatIndices)
+                            continue;
+                        throw new InvalidOperationException(
+                            $"No matching or unused destination float entry is available for " +
+                            $"{BitConverter.Int32BitsToSingle(reference.ValueBits).ToString(CultureInfo.InvariantCulture)}. " +
+                            "The paste was not applied.");
+                    }
+                    destinationIndex = checked((ushort)unused);
+                    staged.ReplaceFloatConstant(destinationIndex,
+                        BitConverter.Int32BitsToSingle(reference.ValueBits));
+                    usedIndices.Add(destinationIndex);
+                }
+                valueIndices.Add(reference.ValueBits, destinationIndex);
+            }
+
+            int operandOffset = reference.RelativeInstructionOffset + 1;
+            portableBytes[operandOffset] = (byte)(destinationIndex & 0xFF);
+            portableBytes[operandOffset + 1] = (byte)(destinationIndex >> 8);
+        }
+        return portableBytes;
+    }
+
+    private void ReplaceStatementRangeCore(int replacementStart, int replacementEnd, byte[] replacementBytes,
+        bool allowUnsafeDestinationEntries)
+    {
+        if (replacementStart < 0 || replacementEnd <= replacementStart ||
+            replacementEnd > ScriptCodeLength)
+            throw new InvalidOperationException("The destination Battle Logic range is invalid.");
+        if (Instructions.All(item => item.Offset != replacementStart) ||
+            replacementEnd < ScriptCodeLength && Instructions.All(item => item.Offset != replacementEnd))
+            throw new InvalidOperationException("The destination range must begin and end on instruction boundaries.");
+
+        bool hasInteriorEntries = Workers.Any(worker =>
+            worker.FunctionOffsets.Any(offset => offset > replacementStart && offset < replacementEnd) ||
+            worker.JumpOffsets.Any(offset => offset > replacementStart && offset < replacementEnd));
+
+        foreach (AtelWorker worker in Workers)
+        {
+            if (!allowUnsafeDestinationEntries &&
+                worker.FunctionOffsets.Any(offset => offset > replacementStart && offset < replacementEnd))
+                throw new InvalidOperationException(
+                    "The destination crosses a function entry and cannot be replaced as one range.");
+            if (!allowUnsafeDestinationEntries &&
+                worker.JumpOffsets.Any(offset => offset > replacementStart && offset < replacementEnd))
+                throw new InvalidOperationException(
+                    "A jump targets the middle of the destination range. Include logic beginning at that jump destination or choose a smaller range.");
+        }
+
+        int removedLength = replacementEnd - replacementStart;
+        int delta = checked(replacementBytes.Length - removedLength);
+        Dictionary<int, int> interiorEntryRemaps = allowUnsafeDestinationEntries && hasInteriorEntries
+            ? BuildInteriorEntryRemaps(replacementStart, replacementEnd, replacementBytes)
+            : [];
+        int oldCodeEnd = checked(ScriptCodeOffset + ScriptCodeLength);
+        int nextDataOffset = Workers.Select(worker => worker.SharedDataOffset)
+            .Where(offset => offset >= oldCodeEnd).DefaultIfEmpty(Bytes.Length).Min();
+        int availablePadding = nextDataOffset - oldCodeEnd;
+        if (Bytes.Skip(oldCodeEnd).Take(availablePadding).Any(value => value != 0))
+            throw new InvalidOperationException(
+                "The bytes after the script are not empty padding, so this replacement was refused.");
+
+        int additionalBytes = Math.Max(0, delta - availablePadding);
+        int relocationAmount = additionalBytes == 0 ? 0 : checked((additionalBytes + 0x0F) & ~0x0F);
+        int relocatedDataOffset = checked(nextDataOffset + relocationAmount);
+        byte[] edited = new byte[checked(Bytes.Length + relocationAmount)];
+        int replacementFileOffset = checked(ScriptCodeOffset + replacementStart);
+        Array.Copy(Bytes, 0, edited, 0, replacementFileOffset);
+        Array.Copy(replacementBytes, 0, edited, replacementFileOffset, replacementBytes.Length);
+        int trailingLength = ScriptCodeLength - replacementEnd;
+        Array.Copy(Bytes, ScriptCodeOffset + replacementEnd, edited,
+            replacementFileOffset + replacementBytes.Length, trailingLength);
+        Array.Copy(Bytes, nextDataOffset, edited, relocatedDataOffset, Bytes.Length - nextDataOffset);
+        int newCodeEnd = checked(oldCodeEnd + delta);
+        if (newCodeEnd < relocatedDataOffset)
+            Array.Clear(edited, newCodeEnd, relocatedDataOffset - newCodeEnd);
+        WriteInt32(edited, 0x00, checked(ScriptCodeLength + delta));
+
+        if (relocationAmount > 0)
+            RelocateAbsolutePointers(edited, nextDataOffset, relocationAmount);
+
+        foreach (AtelWorker worker in Workers)
+        {
+            ReplaceRangeOffsets(edited,
+                RelocatedOffset(worker.FunctionTableOffset, nextDataOffset, relocationAmount),
+                worker.FunctionOffsets, replacementStart, replacementEnd, delta,
+                allowUnsafeDestinationEntries, interiorEntryRemaps);
+            ReplaceRangeOffsets(edited,
+                RelocatedOffset(worker.JumpTableOffset, nextDataOffset, relocationAmount),
+                worker.JumpOffsets, replacementStart, replacementEnd, delta,
+                allowUnsafeDestinationEntries, interiorEntryRemaps);
+        }
+
+        AtelScriptDocument validated = Read(edited, BattleWorkerMappingBytes);
+        if (validated.ScriptCodeOffset != ScriptCodeOffset || validated.WorkerCount != WorkerCount ||
+            validated.ScriptCodeLength != ScriptCodeLength + delta)
+            throw new InvalidOperationException(
+                "The rebuilt ATEL structure did not preserve its required header layout.");
+        Bytes = validated.Bytes;
+        ScriptCodeLength = validated.ScriptCodeLength;
+        Workers = validated.Workers;
+        Instructions = validated.Instructions;
+        Statements = AtelDecompiler.Translate(Instructions, CommandNameResolver, ResolveFloatConstant);
+    }
+
     public int DeleteStatement(int statementOffset)
     {
         AtelStatement statement = Statements.FirstOrDefault(item => item.Offset == statementOffset)
             ?? throw new InvalidOperationException($"No statement starts at script offset 0x{statementOffset:X4}.");
-        AtelInstruction? protectedInstruction = statement.Instructions.FirstOrDefault(instruction => instruction.Opcode is
-            0x34 or 0x3C or 0x40 or 0x54 or 0xB0 or 0xB1 or 0xB2);
-        if (protectedInstruction?.Opcode == 0x3C)
-            throw new InvalidOperationException("This statement contains RETURN, which ends the current function. Deleting it could let execution continue into unrelated AI logic, so it is protected.");
-        if (protectedInstruction?.Opcode == 0xB0)
-            throw new InvalidOperationException("This statement contains JUMP, which controls where execution continues. Deleting it would change the script's control flow, so it is protected.");
-        if (protectedInstruction != null)
-            throw new InvalidOperationException($"This statement contains {protectedInstruction.OpcodeName}, which terminates control flow or uses a jump form that cannot be safely rebuilt yet, so it is protected.");
+        AtelInstruction? returnInstruction =
+            statement.Instructions.FirstOrDefault(instruction => instruction.Opcode == 0x3C);
+        if (returnInstruction != null)
+        {
+            int editableLength = returnInstruction.Offset - statement.Offset;
+            if (editableLength == 0)
+                throw new InvalidOperationException(
+                    "This statement contains only RETURN. RETURN ends the current function and is protected.");
+            return DeleteInstructionRange(statement.Offset, returnInstruction.Offset,
+                preserveEntryAtStart: true);
+        }
 
-        int deletionEnd = checked(statement.Offset + statement.ByteLength);
+        return DeleteInstructionRange(statement.Offset,
+            checked(statement.Offset + statement.ByteLength));
+    }
+
+    public int DeleteInstructionRange(int deletionStart, int deletionEnd,
+        bool preserveEntryAtStart = false)
+    {
+        if (deletionStart < 0 || deletionEnd <= deletionStart || deletionEnd > ScriptCodeLength)
+            throw new InvalidOperationException("The instruction range selected for deletion is invalid.");
+        if (Instructions.All(item => item.Offset != deletionStart) ||
+            deletionEnd < ScriptCodeLength && Instructions.All(item => item.Offset != deletionEnd))
+            throw new InvalidOperationException(
+                "Deletion must begin and end on complete Script Instruction boundaries.");
+
+        AtelInstruction[] removedInstructions = Instructions
+            .Where(item => item.Offset >= deletionStart && item.Offset < deletionEnd).ToArray();
+        if (removedInstructions.Length == 0 ||
+            removedInstructions[^1].Offset + removedInstructions[^1].Bytes.Length != deletionEnd)
+            throw new InvalidOperationException(
+                "Deletion must contain one or more complete Script Instructions.");
+        if (removedInstructions.Any(item => item.Opcode == 0x3C))
+            throw new InvalidOperationException(
+                "RETURN (3C) ends the current function and cannot be deleted.");
+        AtelInstruction? protectedTerminator = removedInstructions.FirstOrDefault(item =>
+            item.Opcode is 0x34 or 0x40 or 0x54);
+        if (protectedTerminator != null)
+            throw new InvalidOperationException(
+                $"{protectedTerminator.OpcodeName} ends control flow and cannot be deleted safely.");
+
         foreach (AtelWorker worker in Workers)
         {
-            if (worker.FunctionOffsets.Any(offset => offset >= statement.Offset && offset < deletionEnd))
+            if (worker.FunctionOffsets.Any(offset =>
+                    offset > deletionStart && offset < deletionEnd ||
+                    !preserveEntryAtStart && offset == deletionStart))
                 throw new InvalidOperationException("This statement is a function entry point and cannot be deleted safely.");
-            if (worker.JumpOffsets.Any(offset => offset >= statement.Offset && offset < deletionEnd))
+            if (worker.JumpOffsets.Any(offset =>
+                    offset > deletionStart && offset < deletionEnd ||
+                    !preserveEntryAtStart && offset == deletionStart))
                 throw new InvalidOperationException("This statement is a jump destination and cannot be deleted safely.");
         }
 
+        int removedLength = deletionEnd - deletionStart;
         byte[] edited = (byte[])Bytes.Clone();
-        int deletionFileOffset = checked(ScriptCodeOffset + statement.Offset);
+        int deletionFileOffset = checked(ScriptCodeOffset + deletionStart);
         int oldCodeEnd = checked(ScriptCodeOffset + ScriptCodeLength);
         int trailingCodeLength = checked(ScriptCodeLength - deletionEnd);
-        Array.Copy(edited, deletionFileOffset + statement.ByteLength, edited, deletionFileOffset, trailingCodeLength);
-        Array.Clear(edited, oldCodeEnd - statement.ByteLength, statement.ByteLength);
-        WriteInt32(edited, 0x00, checked(ScriptCodeLength - statement.ByteLength));
+        Array.Copy(edited, deletionFileOffset + removedLength, edited, deletionFileOffset, trailingCodeLength);
+        Array.Clear(edited, oldCodeEnd - removedLength, removedLength);
+        WriteInt32(edited, 0x00, checked(ScriptCodeLength - removedLength));
 
         foreach (AtelWorker worker in Workers)
         {
             ShiftOffsetTableForDeletion(edited, worker.FunctionTableOffset, worker.FunctionOffsets,
-                deletionEnd, statement.ByteLength);
+                deletionEnd, removedLength);
             ShiftOffsetTableForDeletion(edited, worker.JumpTableOffset, worker.JumpOffsets,
-                deletionEnd, statement.ByteLength);
+                deletionEnd, removedLength);
         }
 
-        AtelScriptDocument validated = Read(edited);
+        AtelScriptDocument validated = Read(edited, BattleWorkerMappingBytes);
         if (validated.ScriptCodeOffset != ScriptCodeOffset || validated.WorkerCount != WorkerCount ||
-            validated.ScriptCodeLength != ScriptCodeLength - statement.ByteLength)
+            validated.ScriptCodeLength != ScriptCodeLength - removedLength)
             throw new InvalidOperationException("The rebuilt ATEL structure did not preserve its required header layout.");
         Bytes = validated.Bytes;
         ScriptCodeLength = validated.ScriptCodeLength;
         Workers = validated.Workers;
         Instructions = validated.Instructions;
         Statements = AtelDecompiler.Translate(Instructions, CommandNameResolver, ResolveFloatConstant);
-        return statement.ByteLength;
+        return removedLength;
     }
 
     private void RelocateAbsolutePointers(byte[] bytes, int oldDataOffset, int amount)
@@ -367,10 +769,14 @@ public sealed class AtelScriptDocument
             RelocatePointerField(bytes, field, oldDataOffset, amount);
         WriteInt32(bytes, 0x10, checked(ReadInt32(Bytes, 0x10) + amount));
 
+        for (int index = 0; index < Workers.Count; index++)
+            RelocatePointerField(bytes, StaticHeaderLength + index * 4, oldDataOffset, amount);
+
         foreach (AtelWorker worker in Workers)
         {
+			int relocatedHeaderOffset = RelocatedOffset(worker.HeaderOffset, oldDataOffset, amount);
             foreach (int field in new[] { 0x14, 0x18, 0x1C, 0x20, 0x24, 0x2C, 0x30 })
-                RelocatePointerField(bytes, worker.HeaderOffset + field, oldDataOffset, amount);
+                RelocatePointerField(bytes, relocatedHeaderOffset + field, oldDataOffset, amount);
         }
 
         if (oldMetaHeaderOffset >= oldDataOffset)
@@ -402,14 +808,14 @@ public sealed class AtelScriptDocument
     }
 
     private static void ShiftOffsetTable(byte[] bytes, int tableOffset, IReadOnlyList<int> offsets,
-        int insertionOffset, int amount)
+        int insertionOffset, int amount, bool preserveEntriesAtInsertion = false)
     {
         if (offsets.Count == 0) return;
         RequireRange(bytes, tableOffset, checked(offsets.Count * 4), "ATEL code-offset table");
         for (int index = 0; index < offsets.Count; index++)
         {
             int value = offsets[index];
-            if (value >= insertionOffset)
+            if (value > insertionOffset || value == insertionOffset && !preserveEntriesAtInsertion)
                 WriteInt32(bytes, tableOffset + index * 4, checked(value + amount));
         }
     }
@@ -425,6 +831,73 @@ public sealed class AtelScriptDocument
             if (value >= deletionEnd)
                 WriteInt32(bytes, tableOffset + index * 4, checked(value - amount));
         }
+    }
+
+    private static void ReplaceRangeOffsets(byte[] bytes, int tableOffset, IReadOnlyList<int> offsets,
+        int replacementStart, int replacementEnd, int delta, bool preserveInteriorEntries = false,
+        IReadOnlyDictionary<int, int>? interiorEntryRemaps = null)
+    {
+        if (offsets.Count == 0) return;
+        RequireRange(bytes, tableOffset, checked(offsets.Count * 4), "ATEL code-offset table");
+        for (int index = 0; index < offsets.Count; index++)
+        {
+            int value = offsets[index];
+            if (value >= replacementEnd)
+                WriteInt32(bytes, tableOffset + index * 4, checked(value + delta));
+            else if (value > replacementStart)
+            {
+                if (preserveInteriorEntries && interiorEntryRemaps != null &&
+                    interiorEntryRemaps.TryGetValue(value, out int remapped))
+                {
+                    WriteInt32(bytes, tableOffset + index * 4, remapped);
+                    continue;
+                }
+                throw new InvalidOperationException(
+                    "An offset-table entry points inside the destination replacement range.");
+            }
+        }
+    }
+
+    private Dictionary<int, int> BuildInteriorEntryRemaps(int replacementStart, int replacementEnd,
+        byte[] replacementBytes)
+    {
+        int[] oldBoundaries = Instructions
+            .Where(item => item.Offset >= replacementStart && item.Offset < replacementEnd)
+            .Select(item => item.Offset)
+            .ToArray();
+        var newRelativeBoundaries = new List<int>();
+        for (int cursor = 0; cursor < replacementBytes.Length;)
+        {
+            newRelativeBoundaries.Add(cursor);
+            int length = (replacementBytes[cursor] & 0x80) != 0 ? 3 : 1;
+            if (cursor + length > replacementBytes.Length)
+                throw new InvalidOperationException(
+                    "The replacement ends inside an instruction and cannot receive remapped entry points.");
+            cursor += length;
+        }
+        if (oldBoundaries.Length == 0 || newRelativeBoundaries.Count == 0)
+            throw new InvalidOperationException(
+                "The destination entry points cannot be mapped because one side contains no instructions.");
+
+        int[] entries = Workers
+            .SelectMany(worker => worker.FunctionOffsets.Concat(worker.JumpOffsets))
+            .Where(offset => offset > replacementStart && offset < replacementEnd)
+            .Distinct()
+            .ToArray();
+        var result = new Dictionary<int, int>();
+        foreach (int entry in entries)
+        {
+            int oldIndex = Array.IndexOf(oldBoundaries, entry);
+            if (oldIndex < 0)
+                throw new InvalidOperationException(
+                    $"Entry point 0x{entry:X4} is not on an instruction boundary.");
+            int newIndex = oldBoundaries.Length == 1
+                ? 0
+                : (int)Math.Round(oldIndex * (newRelativeBoundaries.Count - 1d) /
+                                  (oldBoundaries.Length - 1d));
+            result[entry] = checked(replacementStart + newRelativeBoundaries[newIndex]);
+        }
+        return result;
     }
 
     public AtelInstruction ReplaceInstruction(int scriptOffset, byte opcode, ushort operand)
@@ -546,6 +1019,13 @@ public sealed class AtelScriptDocument
         return bytes[offset] | bytes[offset + 1] << 8 | bytes[offset + 2] << 16 | bytes[offset + 3] << 24;
     }
 
+    private static void WriteUInt16(byte[] bytes, int offset, ushort value)
+    {
+        RequireRange(bytes, offset, 2, "16-bit value");
+        bytes[offset] = (byte)(value & 0xFF);
+        bytes[offset + 1] = (byte)(value >> 8);
+    }
+
     private static void WriteInt32(byte[] bytes, int offset, int value)
     {
         RequireRange(bytes, offset, 4, "32-bit value");
@@ -587,6 +1067,9 @@ public sealed class AtelScriptDocument
 public sealed record AtelInstruction(int Offset, byte Opcode, byte[] Bytes) : INotifyPropertyChanged
 {
     private bool _isJumpDestination;
+    private string _changeSemanticPrefix = "";
+    private string _changeSemanticToken = "";
+    private string _changeSemanticSuffix = "";
     public event PropertyChangedEventHandler? PropertyChanged;
     public bool IsJumpDestination
     {
@@ -619,6 +1102,20 @@ public sealed record AtelInstruction(int Offset, byte Opcode, byte[] Bytes) : IN
     }
     public string CompactSemanticDisplay =>
         $"{OpcodeName,-18}{(HasOperand ? $"operand={(string.IsNullOrEmpty(SemanticOperandDisplay) ? OperandDisplay : SemanticOperandDisplay)}" : "")}";
+    public string ChangeSemanticPrefix => string.IsNullOrEmpty(_changeSemanticToken) ? CompactSemanticDisplay : _changeSemanticPrefix;
+    public string ChangeSemanticToken => _changeSemanticToken;
+    public string ChangeSemanticSuffix => _changeSemanticSuffix;
+    internal void SetChangeSemanticToken(string? token)
+    {
+        string display = CompactSemanticDisplay;
+        int index = string.IsNullOrEmpty(token) ? -1 : display.IndexOf(token, StringComparison.Ordinal);
+        _changeSemanticPrefix = index >= 0 ? display[..index] : display;
+        _changeSemanticToken = index >= 0 ? token! : "";
+        _changeSemanticSuffix = index >= 0 ? display[(index + token!.Length)..] : "";
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ChangeSemanticPrefix)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ChangeSemanticToken)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ChangeSemanticSuffix)));
+    }
     public string CompactDisplayAfterFirstByte
     {
         get
@@ -632,9 +1129,16 @@ public sealed record AtelInstruction(int Offset, byte Opcode, byte[] Bytes) : IN
 
 public sealed record AtelInstructionReplacement(int ScriptOffset, byte Opcode, ushort Operand);
 
+public sealed record AtelRangeBranch(int RelativeInstructionOffset, int RelativeDestinationOffset);
+
+public sealed record AtelRangeFloat(int RelativeInstructionOffset, ushort SourceIndex, int ValueBits);
+
 public sealed record AtelStatement : INotifyPropertyChanged
 {
     private bool _isJumpDestination;
+    private string _changeTranslationPrefix = "";
+    private string _changeTranslationToken = "";
+    private string _changeTranslationSuffix = "";
     public event PropertyChangedEventHandler? PropertyChanged;
     public bool IsJumpDestination
     {
@@ -648,6 +1152,19 @@ public sealed record AtelStatement : INotifyPropertyChanged
     }
     public IReadOnlyList<AtelInstruction> Instructions { get; }
     public string Translation { get; }
+    public string ChangeTranslationPrefix => string.IsNullOrEmpty(_changeTranslationToken) ? Translation : _changeTranslationPrefix;
+    public string ChangeTranslationToken => _changeTranslationToken;
+    public string ChangeTranslationSuffix => _changeTranslationSuffix;
+    internal void SetChangeTranslationToken(string? token)
+    {
+        int index = string.IsNullOrEmpty(token) ? -1 : Translation.IndexOf(token, StringComparison.Ordinal);
+        _changeTranslationPrefix = index >= 0 ? Translation[..index] : Translation;
+        _changeTranslationToken = index >= 0 ? token! : "";
+        _changeTranslationSuffix = index >= 0 ? Translation[(index + token!.Length)..] : "";
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ChangeTranslationPrefix)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ChangeTranslationToken)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ChangeTranslationSuffix)));
+    }
     public int Offset => Instructions[0].Offset;
     public int ByteLength => Instructions.Sum(i => i.Bytes.Length);
     public string BytesDisplay => string.Join(' ', Instructions.SelectMany(i => i.Bytes).Select(b => b.ToString("X2")));
