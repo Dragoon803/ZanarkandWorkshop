@@ -124,9 +124,7 @@ Names and descriptions use the same supported-character, cyan-formatting, and
 line-break rules described under **General text editing**. Saving rebuilds the
 text offsets in `a_ability.bin` and writes the corresponding recipe changes to
 `kaizou.bin`. Numeric fields support Enter to commit and Escape to restore the
-previous value. Save and **Restore Original in Current Editor** preserve the
-focused ability after reloading; recovery restores only the file belonging to
-the active tab.
+previous value. 
 
 <img src="ReadmeAssets/ZW_Auto_Ability_Editor.png" alt="Zanarkand Workshop Auto Ability Editor" width="900"/>
 
