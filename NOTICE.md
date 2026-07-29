@@ -1,15 +1,21 @@
-# Project notice
+# NOTICE
 
-Zanarkand Workshop is an unofficial, independently maintained fork of
-[FFX Project Editor](https://github.com/osdanova/FFXProjectEditor), originally
-created by osdanova. The fork began from the upstream v1.2 codebase and uses its
-own version numbering.
+## Zanarkand Workshop
 
-The upstream repository did not include a license file when this fork was
-prepared. No new open-source license is asserted over the upstream code by this
-repository. Contributors retain whatever rights apply to their original work.
-Before redistributing or reusing the code, obtain any permissions required from
-the applicable copyright holders.
+Zanarkand Workshop is an independently maintained project originally derived
+from FFX Project Editor v1.2 by osdanova.
 
-Final Fantasy X and related names and assets are property of their respective
-owners. This project is not affiliated with or endorsed by Square Enix.
+The original author granted permission to create and publish this fork. Since
+then, Zanarkand Workshop has undergone substantial independent development,
+including new editors, utilities, validation systems, workflow improvements,
+and ongoing maintenance.
+
+Unless otherwise noted, original contributions to Zanarkand Workshop are
+licensed under the GNU General Public License v3.0. See the LICENSE file for
+the complete license text.
+
+Final Fantasy X, FINAL FANTASY, and all related names, trademarks, characters,
+and game assets are the property of Square Enix Co., Ltd.
+
+This project is an unofficial community tool and is not affiliated with,
+endorsed by, or sponsored by Square Enix.
