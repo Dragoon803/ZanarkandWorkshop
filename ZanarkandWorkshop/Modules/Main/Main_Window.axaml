@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="FFXProjectEditor.Main_Window"
-		Title="Zanarkand Workshop v0.2.0"
+		Title="Zanarkand Workshop v0.3.0"
 		Width="1280" Height="720"
 		MinWidth="1280" MinHeight="720"
 		WindowStartupLocation="CenterScreen">
@@ -22,6 +22,16 @@
 			<Setter Property="Margin" Value="2,1"/>
 			<Setter Property="Padding" Value="8,3"/>
 		</Style>
+		<Style Selector="MenuItem.editorSectionHeader">
+			<Setter Property="Foreground" Value="#909090"/>
+			<Setter Property="FontSize" Value="11"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="Opacity" Value="1"/>
+			<Setter Property="Padding" Value="10,6,10,2"/>
+		</Style>
+		<Style Selector="MenuItem.editorEntry">
+			<Setter Property="Padding" Value="22,5,10,5"/>
+		</Style>
 	</Window.Styles>
 
 	<DockPanel>
@@ -38,12 +48,22 @@
 					<MenuItem Classes="flyoutEntry" Header="Exit" Click="MenuItem_Exit"/>
 				</MenuItem>
 				<MenuItem Classes="topMenuEntry" Header="Editors" PointerPressed="MenuItem_ClearProjectLoadStatus" IsEnabled="{Binding ProjService.IsProjectLoaded}">
-					<MenuItem Classes="flyoutEntry" Header="Monster Editor" Click="MenuItem_MonsterEditor"/>
+					<MenuItem Classes="flyoutEntry editorSectionHeader" Header="MONSTER DATA" IsEnabled="False"/>
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Monster Editor" Click="MenuItem_MonsterEditor"/>
 					<Separator/>
-					<MenuItem Classes="flyoutEntry" Header="Items" Click="MenuItem_Items" />
-					<MenuItem Classes="flyoutEntry" Header="Player &amp; Aeon Commands" Click="MenuItem_Commands" />
-					<MenuItem Classes="flyoutEntry" Header="Standard Monster Commands" Click="MenuItem_MonsterMagic1" />
-					<MenuItem Classes="flyoutEntry" Header="Boss Commands" Click="MenuItem_MonsterMagic2" />
+					<MenuItem Classes="flyoutEntry editorSectionHeader" Header="EQUIPMENT &amp; ITEMS" IsEnabled="False"/>
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Auto Ability Editor" Click="MenuItem_AutoAbilities"/>
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Item Editor" Click="MenuItem_Items" />
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Rikku Mix Recipes" Click="MenuItem_MixRecipes" />
+					<Separator/>
+					<MenuItem Classes="flyoutEntry editorSectionHeader" Header="BATTLE COMMANDS" IsEnabled="False"/>
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Player &amp; Aeon Commands" Click="MenuItem_Commands" />
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Standard Monster Commands" Click="MenuItem_MonsterMagic1" />
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Boss Commands" Click="MenuItem_MonsterMagic2" />
+					<Separator/>
+					<MenuItem Classes="flyoutEntry editorSectionHeader" Header="BATTLE DATA" IsEnabled="False"/>
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Battle Formation Editor"
+							  Click="MenuItem_BattleFormationEditor" />
 				</MenuItem>
 				<MenuItem Classes="topMenuEntry" Header="View">
 					<MenuItem x:Name="WindowSize1280MenuItem" Classes="flyoutEntry"
@@ -73,6 +93,9 @@
 					<MenuItem Classes="flyoutEntry" x:Name="RestoreCurrentEditorMenuItem"
 							  Header="Restore Original in Current Editor" Click="MenuItem_RestoreCurrentEditor" IsEnabled="False"
 							  ToolTip.Tip="Restore the complete monster, Items, or Commands file currently open"/>
+					<MenuItem Classes="flyoutEntry" x:Name="RestoreCurrentBattleFolderMenuItem"
+							  Header="Restore Current Battle Folder" Click="MenuItem_RestoreFolder" IsEnabled="False"
+							  ToolTip.Tip="Restore the currently open battle folder from the configured clean Master"/>
 					<Separator/>
 					<MenuItem Classes="flyoutEntry" x:Name="VanillaMasterStatusMenuItem" Header="Original Game Files: Not configured" IsEnabled="False"/>
 				</MenuItem>
@@ -101,7 +124,7 @@
 				<StackPanel Spacing="14" HorizontalAlignment="Center">
 					<TextBlock Text="Zanarkand Workshop" FontSize="30" FontWeight="Bold"
 							   HorizontalAlignment="Center"/>
-					<TextBlock Text="v0.2.0" FontSize="12" Foreground="#999999"
+					<TextBlock Text="v0.3.0" FontSize="12" Foreground="#999999"
 							   Margin="0,-10,0,0" HorizontalAlignment="Center"/>
 					<TextBlock Text="Comprehensive tools for editing FFX battle data"
 							   FontSize="17" Foreground="#CCCCCC" HorizontalAlignment="Center"/>

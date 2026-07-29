@@ -242,6 +242,24 @@ public sealed class AtelScriptDocument
             throw new InvalidOperationException("The rebuilt ATEL jump table did not preserve the new destination.");
     }
 
+    public int AddWorkerVariable(int workerIndex)
+    {
+        AtelWorker worker = Workers.FirstOrDefault(item => item.Index == workerIndex)
+            ?? throw new InvalidOperationException($"Worker w{workerIndex:X2} does not exist.");
+        if (worker.VariableCount >= ushort.MaxValue)
+            throw new InvalidOperationException($"Worker w{workerIndex:X2} cannot contain any more variables.");
+
+        int newIndex = worker.VariableCount;
+        byte[] edited = (byte[])Bytes.Clone();
+        WriteUInt16(edited, worker.HeaderOffset + 0x02, checked((ushort)(worker.VariableCount + 1)));
+        ReplaceBytes(edited);
+
+        AtelWorker validatedWorker = Workers.First(item => item.Index == workerIndex);
+        if (validatedWorker.VariableCount != worker.VariableCount + 1)
+            throw new InvalidOperationException("The rebuilt ATEL worker did not preserve the new variable.");
+        return newIndex;
+    }
+
     public int AddWorkerJump(int workerIndex, int destinationOffset)
     {
         AtelWorker worker = Workers.FirstOrDefault(item => item.Index == workerIndex)
@@ -255,11 +273,13 @@ public sealed class AtelScriptDocument
             WriteInt32(allocated, tableOffset, destinationOffset);
             WriteUInt16(allocated, worker.HeaderOffset + 0x0A, 1);
             WriteInt32(allocated, worker.HeaderOffset + 0x24, tableOffset);
+            WriteInt32(allocated, 0x10, checked(ReadInt32(Bytes, 0x10) + 4));
 
             AtelScriptDocument allocatedDocument = Read(allocated, BattleWorkerMappingBytes);
             AtelWorker allocatedWorker = allocatedDocument.Workers.First(item => item.Index == workerIndex);
             if (allocatedWorker.JumpCount != 1 || allocatedWorker.JumpTableOffset != tableOffset ||
-                allocatedWorker.JumpOffsets[0] != destinationOffset)
+                allocatedWorker.JumpOffsets[0] != destinationOffset ||
+                ReadInt32(allocatedDocument.Bytes, 0x10) != checked(ReadInt32(Bytes, 0x10) + 4))
                 throw new InvalidOperationException(
                     "The allocated ATEL jump table did not preserve its first destination.");
             Bytes = allocatedDocument.Bytes;

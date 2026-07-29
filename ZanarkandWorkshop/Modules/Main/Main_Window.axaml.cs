@@ -4,7 +4,10 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FFXProjectEditor.Modules.BattleKernel.Commands;
+using FFXProjectEditor.Modules.BattleFormationEditor;
 using FFXProjectEditor.Modules.Main;
+using FFXProjectEditor.Modules.MixEditor;
+using FFXProjectEditor.Modules.MonEditor;
 using FFXProjectEditor.Services;
 using FFXProjectEditor.Utils;
 using System;
@@ -92,6 +95,16 @@ public partial class Main_Window : Window
 
 	private async void MenuItem_RestoreCurrentEditor(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
 	{
+		if (ContentFrame.Content is AutoAbilityEditor_Control autoAbilityEditor)
+		{
+			await autoAbilityEditor.RestoreOriginalAsync(this);
+			return;
+		}
+		if (ContentFrame.Content is MixEditor_Control mixEditor)
+		{
+			await mixEditor.RestoreOriginalAsync(this);
+			return;
+		}
 		if (ContentFrame.Content is KernelCommands_Control kernelEditor)
 		{
 			await kernelEditor.RestoreOriginalAsync(this);
@@ -106,14 +119,65 @@ public partial class Main_Window : Window
 		}
 	}
 
+	private async void MenuItem_RestoreFolder(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+	{
+		if (!Project_Service.Instance.IsProjectLoaded)
+		{
+			await RecoveryNotice_Window.Show(this, "No Editing Project",
+				"Load an editing project before restoring an individual folder.", null, false);
+			return;
+		}
+
+		if (ContentFrame.Content is not BattleFormationEditor_Control battleEditor ||
+			string.IsNullOrWhiteSpace(battleEditor.SelectedFolderPath))
+		{
+			await RecoveryNotice_Window.Show(this, "No Battle Folder Selected",
+				"Open a formation in the Battle Formation Editor before restoring its folder.",
+				null, false);
+			return;
+		}
+		string projectFolder = battleEditor.SelectedFolderPath;
+
+		try
+		{
+			(string source, string relative, int fileCount) =
+				VanillaReference_Service.PreviewFolderRestore(projectFolder);
+			string explanation =
+				$"Restore {fileCount:N0} original file(s) in project folder “{relative}”. " +
+				"Files that exist only in the editing project will not be removed.";
+			bool confirmed = await AiRevertConfirmationWindow.Show(
+				this, "Restore Original Folder", explanation, source, "Restore Folder",
+				"This immediately writes files to the active editing project.");
+			if (!confirmed) return;
+
+			VanillaReference_Service.FolderRestoreResult result =
+				VanillaReference_Service.RestoreFolder(projectFolder);
+			battleEditor.ReloadAfterFolderRecovery();
+			await RecoveryNotice_Window.Show(this, "Folder Restored",
+				$"Restored {result.FilesRestored:N0} original file(s) in {result.RelativeFolder}." +
+				Environment.NewLine + "Project-only extra files were left untouched.",
+				projectFolder, true);
+		}
+		catch (Exception ex)
+		{
+			await RecoveryNotice_Window.Show(this, "Folder Could Not Be Restored",
+				ex.Message, projectFolder, false);
+		}
+	}
+
 	private void MenuItem_RecoveryOpened(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
 	{
 		RestoreCurrentEditorMenuItem.IsEnabled =
+			ContentFrame.Content is AutoAbilityEditor_Control ||
+			ContentFrame.Content is MixEditor_Control ||
 			ContentFrame.Content is KernelCommands_Control ||
 			ContentFrame.Content is MonEditorSelector_Control
 			{
 				ActiveMonsterEditor: not null
 			};
+		RestoreCurrentBattleFolderMenuItem.IsEnabled =
+			ContentFrame.Content is BattleFormationEditor_Control battleEditor &&
+			!string.IsNullOrWhiteSpace(battleEditor.SelectedFolderPath);
 	}
 
 	private void RefreshVanillaMasterStatus()
@@ -421,6 +485,33 @@ public partial class Main_Window : Window
 		await OpenProjectEditor("Player & Aeon Commands", Project_Service.Instance.Path_KernelCommandUs, false,
 			() => new KernelCommands_Control(CommandFile_enum.Command));
     }
+    private async void MenuItem_AutoAbilities(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!Project_Service.Instance.IsProjectLoaded)
+            return;
+
+        string abilityPath = Project_Service.Instance.Path_KernelAutoAbilityUs;
+        string recipePath = Project_Service.Instance.Path_KernelCustomization;
+        if (!File.Exists(abilityPath) && !File.Exists(recipePath))
+        {
+            await RecoveryNotice_Window.Show(this, "Auto Abilities is unavailable",
+                "The editor requires at least one of its data files, but both are missing.\n\n" +
+                "Properties & Effects:\n" + abilityPath + "\n\n" +
+                "Recipes:\n" + recipePath,
+                Project_Service.Instance.ProjectPath, false);
+            return;
+        }
+        try
+        {
+            ContentFrame.Content = new AutoAbilityEditor_Control();
+        }
+        catch (Exception ex)
+        {
+            await RecoveryNotice_Window.Show(this, "Auto Abilities could not be opened",
+                "The available Auto Ability data could not be read.\n\n" + ex.Message,
+                File.Exists(abilityPath) ? abilityPath : recipePath, false);
+        }
+    }
     private async void MenuItem_Items(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (!Project_Service.Instance.IsProjectLoaded)
@@ -428,6 +519,34 @@ public partial class Main_Window : Window
 
 		await OpenProjectEditor("Items", Project_Service.Instance.Path_KernelItemUs, false,
 			() => new KernelCommands_Control(CommandFile_enum.Item));
+    }
+    private async void MenuItem_MixRecipes(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!Project_Service.Instance.IsProjectLoaded)
+            return;
+
+        string recipePath = Project_Service.Instance.Path_KernelMixRecipes;
+        string commandPath = Project_Service.Instance.Path_KernelCommandUs;
+        if (!File.Exists(recipePath) || !File.Exists(commandPath))
+        {
+            await RecoveryNotice_Window.Show(this, "Rikku Mix Recipes is unavailable",
+                "This editor requires both prepare.bin and the localized command.bin.\n\n" +
+                "Recipes:\n" + recipePath + "\n\n" +
+                "Result names:\n" + commandPath,
+                Project_Service.Instance.ProjectPath, false);
+            return;
+        }
+
+        try
+        {
+            ContentFrame.Content = new MixEditor_Control();
+        }
+        catch (Exception ex)
+        {
+            await RecoveryNotice_Window.Show(this, "Rikku Mix Recipes could not be opened",
+                "The Mix recipe data could not be read.\n\n" + ex.Message,
+                recipePath, false);
+        }
     }
     private async void MenuItem_MonsterMagic1(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -444,6 +563,15 @@ public partial class Main_Window : Window
 
 		await OpenProjectEditor("Boss Commands", Project_Service.Instance.Path_KernelMonMagic2Us, false,
 			() => new KernelCommands_Control(CommandFile_enum.MonMagic2));
+    }
+
+    private async void MenuItem_BattleFormationEditor(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!Project_Service.Instance.IsProjectLoaded)
+            return;
+
+        await OpenProjectEditor("Battle Formation Editor", Project_Service.Instance.Path_Btl, true,
+            () => new BattleFormationEditor_Control());
     }
 
 	private async System.Threading.Tasks.Task OpenProjectEditor(

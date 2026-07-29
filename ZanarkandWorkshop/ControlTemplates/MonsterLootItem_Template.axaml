@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:FFXProjectEditor">
+  <ControlTheme x:Key="{x:Type controls:MonsterLootItem_Template}"
+                TargetType="controls:MonsterLootItem_Template">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Margin="5" Padding="10" HorizontalAlignment="Left"
+                BorderThickness="1" BorderBrush="AliceBlue" CornerRadius="5">
+          <StackPanel>
+            <TextBlock Margin="0,0,0,5" Text="{TemplateBinding LootLabel}"/>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <controls:LimitedNumericUpDown Width="55" MaxInputLength="2"
+                                             Value="{Binding LootCount, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                             Minimum="0" Maximum="99"
+                                             FormatString="0" ShowButtonSpinner="False"/>
+              <ComboBox x:Name="PART_ItemComboBox" MinWidth="120" MaxWidth="300"
+                        ItemsSource="{TemplateBinding ItemOptions}"
+                        SelectedValue="{Binding LootObject.Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                        SelectedValueBinding="{Binding ItemId}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

@@ -34,11 +34,13 @@
 		<!-- TABLE -->
 		<DataGrid Grid.Row="1" Margin="20" Name="DGrid"
 					ItemsSource="{Binding DisplayedCommands, Mode=TwoWay}"
+					SelectedItem="{Binding SelectedCommand, Mode=TwoWay}"
 					GridLinesVisibility="All" BorderThickness="1" BorderBrush="Gray">
 
 			<DataGrid.Columns>
 
-				<DataGridTextColumn Header="Index" Binding="{Binding Index}"/>
+				<DataGridTextColumn Header="Index" IsReadOnly="True"
+									Binding="{Binding Index, Mode=OneWay}"/>
 				<DataGridTextColumn Header="Name" Binding="{Binding Name, Mode=TwoWay}"/>
 				<DataGridTextColumn IsVisible="{Binding ShowDescription}" Header="Description"
 									Binding="{Binding Description, Mode=TwoWay}"/>
@@ -250,6 +252,15 @@
 			<StackPanel Grid.Column="0" Orientation="Horizontal">
 				<TextBox VerticalAlignment="Center" Width="200" Margin="20,0,10,0"
 						 Watermark="Search..." Text="{Binding FilterText}" TextChanged="Filter_Changed"/>
+				<Button Click="Button_CloneAsNewCommand"
+						Margin="0,0,10,0"
+						VerticalAlignment="Center"
+						IsVisible="{Binding IsMonsterCommandEditor}">Clone as New Command</Button>
+				<Button Click="Button_DeleteClone"
+						Margin="0,0,10,0"
+						VerticalAlignment="Center"
+						IsEnabled="{Binding CanDeleteSelectedClone}"
+						IsVisible="{Binding IsMonsterCommandEditor}">Delete Clone</Button>
 			</StackPanel>
 			<TextBlock Grid.Column="1" Margin="12,0" VerticalAlignment="Center"
 					   Text="{Binding RecoveryStatus}" TextWrapping="Wrap" Foreground="#DDDDDD"/>

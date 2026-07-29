@@ -1,0 +1,244 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:FFXProjectEditor"
+             x:Class="FFXProjectEditor.AutoAbilityEditor_Control">
+  <UserControl.Styles>
+    <Style Selector="NumericUpDown.statusValue TextBox">
+      <Setter Property="MaxLength" Value="3"/>
+    </Style>
+    <Style Selector="NumericUpDown.statusValue">
+      <Setter Property="Width" Value="65"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+    <Style Selector="Grid#ElementGrid CheckBox">
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="NumericUpDown.compactByteValue TextBox">
+      <Setter Property="MaxLength" Value="3"/>
+    </Style>
+    <Style Selector="NumericUpDown.compactByteValue">
+      <Setter Property="Width" Value="65"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+    <Style Selector="NumericUpDown.recipeQuantity TextBox">
+      <Setter Property="MaxLength" Value="2"/>
+    </Style>
+    <Style Selector="NumericUpDown.recipeQuantity">
+      <Setter Property="Width" Value="55"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="220,6,*" RowDefinitions="*,Auto">
+    <DockPanel Grid.Column="0">
+      <TextBox DockPanel.Dock="Bottom" Margin="6" Text="{Binding FilterText}" Watermark="Search abilities"
+               TextChanged="Filter_Changed"/>
+      <ListBox ItemsSource="{Binding DisplayedAbilities}" SelectedItem="{Binding SelectedAbility}">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <StackPanel Margin="4,2">
+              <TextBlock Text="{Binding DisplayName}"/>
+              <TextBlock Text="{Binding DisplayId}" FontSize="11" Foreground="#888"/>
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <GridSplitter Grid.Column="1" Width="6" Background="#444"/>
+
+    <TabControl x:Name="EditorTabs" Grid.Column="2" SelectedIndex="{Binding InitialTabIndex, Mode=OneTime}">
+      <TabItem Header="{Binding PropertiesTabHeader}" IsEnabled="{Binding HasAbilityFile}">
+        <ScrollViewer>
+          <StackPanel Margin="16" Spacing="12" DataContext="{Binding SelectedAbility}"
+                      MaxWidth="1200" HorizontalAlignment="Left">
+            <TextBlock Text="{Binding Name}" FontSize="24" FontWeight="Bold"/>
+            <Expander Header="Identity" IsExpanded="True">
+              <StackPanel Margin="8" Spacing="8">
+                <TextBlock Text="Name"/>
+                <TextBox Text="{Binding Name}" MaxLength="255"/>
+                <TextBlock Text="Description"/>
+                <TextBox Text="{Binding Description}" AcceptsReturn="True" TextWrapping="Wrap"
+                         MinHeight="80"/>
+                <TextBlock Text="Changing text rebuilds the complete auto-ability text section and updates every text offset."
+                           Foreground="#999" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Expander>
+            <Expander Header="General Properties" IsExpanded="True" Width="620" HorizontalAlignment="Left">
+              <StackPanel Margin="8" Spacing="8">
+                <TextBlock Text="Behavior" FontWeight="Bold"/>
+                <CheckBox Content="Is SOS Ability" IsChecked="{Binding IsSos}"/>
+                <Separator Margin="0,4"/>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <TextBlock Text="Display and Grouping" FontWeight="Bold"/>
+                  <TextBlock Text="Value range: 0-255" Foreground="#999" VerticalAlignment="Center"/>
+                </StackPanel>
+                <Grid ColumnDefinitions="140,160,160" RowDefinitions="Auto,Auto">
+                  <StackPanel Grid.Row="0" Grid.Column="0"><TextBlock Text="Icon ID"/><controls:LimitedNumericUpDown Classes="compactByteValue" Value="{Binding Icon}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></StackPanel>
+                  <StackPanel Grid.Row="0" Grid.Column="1"><TextBlock Text="Group Index"/><controls:LimitedNumericUpDown Classes="compactByteValue" Value="{Binding GroupIndex}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></StackPanel>
+                  <StackPanel Grid.Row="0" Grid.Column="2"><TextBlock Text="Group Level"/><controls:LimitedNumericUpDown Classes="compactByteValue" Value="{Binding GroupLevel}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,0"><TextBlock Text="International Bonus Index"/><controls:LimitedNumericUpDown Classes="compactByteValue" Value="{Binding InternationalBonusIndex}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></StackPanel>
+                </Grid>
+              </StackPanel>
+            </Expander>
+            <Expander Header="Elements" IsExpanded="True">
+              <Grid x:Name="ElementGrid" Margin="8" ColumnDefinitions="120,90,90,90,90,90" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+                <TextBlock Grid.Column="1" Text="Fire" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="2" Text="Ice" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="3" Text="Thunder" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="4" Text="Water" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="5" Text="Holy" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Row="1" Text="Strike"/><CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding FireStrike}"/><CheckBox Grid.Row="1" Grid.Column="2" IsChecked="{Binding IceStrike}"/><CheckBox Grid.Row="1" Grid.Column="3" IsChecked="{Binding ThunderStrike}"/><CheckBox Grid.Row="1" Grid.Column="4" IsChecked="{Binding WaterStrike}"/><CheckBox Grid.Row="1" Grid.Column="5" IsChecked="{Binding HolyStrike}"/>
+                <TextBlock Grid.Row="2" Text="Absorb"/><CheckBox Grid.Row="2" Grid.Column="1" IsChecked="{Binding FireAbsorb}"/><CheckBox Grid.Row="2" Grid.Column="2" IsChecked="{Binding IceAbsorb}"/><CheckBox Grid.Row="2" Grid.Column="3" IsChecked="{Binding ThunderAbsorb}"/><CheckBox Grid.Row="2" Grid.Column="4" IsChecked="{Binding WaterAbsorb}"/><CheckBox Grid.Row="2" Grid.Column="5" IsChecked="{Binding HolyAbsorb}"/>
+                <TextBlock Grid.Row="3" Text="Immune"/><CheckBox Grid.Row="3" Grid.Column="1" IsChecked="{Binding FireIgnore}"/><CheckBox Grid.Row="3" Grid.Column="2" IsChecked="{Binding IceIgnore}"/><CheckBox Grid.Row="3" Grid.Column="3" IsChecked="{Binding ThunderIgnore}"/><CheckBox Grid.Row="3" Grid.Column="4" IsChecked="{Binding WaterIgnore}"/><CheckBox Grid.Row="3" Grid.Column="5" IsChecked="{Binding HolyIgnore}"/>
+                <TextBlock Grid.Row="4" Text="Resist"/><CheckBox Grid.Row="4" Grid.Column="1" IsChecked="{Binding FireResist}"/><CheckBox Grid.Row="4" Grid.Column="2" IsChecked="{Binding IceResist}"/><CheckBox Grid.Row="4" Grid.Column="3" IsChecked="{Binding ThunderResist}"/><CheckBox Grid.Row="4" Grid.Column="4" IsChecked="{Binding WaterResist}"/><CheckBox Grid.Row="4" Grid.Column="5" IsChecked="{Binding HolyResist}"/>
+                <TextBlock Grid.Row="5" Text="Weak"/><CheckBox Grid.Row="5" Grid.Column="1" IsChecked="{Binding FireWeak}"/><CheckBox Grid.Row="5" Grid.Column="2" IsChecked="{Binding IceWeak}"/><CheckBox Grid.Row="5" Grid.Column="3" IsChecked="{Binding ThunderWeak}"/><CheckBox Grid.Row="5" Grid.Column="4" IsChecked="{Binding WaterWeak}"/><CheckBox Grid.Row="5" Grid.Column="5" IsChecked="{Binding HolyWeak}"/>
+              </Grid>
+            </Expander>
+            <Expander Header="Status Effects" IsExpanded="True">
+              <StackPanel Margin="8" Spacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <TextBlock Text="Permanent Statuses" FontSize="16" FontWeight="Bold"/>
+                  <TextBlock Text="Value range: 0-255" Foreground="#999" VerticalAlignment="Center"/>
+                </StackPanel>
+                <DataGrid ItemsSource="{Binding PermanentStatuses}" AutoGenerateColumns="False"
+                          CanUserResizeColumns="False" GridLinesVisibility="All"
+                          HeadersVisibility="Column" MinHeight="260" Width="515"
+                          HorizontalAlignment="Left">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Name}" IsReadOnly="True" Width="125"/>
+                    <DataGridTemplateColumn Header="Inflict Chance" Width="125">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate><controls:LimitedNumericUpDown Classes="statusValue" Value="{Binding InflictChance}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Resistance" Width="125">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate><controls:LimitedNumericUpDown Classes="statusValue" Value="{Binding ResistChance}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridCheckBoxColumn Header="Remains Active" Binding="{Binding Auto}" Width="140"/>
+                  </DataGrid.Columns>
+                </DataGrid>
+                <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+                  <TextBlock Text="Temporary Statuses" FontSize="16" FontWeight="Bold"/>
+                  <TextBlock Text="Value range: 0-255" Foreground="#999" VerticalAlignment="Center"/>
+                </StackPanel>
+                <DataGrid ItemsSource="{Binding TemporaryStatuses}" AutoGenerateColumns="False"
+                          CanUserResizeColumns="False" GridLinesVisibility="All"
+                          HeadersVisibility="Column" MinHeight="280" Width="640"
+                          HorizontalAlignment="Left">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Name}" IsReadOnly="True" Width="125"/>
+                    <DataGridTemplateColumn Header="Inflict Chance" Width="125">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate><controls:LimitedNumericUpDown Classes="statusValue" Value="{Binding InflictChance}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Duration" Width="125">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate><controls:LimitedNumericUpDown Classes="statusValue" Value="{Binding Duration}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Resistance" Width="125">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate><controls:LimitedNumericUpDown Classes="statusValue" Value="{Binding ResistChance}" Minimum="0" Maximum="255" FormatString="0" ShowButtonSpinner="False"/></DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridCheckBoxColumn Header="Remains Active" Binding="{Binding Auto}" Width="140"/>
+                  </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Text="Extra statuses" FontSize="16" FontWeight="Bold" Margin="0,8,0,0"/>
+                <DataGrid ItemsSource="{Binding ExtraStatusEffects}" AutoGenerateColumns="False"
+                          CanUserResizeColumns="False" GridLinesVisibility="All"
+                          HeadersVisibility="Column" MinHeight="320" Width="590"
+                          HorizontalAlignment="Left">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Name}" IsReadOnly="True" Width="180"/>
+                    <DataGridCheckBoxColumn Header="Will Inflict" Binding="{Binding Inflict}" Width="125"/>
+                    <DataGridCheckBoxColumn Header="Will Resist" Binding="{Binding Resist}" Width="125"/>
+                    <DataGridCheckBoxColumn Header="Remains Active" Binding="{Binding Auto}" Width="160"/>
+                  </DataGrid.Columns>
+                </DataGrid>
+              </StackPanel>
+            </Expander>
+            <Expander Header="Stat Increase" IsExpanded="True">
+              <StackPanel Margin="8" Spacing="10" Width="700" HorizontalAlignment="Left">
+                <StackPanel>
+                  <TextBlock Text="Increase Amount (%)"/>
+                  <controls:LimitedNumericUpDown Classes="compactByteValue" Value="{Binding StatIncreaseAmount}"
+                                 Minimum="0" Maximum="255" FormatString="0"
+                                 ShowButtonSpinner="False"/>
+                  <TextBlock Text="Value range: 0-255."
+                             Foreground="#999" Margin="0,4,0,0"/>
+                </StackPanel>
+                <TextBlock Text="Base Stats" FontWeight="Bold"/>
+                <Grid ColumnDefinitions="140,140,140,140,140" RowDefinitions="Auto,Auto">
+                  <CheckBox Grid.Row="0" Grid.Column="0" Content="Strength" IsChecked="{Binding Strength}"/>
+                  <CheckBox Grid.Row="0" Grid.Column="1" Content="Defense" IsChecked="{Binding Defense}"/>
+                  <CheckBox Grid.Row="0" Grid.Column="2" Content="Magic" IsChecked="{Binding Magic}"/>
+                  <CheckBox Grid.Row="0" Grid.Column="3" Content="Magic Defense" IsChecked="{Binding MagicDefense}"/>
+                  <CheckBox Grid.Row="0" Grid.Column="4" Content="Agility" IsChecked="{Binding Agility}"/>
+                  <CheckBox Grid.Row="1" Grid.Column="0" Content="Luck" IsChecked="{Binding Luck}"/>
+                  <CheckBox Grid.Row="1" Grid.Column="1" Content="Evasion" IsChecked="{Binding Evasion}"/>
+                  <CheckBox Grid.Row="1" Grid.Column="2" Content="Accuracy" IsChecked="{Binding Accuracy}"/>
+                  <CheckBox Grid.Row="1" Grid.Column="3" Content="HP" IsChecked="{Binding Hp}"/>
+                  <CheckBox Grid.Row="1" Grid.Column="4" Content="MP" IsChecked="{Binding Mp}"/>
+                </Grid>
+                <TextBlock Text="Bonus Stats" FontWeight="Bold"/>
+                <Grid ColumnDefinitions="150,150,150,200">
+                  <CheckBox Grid.Column="0" Content="Strength Bonus" IsChecked="{Binding StrengthBonus}"/>
+                  <CheckBox Grid.Column="1" Content="Magic Bonus" IsChecked="{Binding MagicBonus}"/>
+                  <CheckBox Grid.Column="2" Content="Defense Bonus" IsChecked="{Binding DefenseBonus}"/>
+                  <CheckBox Grid.Column="3" Content="Magic Defense Bonus" IsChecked="{Binding MagicDefenseBonus}"/>
+                </Grid>
+              </StackPanel>
+            </Expander>
+            <Expander Header="Special effects" IsExpanded="True">
+              <ItemsControl Margin="8" ItemsSource="{Binding EffectFlags}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="210"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate><CheckBox Content="{Binding Name}" IsChecked="{Binding Value}"/></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Expander>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="{Binding RecipeTabHeader}" IsEnabled="{Binding HasRecipeFile}">
+        <StackPanel Margin="24" Spacing="16">
+          <TextBlock Text="Customization Recipe" FontSize="24" FontWeight="Bold"/>
+          <TextBlock Text="Some auto abilities do not have a customization recipe." Foreground="#999"/>
+          <TextBlock Text="This Auto Ability does not have a customization recipe."
+                     IsVisible="{Binding SelectedAbility.HasNoRecipe}"
+                     Foreground="#D6A85F"/>
+          <ContentControl Content="{Binding SelectedAbility.Recipe}"
+                          IsVisible="{Binding SelectedAbility.HasRecipe}">
+            <ContentControl.ContentTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="16">
+                  <StackPanel Orientation="Horizontal" Spacing="20">
+                    <RadioButton Content="Weapon" IsChecked="{Binding IsWeapon}" GroupName="GearType"/>
+                    <RadioButton Content="Armor" IsChecked="{Binding IsArmor}" GroupName="GearType"/>
+                  </StackPanel>
+                  <StackPanel MaxWidth="500" HorizontalAlignment="Left">
+                    <TextBlock Text="Item"/>
+                    <ComboBox ItemsSource="{Binding ItemOptions}" SelectedItem="{Binding SelectedItem}">
+                      <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Display}"/></DataTemplate></ComboBox.ItemTemplate>
+                    </ComboBox>
+                  </StackPanel>
+                  <StackPanel Width="180" HorizontalAlignment="Left">
+                    <TextBlock Text="Quantity"/>
+                    <controls:LimitedNumericUpDown Classes="recipeQuantity" Value="{Binding Quantity}"
+                                                   Minimum="0" Maximum="99" FormatString="0"
+                                                   MaxInputLength="2" ShowButtonSpinner="False"/>
+                  </StackPanel>
+                </StackPanel>
+              </DataTemplate>
+            </ContentControl.ContentTemplate>
+          </ContentControl>
+        </StackPanel>
+      </TabItem>
+    </TabControl>
+    <Grid Grid.Row="1" Grid.ColumnSpan="3" ColumnDefinitions="*,Auto" Margin="12,6">
+      <TextBlock Text="{Binding Status}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+      <Button Grid.Column="1" Content="Save" Click="Button_Save" Padding="20,8"/>
+    </Grid>
+  </Grid>
+</UserControl>

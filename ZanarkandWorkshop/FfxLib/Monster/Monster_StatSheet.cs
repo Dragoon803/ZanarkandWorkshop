@@ -42,10 +42,10 @@ namespace FFXProjectEditor.FfxLib.Monster
         [Data(Count = 16)] public ushort[] Abilities { get; set; }
 
         [Data] public ushort ForcedAction { get; set; }
-        [Data] public short MonsterId { get; set; }
-        [Data] public short ModelId { get; set; }
+        [Data] public ushort MonsterId { get; set; }
+        [Data] public ushort ModelId { get; set; }
         [Data] public byte CtbIconId { get; set; }
-        [Data] public sbyte DoomCount { get; set; }
+        [Data] public byte DoomCount { get; set; }
         [Data] public sbyte ArenaId { get; set; }
         [Data] public byte ArenaIdPadding { get; set; }
         [Data] public short SoundId { get; set; }

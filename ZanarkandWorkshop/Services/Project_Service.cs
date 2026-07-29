@@ -63,6 +63,9 @@ namespace FFXProjectEditor.Services
         public string Path_KernelItemUs => Path.Combine(Path_KernelUs, "item.bin");
         public string Path_KernelMonMagic1Us => Path.Combine(Path_KernelUs, "monmagic1.bin");
         public string Path_KernelMonMagic2Us => Path.Combine(Path_KernelUs, "monmagic2.bin");
+        public string Path_KernelAutoAbilityUs => Path.Combine(Path_KernelUs, "a_ability.bin");
+        public string Path_KernelCustomization => Path.Combine(Path_Kernel, "kaizou.bin");
+        public string Path_KernelMixRecipes => Path.Combine(Path_Kernel, "prepare.bin");
         public string Path_Mon => Path.Combine(ProjectPath, "jppc", "battle", "mon");
 
         public string GetPathKernelMonsterUs(int monsterId)

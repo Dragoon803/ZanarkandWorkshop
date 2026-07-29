@@ -1,15 +1,24 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FFXProjectEditor.FfxLib.Dictionaries;
 using FFXProjectEditor.FfxLib.Monster;
+using System.Collections.Generic;
+using System.Linq;
 using static FFXProjectEditor.FfxLib.Monster.Monster_Loot;
 
 namespace FFXProjectEditor.Modules.MonEditor
 {
     internal partial class MonsterLoot_Wrapper : ObservableObject
     {
-        [ObservableProperty] public short gil;
-        [ObservableProperty] public short ap;
-        [ObservableProperty] public short apOverkill;
-        [ObservableProperty] public GameIndex_Wrapper ronsoRage;
+        internal sealed record RonsoRageCommandOption(ushort CommandId, string DisplayName)
+        {
+            public override string ToString() => DisplayName;
+        }
+
+        [ObservableProperty] public ushort gil;
+        [ObservableProperty] public ushort ap;
+        [ObservableProperty] public ushort apOverkill;
+        [ObservableProperty] public RonsoRageCommandOption selectedRonsoRage = null!;
+        public IReadOnlyList<RonsoRageCommandOption> RonsoRageCommands { get; private set; } = [];
 
         // Drops
         [ObservableProperty] public byte drop1Chance;
@@ -75,11 +84,50 @@ namespace FFXProjectEditor.Modules.MonEditor
         public string NoticeSlots => "Slots: ["+ GetRandomSlotsMin(GearSlotCount) +"] - [" + GetRandomSlotsMax(GearSlotCount) +"]";
         public string NoticeAbis => "Slots: ["+ GetRandomAbiMin(GearAbilityCount) +"] - [" + GetRandomAbiMax(GearAbilityCount) +"]";
 
-        public static MonsterLoot_Wrapper Wrap(Monster_Loot loot)
+        public static MonsterLoot_Wrapper Wrap(
+            Monster_Loot loot,
+            IReadOnlyDictionary<ushort, string>? currentCommandNames = null)
         {
             MonsterLoot_Wrapper wrapper = new();
 
-            wrapper.ronsoRage = GameIndex_Wrapper.Wrap(loot.RonsoRageId);
+            ushort noneCommandId = loot.RonsoRageId is 0x0000 or 0x00FF
+                ? loot.RonsoRageId
+                : (ushort)0x0000;
+            IEnumerable<ushort> commandIndexes = CommandCharacter_Dictionary.Instance.Keys;
+            if (currentCommandNames is not null)
+            {
+                commandIndexes = commandIndexes.Concat(
+                    currentCommandNames.Keys
+                        .Where(commandId => (commandId & 0xF000) == 0x3000)
+                        .Select(commandId => (ushort)(commandId & 0x0FFF)));
+            }
+
+            List<RonsoRageCommandOption> ronsoRageCommands = [new(noneCommandId, "NONE")];
+            foreach (ushort commandIndex in commandIndexes.Distinct().OrderBy(index => index))
+            {
+                ushort commandId = (ushort)(0x3000 | commandIndex);
+                string displayName =
+                    currentCommandNames is not null &&
+                    currentCommandNames.TryGetValue(commandId, out string? currentName)
+                        ? currentName
+                        : CommandCharacter_Dictionary.Instance.TryGetValue(commandIndex, out string? fallbackName)
+                            ? fallbackName
+                            : $"Command {commandIndex}";
+                ronsoRageCommands.Add(new(commandId, displayName));
+            }
+
+            RonsoRageCommandOption? selectedRonsoRage = ronsoRageCommands
+                .FirstOrDefault(option => option.CommandId == loot.RonsoRageId);
+            if (selectedRonsoRage is null)
+            {
+                selectedRonsoRage = new(
+                    loot.RonsoRageId,
+                    $"Unknown (0x{loot.RonsoRageId:X4})");
+                ronsoRageCommands.Insert(1, selectedRonsoRage);
+            }
+
+            wrapper.RonsoRageCommands = ronsoRageCommands;
+            wrapper.selectedRonsoRage = selectedRonsoRage;
 
             wrapper.gil = loot.Gil;
             wrapper.ap = loot.Ap;
@@ -151,7 +199,7 @@ namespace FFXProjectEditor.Modules.MonEditor
             loot.Ap = ap;
             loot.ApOverkill = apOverkill;
 
-            loot.RonsoRageId = RonsoRage.Unwrap();
+            loot.RonsoRageId = SelectedRonsoRage.CommandId;
 
             loot.Drop1Chance = drop1Chance;
             loot.Drop2Chance = drop2Chance;

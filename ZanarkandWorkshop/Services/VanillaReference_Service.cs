@@ -35,6 +35,10 @@ public static class VanillaReference_Service
 		int MonsterFilesChecked,
 		int KernelFilesChecked);
 
+	public sealed record FolderRestoreResult(
+		string RelativeFolder,
+		int FilesRestored);
+
 	private static readonly string[] RequiredKernelFiles =
 	{
 		"command.bin", "monmagic1.bin", "monmagic2.bin", "item.bin"
@@ -285,6 +289,56 @@ public static class VanillaReference_Service
         string candidate = Path.GetFullPath(Path.Combine(MasterPath!, relativePath));
         return File.Exists(candidate) ? candidate : null;
     }
+
+	public static (string SourceFolder, string RelativeFolder, int FileCount)
+		PreviewFolderRestore(string projectFolder)
+	{
+		if (!IsConfigured || string.IsNullOrWhiteSpace(MasterPath))
+			throw new InvalidOperationException(
+				"Configure and verify Original Game Files before restoring a folder.");
+		if (!Project_Service.Instance.IsProjectLoaded)
+			throw new InvalidOperationException("Load an editing project before restoring a folder.");
+
+		string projectRoot = NormalizeMasterPath(Project_Service.Instance.ProjectPath);
+		string selected = NormalizeMasterPath(projectFolder);
+		string relative = Path.GetRelativePath(projectRoot, selected);
+		if (relative == "." || relative.StartsWith(".." + Path.DirectorySeparatorChar,
+			    StringComparison.Ordinal) || Path.IsPathRooted(relative))
+			throw new InvalidOperationException(
+				"Select an individual subfolder inside the active project Master folder.");
+
+		string source = Path.GetFullPath(Path.Combine(MasterPath, relative));
+		if (!Directory.Exists(source))
+			throw new InvalidOperationException(
+				$"The Original Game Files do not contain the matching folder:{Environment.NewLine}{source}");
+
+		int fileCount = Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories).Count();
+		if (fileCount == 0)
+			throw new InvalidOperationException("The matching original folder contains no files.");
+		return (source, relative, fileCount);
+	}
+
+	public static FolderRestoreResult RestoreFolder(string projectFolder)
+	{
+		(string source, string relativeFolder, _) = PreviewFolderRestore(projectFolder);
+		string destination = NormalizeMasterPath(projectFolder);
+		int restored = 0;
+
+		foreach (string sourceFile in Directory.EnumerateFiles(
+			         source, "*", SearchOption.AllDirectories))
+		{
+			string relativeFile = Path.GetRelativePath(source, sourceFile);
+			string destinationFile = Path.GetFullPath(Path.Combine(destination, relativeFile));
+			string? destinationDirectory = Path.GetDirectoryName(destinationFile);
+			if (!string.IsNullOrWhiteSpace(destinationDirectory))
+				Directory.CreateDirectory(destinationDirectory);
+
+			File.Copy(sourceFile, destinationFile, true);
+			restored++;
+		}
+
+		return new FolderRestoreResult(relativeFolder, restored);
+	}
 
     private static string? LoadSavedPath()
     {

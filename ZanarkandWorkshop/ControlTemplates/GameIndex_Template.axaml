@@ -24,7 +24,9 @@
 				<StackPanel>
 					<Label Content="{TemplateBinding GameIndex_Label}" IsVisible="{TemplateBinding IsLabelVisible}"/>
 					<DockPanel>
-						<TextBox Width="30" Text="{Binding GameIndex_Object.Index, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+						<controls:LimitedNumericUpDown Width="65" MaxInputLength="4"
+									 Value="{Binding GameIndex_Object.Index, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+									 Minimum="0" Maximum="4095" FormatString="0" ShowButtonSpinner="False"/>
 						<StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
 							<ComboBox Width="220" HorizontalAlignment="Stretch"
 									  ItemsSource="{TemplateBinding CategOptions}"

@@ -211,10 +211,10 @@ namespace FFXProjectEditor.Files
             [Data] public short ExtraStatusImmunities { get; set; }
             [Data(Count=16)] public short[] Abilities { get; set; }
             [Data] public short ForcedAction { get; set; }
-            [Data] public short MonsterId { get; set; }
-            [Data] public short ModelId { get; set; }
+            [Data] public ushort MonsterId { get; set; }
+            [Data] public ushort ModelId { get; set; }
             [Data] public byte IconId { get; set; }
-            [Data] public sbyte DoomCount { get; set; }
+            [Data] public byte DoomCount { get; set; }
             [Data] public sbyte ArenaId { get; set; }
             [Data] public byte ArenaIdPadding { get; set; }
             [Data] public short SoundId { get; set; }

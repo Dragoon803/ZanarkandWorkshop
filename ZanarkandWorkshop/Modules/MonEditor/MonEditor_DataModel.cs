@@ -1,6 +1,7 @@
 using FFXProjectEditor.Converters;
 using FFXProjectEditor.FfxLib.Atel;
 using FFXProjectEditor.FfxLib.Ability;
+using FFXProjectEditor.FfxLib.Dictionaries;
 using FFXProjectEditor.Services;
 using FFXProjectEditor.Utils.Encoding;
 using FFXProjectEditor.FfxLib.Monster;
@@ -44,6 +45,7 @@ namespace FFXProjectEditor.Modules.MonEditor
             : $"Script {AiDocument.ScriptId} | Creator: {AiDocument.Creator} | Code: 0x{AiDocument.ScriptCodeLength:X} bytes at 0x{AiDocument.ScriptCodeOffset:X} | Workers: {AiDocument.WorkerCount} | Actors: {AiDocument.ActorCount}";
 
         public List<string> CategoryOptions => new GameCategory_Converter().Options.Values.ToList();
+        public IReadOnlyList<MonsterLootItemOption> LootItemOptions { get; private set; } = [];
 
         public MonEditor_DataModel(Monster_File monsterFile, string monsterPath, MonEditorSelector_DataModel selectorDM)
         {
@@ -53,14 +55,15 @@ namespace FFXProjectEditor.Modules.MonEditor
             _monsterId = ParseMonsterId(monsterPath);
             MonsterStatSheet = MonsterStatSheet_Wrapper.Wrap(MonsterFile.StatSheetFile);
             _usesLocalizedMonsterText = LoadLocalizedTextIntoWrapper();
-            MonsterLoot = MonsterLoot_Wrapper.Wrap(MonsterFile.LootFile);
+            AiCommandNames = LoadCommandNames();
+            MonsterLoot = MonsterLoot_Wrapper.Wrap(MonsterFile.LootFile, AiCommandNames);
+            LootItemOptions = BuildLootItemOptions();
             _originalAiBytes = MonsterFile.AiFile == null ? [] : (byte[])MonsterFile.AiFile.Clone();
             _originalWorkerBytes = MonsterFile.WorkerFile == null ? [] : (byte[])MonsterFile.WorkerFile.Clone();
 
             try
             {
                 AiDocument = AtelScriptDocument.Read(MonsterFile.AiFile, MonsterFile.WorkerFile);
-                AiCommandNames = LoadCommandNames();
                 AiDocument.SetCommandNameResolver(gameIndex => AiCommandNames.TryGetValue(gameIndex, out string? name) ? name : null);
                 AiHex = AiDocument.ToHexEditorText();
                 AiStatus = AiDocument.RecoveredMissingCodeLength
@@ -102,12 +105,9 @@ namespace FFXProjectEditor.Modules.MonEditor
             Monster_File roundTrip = Monster_File.Read(rebuilt);
             AtelScriptDocument.Read(roundTrip.AiFile, roundTrip.WorkerFile);
 
-            string backupPath = OriginalBackupPath;
-            if (!File.Exists(backupPath))
-                File.Copy(MonsterPath, backupPath);
             File.WriteAllBytes(MonsterPath, rebuilt);
 
-            AiStatus = $"Reverted the Battle Script to the state captured when this monster was opened and saved it to disk. Original backup: {backupPath}";
+            AiStatus = "Reverted the Battle Script to the state captured when this monster was opened and saved it to disk.";
         }
 
         public int AiUndoCount => _aiUndoHistory.Count;
@@ -226,25 +226,6 @@ namespace FFXProjectEditor.Modules.MonEditor
             AiStatus = $"Redid: {snapshot.Description}. {_aiRedoHistory.Count} later change(s) remain available.";
         }
 
-        public string OriginalBackupPath => MonsterPath + ".bak";
-
-        public void RestoreAiFromOriginalBackup()
-        {
-            if (!File.Exists(OriginalBackupPath))
-                throw new InvalidOperationException($"No original backup exists yet: {OriginalBackupPath}");
-            Monster_File backup = Monster_File.Read(File.ReadAllBytes(OriginalBackupPath));
-            if (backup.AiFile == null || backup.AiFile.Length == 0)
-                throw new InvalidOperationException("The original backup contains no monster Battle Script.");
-            AtelScriptDocument restored = AtelScriptDocument.Read(backup.AiFile, backup.WorkerFile);
-            restored.SetCommandNameResolver(gameIndex => AiCommandNames.TryGetValue(gameIndex, out string? name) ? name : null);
-            AiDocument = restored;
-            MonsterFile.AiFile = (byte[])backup.AiFile.Clone();
-            AiHex = restored.ToHexEditorText();
-            AiSearchOffsets = [];
-            AiSearchLength = 0;
-            AiStatus = $"Restored only the Battle Script from original backup {OriginalBackupPath}. Press Save to write it to disk.";
-        }
-
         public void StageVanillaMonster(string vanillaPath)
         {
             if (!File.Exists(vanillaPath))
@@ -258,7 +239,8 @@ namespace FFXProjectEditor.Modules.MonEditor
             MonsterFile = vanilla;
             MonsterStatSheet = MonsterStatSheet_Wrapper.Wrap(vanilla.StatSheetFile);
             _usesLocalizedMonsterText = LoadLocalizedTextIntoWrapper();
-            MonsterLoot = MonsterLoot_Wrapper.Wrap(vanilla.LootFile);
+            MonsterLoot = MonsterLoot_Wrapper.Wrap(vanilla.LootFile, AiCommandNames);
+            LootItemOptions = BuildLootItemOptions();
             AiDocument = vanillaAi;
             AiHex = vanillaAi.ToHexEditorText();
             AiSearchOffsets = [];
@@ -270,7 +252,7 @@ namespace FFXProjectEditor.Modules.MonEditor
         {
             StageVanillaMonster(originalPath);
             Save();
-            AiStatus = $"Restored the complete original monster from {originalPath} and saved it to disk. Original backup: {OriginalBackupPath}";
+            AiStatus = $"Restored the complete original monster from {originalPath} and saved it to disk.";
         }
 
         private static IReadOnlyDictionary<ushort, string> LoadCommandNames()
@@ -281,6 +263,50 @@ namespace FFXProjectEditor.Modules.MonEditor
             LoadCommandNames(names, Project_Service.Instance.Path_KernelMonMagic1Us, 0x4, false);
             LoadCommandNames(names, Project_Service.Instance.Path_KernelMonMagic2Us, 0x6, false);
             return names;
+        }
+
+        private IReadOnlyList<MonsterLootItemOption> BuildLootItemOptions()
+        {
+            List<MonsterLootItemOption> options =
+            [
+                new(0x00FF, "NONE"),
+                new(0x0000, "NONE")
+            ];
+
+            IEnumerable<ushort> itemIndexes = Item_Dictionary.Instance.Keys;
+            itemIndexes = itemIndexes.Concat(
+                AiCommandNames.Keys
+                    .Where(itemId => (itemId & 0xF000) == 0x2000)
+                    .Select(itemId => (ushort)(itemId & 0x0FFF)));
+
+            foreach (ushort itemIndex in itemIndexes.Distinct().OrderBy(index => index))
+            {
+                ushort itemId = (ushort)(0x2000 | itemIndex);
+                string displayName =
+                    AiCommandNames.TryGetValue(itemId, out string? currentName)
+                        ? currentName
+                        : Item_Dictionary.Instance.TryGetValue(itemIndex, out string? fallbackName)
+                            ? fallbackName
+                            : $"Item {itemIndex}";
+                options.Add(new(itemId, displayName));
+            }
+
+            ushort[] existingIds =
+            [
+                MonsterLoot.Drop1.Value, MonsterLoot.Drop1Rare.Value,
+                MonsterLoot.Drop2.Value, MonsterLoot.Drop2Rare.Value,
+                MonsterLoot.DropOverkill1.Value, MonsterLoot.DropOverkill1Rare.Value,
+                MonsterLoot.DropOverkill2.Value, MonsterLoot.DropOverkill2Rare.Value,
+                MonsterLoot.Steal.Value, MonsterLoot.StealRare.Value,
+                MonsterLoot.Bribe.Value
+            ];
+            foreach (ushort existingId in existingIds.Distinct())
+            {
+                if (options.All(option => option.ItemId != existingId))
+                    options.Insert(2, new(existingId, $"Unknown (0x{existingId:X4})"));
+            }
+
+            return options;
         }
 
         private static void LoadCommandNames(Dictionary<ushort, string> names, string path, int category, bool hasExtraInfo)
@@ -473,6 +499,17 @@ namespace FFXProjectEditor.Modules.MonEditor
             AiStatus = $"Added worker w{workerIndex:X2} jump j{jumpIndex:X2} targeting script offset " +
                 $"0x{destinationOffset:X4} (Battle Script offset 0x{chunkOffset:X}). Press Save to write this change to disk.";
             return jumpIndex;
+        }
+
+        public int AddWorkerVariable(int workerIndex)
+        {
+            if (AiDocument == null) throw new InvalidOperationException(AiStatus);
+            int variableIndex = AiDocument.AddWorkerVariable(workerIndex);
+            MonsterFile.AiFile = (byte[])AiDocument.Bytes.Clone();
+            AiHex = AiDocument.ToHexEditorText();
+            AiStatus = $"Added variable[0x{variableIndex:X4}] to worker w{workerIndex:X2}. " +
+                "It is now available in variable operand lists. Press Save to write this change to disk.";
+            return variableIndex;
         }
 
         internal static ushort ParseOperandText(string operandText)
@@ -740,6 +777,7 @@ namespace FFXProjectEditor.Modules.MonEditor
 
         public void Save()
         {
+            ValidateEditorValues();
             ApplyAiHex();
             Monster_StatSheet editedSheet = MonsterStatSheet.Unwrap();
             string kernelPath = Project_Service.Instance.GetPathKernelMonsterUs(_monsterId);
@@ -780,24 +818,73 @@ namespace FFXProjectEditor.Modules.MonEditor
                     throw new InvalidDataException("Localized monster text failed round-trip verification.");
             }
 
-            string backupPath = MonsterPath + ".bak";
-            if (!File.Exists(backupPath))
-                File.Copy(MonsterPath, backupPath);
             File.WriteAllBytes(MonsterPath, rebuilt);
             if (rebuiltKernel != null)
             {
-                string kernelBackupPath = kernelPath + ".bak";
-                if (!File.Exists(kernelBackupPath))
-                    File.Copy(kernelPath, kernelBackupPath);
                 File.WriteAllBytes(kernelPath, rebuiltKernel);
-                AiStatus = $"Saved and verified m{_monsterId:000} plus English monster text. " +
-                    $"Original backups: {backupPath}; {kernelBackupPath}";
+                AiStatus = $"Saved and verified m{_monsterId:000} plus English monster text.";
             }
             else
             {
                 AiStatus = $"Localized monster file was not present. Saved and verified m{_monsterId:000}, " +
-                    $"including its local Name, Sensor, and Scan text. Original backup: {backupPath}";
+                    "including its local Name, Sensor, and Scan text.";
             }
+        }
+
+        private void ValidateEditorValues()
+        {
+            if (MonsterStatSheet.PoisonDamage > 100)
+                throw new InvalidDataException("Poison Damage must be between 0 and 100.");
+            byte[] quantities =
+            [
+                MonsterLoot.Drop1Count, MonsterLoot.Drop1RareCount,
+                MonsterLoot.Drop2Count, MonsterLoot.Drop2RareCount,
+                MonsterLoot.DropOverkillCount, MonsterLoot.DropOverkillRareCount,
+                MonsterLoot.DropOverkill2Count, MonsterLoot.DropOverkill2RareCount,
+                MonsterLoot.StealCount, MonsterLoot.StealRareCount, MonsterLoot.BribeCount
+            ];
+            if (quantities.Any(value => value > 99))
+                throw new InvalidDataException("Monster loot quantities must be between 0 and 99.");
+
+            IEnumerable<GameIndex_Wrapper> DirectIndexes()
+            {
+                yield return MonsterStatSheet.ForcedAbility;
+                yield return MonsterStatSheet.Ability1; yield return MonsterStatSheet.Ability2;
+                yield return MonsterStatSheet.Ability3; yield return MonsterStatSheet.Ability4;
+                yield return MonsterStatSheet.Ability5; yield return MonsterStatSheet.Ability6;
+                yield return MonsterStatSheet.Ability7; yield return MonsterStatSheet.Ability8;
+                yield return MonsterStatSheet.Ability9; yield return MonsterStatSheet.Ability10;
+                yield return MonsterStatSheet.Ability11; yield return MonsterStatSheet.Ability12;
+                yield return MonsterStatSheet.Ability13; yield return MonsterStatSheet.Ability14;
+                yield return MonsterStatSheet.Ability15; yield return MonsterStatSheet.Ability16;
+                yield return MonsterLoot.Drop1; yield return MonsterLoot.Drop1Rare;
+                yield return MonsterLoot.Drop2; yield return MonsterLoot.Drop2Rare;
+                yield return MonsterLoot.DropOverkill1; yield return MonsterLoot.DropOverkill1Rare;
+                yield return MonsterLoot.DropOverkill2; yield return MonsterLoot.DropOverkill2Rare;
+                yield return MonsterLoot.Steal; yield return MonsterLoot.StealRare;
+                yield return MonsterLoot.Bribe;
+            }
+
+            IEnumerable<GameIndex_Wrapper> indexes = DirectIndexes()
+                .Concat(MonsterLoot.TidusWeapons).Concat(MonsterLoot.TidusArmors)
+                .Concat(MonsterLoot.YunaWeapons).Concat(MonsterLoot.YunaArmors)
+                .Concat(MonsterLoot.AuronWeapons).Concat(MonsterLoot.AuronArmors)
+                .Concat(MonsterLoot.KimahriWeapons).Concat(MonsterLoot.KimahriArmors)
+                .Concat(MonsterLoot.WakkaWeapons).Concat(MonsterLoot.WakkaArmors)
+                .Concat(MonsterLoot.LuluWeapons).Concat(MonsterLoot.LuluArmors)
+                .Concat(MonsterLoot.RikkuWeapons).Concat(MonsterLoot.RikkuArmors);
+            if (indexes.Any(value => value == null || value.Index > 0xFFF))
+                throw new InvalidDataException("Ability and item indexes must be between 0 and 4095.");
+
+            long textPoolSize =
+                (MonsterStatSheet.NameScriptBytes?.Length ?? 0) + 1L +
+                (MonsterStatSheet.SensorScriptBytes?.Length ?? 0) + 1L +
+                (MonsterStatSheet.UnusedText1ScriptBytes?.Length ?? 0) + 1L +
+                (MonsterStatSheet.ScanScriptBytes?.Length ?? 0) + 1L +
+                (MonsterStatSheet.UnusedText2ScriptBytes?.Length ?? 0) + 1L;
+            if (textPoolSize > ushort.MaxValue + 1L)
+                throw new InvalidDataException(
+                    "Monster Name, Sensor, and Scan text exceed the 16-bit text-pool limit.");
         }
 
         private bool LoadLocalizedTextIntoWrapper()

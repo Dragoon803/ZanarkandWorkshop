@@ -22,6 +22,8 @@ int parsed = 0;
 int recoveredHeaders = 0;
 int retargetedJumps = 0;
 int addedJumps = 0;
+int allocatedJumpTables = 0;
+int addedVariables = 0;
 int expandedReturnOnlyFunctions = 0;
 int preservedGroupedReturns = 0;
 int protectedReturns = 0;
@@ -45,6 +47,49 @@ foreach (string directory in Directory.GetDirectories(args[0], "_m*"))
             throw new InvalidDataException("Monster-type actor reference 0x107C was not decoded as m124.");
 		byte[] normalizedAi = document.Bytes.ToArray();
 		if (document.RecoveredMissingCodeLength) recoveredHeaders++;
+		foreach (AtelWorker originalWorker in document.Workers.Where(worker => worker.VariableCount < ushort.MaxValue))
+		{
+			AtelScriptDocument expansion = AtelScriptDocument.Read(normalizedAi);
+			AtelWorker candidate = expansion.Workers.First(worker => worker.Index == originalWorker.Index);
+			int oldVariableCount = candidate.VariableCount;
+			int newIndex = expansion.AddWorkerVariable(candidate.Index);
+			if (newIndex != oldVariableCount || expansion.Bytes.Length != normalizedAi.Length)
+				throw new InvalidDataException("Adding a variable changed the ATEL chunk length or returned the wrong index.");
+			AtelWorker expandedWorker = expansion.Workers.First(worker => worker.Index == candidate.Index);
+			if (expandedWorker.VariableCount != oldVariableCount + 1)
+				throw new InvalidDataException("Adding a variable did not increment the selected worker's variable count.");
+			if (expansion.Workers.Where(worker => worker.Index != candidate.Index)
+				.Any(worker => worker.VariableCount != document.Workers.First(original => original.Index == worker.Index).VariableCount))
+				throw new InvalidDataException("Adding a variable changed another worker's variable count.");
+			AtelScriptDocument expandedRoundTrip = AtelScriptDocument.Read(expansion.Bytes);
+			if (expandedRoundTrip.Workers.First(worker => worker.Index == candidate.Index).VariableCount != oldVariableCount + 1)
+				throw new InvalidDataException("Added variable did not survive an ATEL round trip.");
+			addedVariables++;
+		}
+		foreach (AtelWorker originalWorker in document.Workers.Where(worker => worker.JumpCount == 0))
+		{
+			AtelScriptDocument allocation = AtelScriptDocument.Read(normalizedAi);
+			AtelWorker candidate = allocation.Workers.First(worker => worker.Index == originalWorker.Index);
+			AtelInstruction? candidateDestination = allocation.Instructions.FirstOrDefault(instruction =>
+				allocation.GetWorkerIndexForCodeOffset(instruction.Offset) == candidate.Index);
+			if (candidateDestination == null) continue;
+
+			int oldDeclaredLength = BitConverter.ToInt32(allocation.Bytes, 0x10);
+			int newIndex = allocation.AddWorkerJump(candidate.Index, candidateDestination.Offset);
+			if (newIndex != 0 || allocation.Bytes.Length != normalizedAi.Length + 4)
+				throw new InvalidDataException("Allocating a first jump table did not append exactly one four-byte entry.");
+			AtelWorker allocatedWorker = allocation.Workers.First(worker => worker.Index == candidate.Index);
+			if (allocatedWorker.JumpCount != 1 || allocatedWorker.JumpTableOffset != normalizedAi.Length ||
+				allocatedWorker.JumpOffsets[0] != candidateDestination.Offset)
+				throw new InvalidDataException("Allocating a first jump table did not preserve j00 and its destination.");
+			if (BitConverter.ToInt32(allocation.Bytes, 0x10) != oldDeclaredLength + 4)
+				throw new InvalidDataException("Allocating a first jump table did not update the ATEL data length.");
+			AtelScriptDocument allocationRoundTrip = AtelScriptDocument.Read(allocation.Bytes);
+			AtelWorker roundTripWorker = allocationRoundTrip.Workers.First(worker => worker.Index == candidate.Index);
+			if (roundTripWorker.JumpCount != 1 || roundTripWorker.JumpOffsets[0] != candidateDestination.Offset)
+				throw new InvalidDataException("The first allocated jump table did not survive an ATEL round trip.");
+			allocatedJumpTables++;
+		}
 		AtelWorker? jumpWorker = document.Workers.FirstOrDefault(worker => worker.JumpOffsets.Count > 0);
 		if (jumpWorker != null)
 		{
@@ -216,6 +261,6 @@ foreach (string directory in Directory.GetDirectories(args[0], "_m*"))
     }
 }
 
-Console.WriteLine($"Parsed={parsed} RecoveredHeaders={recoveredHeaders} RetargetedJumps={retargetedJumps} AddedJumps={addedJumps} ExpandedReturnOnlyFunctions={expandedReturnOnlyFunctions} PreservedGroupedReturns={preservedGroupedReturns} ProtectedReturns={protectedReturns} DeletedJumpReferences={deletedJumpReferences} Failed={failures.Count}");
+Console.WriteLine($"Parsed={parsed} RecoveredHeaders={recoveredHeaders} RetargetedJumps={retargetedJumps} AddedJumps={addedJumps} AllocatedJumpTables={allocatedJumpTables} AddedVariables={addedVariables} ExpandedReturnOnlyFunctions={expandedReturnOnlyFunctions} PreservedGroupedReturns={preservedGroupedReturns} ProtectedReturns={protectedReturns} DeletedJumpReferences={deletedJumpReferences} Failed={failures.Count}");
 foreach (string failure in failures) Console.WriteLine(failure);
 return failures.Count == 0 ? 0 : 1;

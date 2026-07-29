@@ -316,7 +316,7 @@ public partial class MonEditor_Control : UserControl
 			AiWorkerJumpOptions.IsEnabled = choices.Any(choice => choice.Index >= 0);
 			AiWorkerJumpButton.IsEnabled = choices.Any(choice => choice.Index >= 0);
 			AiChangeWorkerJumpButton.IsEnabled = choices.Any(choice => choice.Index >= 0);
-			AiAddWorkerJumpButton.IsEnabled = worker?.JumpCount > 0;
+			AiAddWorkerJumpButton.IsEnabled = worker != null;
 		}
 		AiWorkerJumpOptions.ItemsSource = choices;
 		AiWorkerJumpOptions.SelectedIndex = 0;
@@ -3276,9 +3276,9 @@ public partial class MonEditor_Control : UserControl
 			return;
 		}
 		AtelWorker? worker = DataModel.AiDocument.Workers.FirstOrDefault(item => item.Index == _selectedWorkerIndex);
-		if (worker == null || worker.JumpCount == 0)
+		if (worker == null)
 		{
-			AiStatusText.Text = "ERROR: Phase 2 can add entries only to workers that already have a jump table.";
+			AiStatusText.Text = "ERROR: The selected worker is no longer available.";
 			return;
 		}
 
@@ -3297,6 +3297,29 @@ public partial class MonEditor_Control : UserControl
 		AiJumpDestinationPickerText.Text = $"Adding w{worker.Index:X2}:j{worker.JumpCount:X2} — select Battle Logic or an instruction.";
 		ClearJumpDestinationHighlight();
 		AiStatusText.Text = $"Add-jump mode: select a Battle Logic statement or Script Instruction in w{worker.Index:X2}, then Apply or Cancel.";
+	}
+
+	private void Button_AddWorkerVariable(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+	{
+		if (DataModel.AiDocument == null || _selectedWorkerIndex < 0)
+		{
+			AiStatusText.Text = "ERROR: Select a worker before adding a variable.";
+			return;
+		}
+
+		try
+		{
+			int workerIndex = _selectedWorkerIndex;
+			AiEditSnapshot before = CaptureAiEditSnapshot();
+			DataModel.RecordAiUndoCheckpoint("add worker variable", "Worker");
+			DataModel.AddWorkerVariable(workerIndex);
+			CompleteAiEdit(before);
+			AiStatusText.Text = DataModel.AiStatus;
+		}
+		catch (Exception ex)
+		{
+			AiStatusText.Text = "ERROR: " + ex.Message;
+		}
 	}
 
 	private void PreviewWorkerJumpDestination(int destinationOffset, string description)
@@ -3383,7 +3406,7 @@ public partial class MonEditor_Control : UserControl
 		AiWorkerJumpOptions.IsEnabled = hasJump;
 		AiWorkerJumpButton.IsEnabled = hasJump;
 		AiChangeWorkerJumpButton.IsEnabled = hasJump;
-		AiAddWorkerJumpButton.IsEnabled = hasJump;
+		AiAddWorkerJumpButton.IsEnabled = DataModel.AiDocument != null && _selectedWorkerIndex >= 0;
 	}
 
 	private void ApplyJumpDestinationPickerVisibility()

@@ -41,6 +41,8 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public bool showExtra = false;
         [ObservableProperty] public bool showItemPreview = false;
         [ObservableProperty] public string recoveryStatus = "";
+        [ObservableProperty] public string filterText = "";
+        [ObservableProperty] public KernelCommands_Wrapper? selectedCommand;
 
         public List<string> CharacterOptions => new Character_Converter().Options.Values.ToList();
         public List<string> HitCalcTypeOptions => new HitCalcType_Converter().Options.Values.ToList();
@@ -48,10 +50,31 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
 
         public bool IsExtraEnabled => HasExtraInfo();
         public bool IsItemPreviewEnabled => CommandFileType == CommandFile_enum.Item;
+        public bool IsMonsterCommandEditor =>
+            CommandFileType is CommandFile_enum.MonMagic1 or CommandFile_enum.MonMagic2;
         public bool ShowMenuExtra => ShowMenu && IsExtraEnabled;
-        string FilterText { get; set; } = "";
+        private int ProtectedMonsterCommandCount => CommandFileType switch
+        {
+            CommandFile_enum.MonMagic1 => 300,
+            CommandFile_enum.MonMagic2 => 247,
+            _ => int.MaxValue
+        };
+        public bool CanDeleteSelectedClone
+        {
+            get
+            {
+                if (!IsMonsterCommandEditor || SelectedCommand == null)
+                    return false;
+
+                int actualIndex = LoadedCommands.IndexOf(SelectedCommand);
+                return actualIndex >= ProtectedMonsterCommandCount &&
+                       actualIndex == LoadedCommands.Count - 1;
+            }
+        }
 
         partial void OnShowMenuChanged(bool value) => OnPropertyChanged(nameof(ShowMenuExtra));
+        partial void OnSelectedCommandChanged(KernelCommands_Wrapper? value) =>
+            OnPropertyChanged(nameof(CanDeleteSelectedClone));
 
         public KernelCommands_DataModel(CommandFile_enum commandFileType)
         {
@@ -92,14 +115,71 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             }
         }
 
+        public KernelCommands_Wrapper CloneAsNewCommand(KernelCommands_Wrapper source)
+        {
+            if (!IsMonsterCommandEditor)
+                throw new InvalidOperationException(
+                    "New command slots are supported only for monster-command files.");
+            if (LoadedCommands.Count >= 0x1000)
+                throw new InvalidOperationException(
+                    "The monster-command file has no remaining 12-bit command indices.");
+
+            int sourceIndex = LoadedCommands.IndexOf(source);
+            if (sourceIndex < 0)
+                throw new InvalidOperationException(
+                    "The selected command is not part of the loaded command file.");
+
+            Ability_Command sourceCommand = source.Unwrap();
+            Ability_Command clone = Ability_Command.ReadSingle(
+                sourceCommand.WriteSingle(hasExtraInfo: false), hasExtraInfo: false);
+            KernelCommands_Wrapper wrapper = KernelCommands_Wrapper.Wrap(clone);
+            wrapper.Name = $"{source.Name} - clone";
+            wrapper.Index = LoadedCommands.Count;
+            LoadedCommands.Add(wrapper);
+
+            FilterText = "";
+            ApplyFilter();
+            int category = CommandFileType == CommandFile_enum.MonMagic1 ? 0x4 : 0x6;
+            int commandReference = (category << 12) | wrapper.Index;
+            RecoveryStatus =
+                $"Cloned command {sourceIndex} into new slot {wrapper.Index} " +
+                $"(reference 0x{commandReference:X4}). Save to write it to disk.";
+            return wrapper;
+        }
+
+        public KernelCommands_Wrapper? DeleteClonedCommand(KernelCommands_Wrapper command)
+        {
+            if (!IsMonsterCommandEditor)
+                throw new InvalidOperationException(
+                    "Cloned-command deletion is supported only for monster-command files.");
+
+            int actualIndex = LoadedCommands.IndexOf(command);
+            if (actualIndex < 0)
+                throw new InvalidOperationException(
+                    "The selected command is not part of the loaded command file.");
+            if (actualIndex < ProtectedMonsterCommandCount)
+                throw new InvalidOperationException(
+                    $"Command {actualIndex} is an original game command and cannot be deleted.");
+            if (actualIndex != LoadedCommands.Count - 1)
+                throw new InvalidOperationException(
+                    "Only the final cloned command can be deleted. Deleting an earlier clone " +
+                    "would change later command IDs and break battle-script references.");
+
+            LoadedCommands.RemoveAt(actualIndex);
+            FilterText = "";
+            ApplyFilter();
+            RecoveryStatus =
+                $"Deleted cloned command {actualIndex}. Save to write the removal to disk.";
+            return LoadedCommands.Count > 0 ? LoadedCommands[^1] : null;
+        }
+
         public void Save()
         {
             string path = GetFilePath();
             byte[] rebuilt = BuildFile();
             _ = Ability_Command.ReadList(rebuilt, HasExtraInfo());
-            CreateBackupIfNeeded(path);
             File.WriteAllBytes(path, rebuilt);
-            RecoveryStatus = $"Saved and verified. Original project backup: {path}.bak";
+            RecoveryStatus = "Saved and verified.";
         }
 
         public void RestoreOriginalAndSave(string originalPath)
@@ -113,13 +193,11 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
                 throw new InvalidDataException("The original file contains no readable entries.");
 
             string projectPath = GetFilePath();
-            CreateBackupIfNeeded(projectPath);
             File.WriteAllBytes(projectPath, originalBytes);
 
             LoadCommands();
             ApplyFilter();
-            RecoveryStatus = $"Restored {GetEditorName()} from verified Original Game Files. " +
-                $"Previous project file: {projectPath}.bak";
+            RecoveryStatus = $"Restored {GetEditorName()} from verified Original Game Files.";
         }
         public void LoadInGame()
         {
@@ -189,13 +267,6 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             CommandFile_enum.MonMagic2 => "Boss Commands",
             _ => "Kernel editor"
         };
-
-        private static void CreateBackupIfNeeded(string path)
-        {
-            string backupPath = path + ".bak";
-            if (!File.Exists(backupPath))
-                File.Copy(path, backupPath);
-        }
 
         public bool HasExtraInfo()
         {

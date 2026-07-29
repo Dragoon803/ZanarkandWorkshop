@@ -13,5 +13,7 @@
 
 # Release packages and diagnostic output
 /artifacts/
+/Backups/
+/ZanarkandWorkshop Backup *.zip
 *.log
 *.dmp

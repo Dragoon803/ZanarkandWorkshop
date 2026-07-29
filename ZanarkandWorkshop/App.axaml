@@ -24,6 +24,7 @@
 				<ResourceInclude Source="/ControlTemplates/PropertyBool_Template.axaml"/>
 				<ResourceInclude Source="/ControlTemplates/GameIndex_Template.axaml"/>
 				<ResourceInclude Source="/ControlTemplates/Loot_Template.axaml"/>
+				<ResourceInclude Source="/ControlTemplates/MonsterLootItem_Template.axaml"/>
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</Application.Resources>

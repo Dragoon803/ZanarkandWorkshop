@@ -87,11 +87,11 @@
 
 								<WrapPanel>
 									<StackPanel Width="220" Height="150">
-										<local:Property_Template Margin="5" Property_Label="HP Overkill" Property_Value="{Binding MonsterStatSheet.HpOverkill}" BorderWidth="200" ValueBorderWidth="100"/>
+										<local:Property_Template Margin="5" Property_Label="HP Overkill" Property_Value="{Binding MonsterStatSheet.HpOverkill}" Maximum="4294967295" MaxInputLength="10" BorderWidth="200" ValueBorderWidth="100"/>
 									</StackPanel>
 									<StackPanel Width="220" Height="150">
-										<local:Property_Template Margin="5" Grid.Row="0" Grid.Column="1" Property_Label="HP" Property_Value="{Binding MonsterStatSheet.Hp}" BorderWidth="200" ValueBorderWidth="100"/>
-										<local:Property_Template Margin="5" Grid.Row="1" Grid.Column="1" Property_Label="MP" Property_Value="{Binding MonsterStatSheet.Mp}" BorderWidth="200" ValueBorderWidth="100"/>
+										<local:Property_Template Margin="5" Grid.Row="0" Grid.Column="1" Property_Label="HP" Property_Value="{Binding MonsterStatSheet.Hp}" Maximum="4294967295" MaxInputLength="10" BorderWidth="200" ValueBorderWidth="100"/>
+										<local:Property_Template Margin="5" Grid.Row="1" Grid.Column="1" Property_Label="MP" Property_Value="{Binding MonsterStatSheet.Mp}" Maximum="4294967295" MaxInputLength="10" BorderWidth="200" ValueBorderWidth="100"/>
 									</StackPanel>
 									<StackPanel Width="220" Height="150">
 										<local:Property_Template Margin="5" Grid.Row="0" Grid.Column="2" Property_Label="Strength" Property_Value="{Binding MonsterStatSheet.Strength}" BorderWidth="200" ValueBorderWidth="100"/>
@@ -130,8 +130,8 @@
 									<CheckBox Margin="5" Width="200" IsChecked="{Binding MonsterStatSheet.Prop_ImmunityBribe_Maybe}">ImmunityBribe</CheckBox>
 								</WrapPanel>
 								<WrapPanel HorizontalAlignment="Center">
-									<local:Property_Template Margin="5" Property_Label="Poison Damage" Property_Value="{Binding MonsterStatSheet.PoisonDamage}" BorderWidth="200" ValueBorderWidth="50"/>
-									<local:Property_Template Margin="5" Property_Label="Doom Counter" Property_Value="{Binding MonsterStatSheet.DoomCount}" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Poison Damage" Property_Value="{Binding MonsterStatSheet.PoisonDamage}" Maximum="100" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Doom Counter" Property_Value="{Binding MonsterStatSheet.DoomCount}" Maximum="255" MaxInputLength="3" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 							</StackPanel>
 						</Expander>
@@ -313,12 +313,12 @@
 						<Expander Header="Identifiers" IsExpanded="{Binding SelectorDM.IdentifiersExpanded}" HorizontalAlignment="Stretch">
 							<StackPanel>
 								<WrapPanel>
-									<local:Property_Template Margin="5" Property_Label="Monster Id" Property_Value="{Binding MonsterStatSheet.MonsterId}" BorderWidth="200" ValueBorderWidth="50"/>
-									<local:Property_Template Margin="5" Property_Label="Arena Id" Property_Value="{Binding MonsterStatSheet.ArenaId}" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Monster Id" Property_Value="{Binding MonsterStatSheet.MonsterId}" Maximum="65535" MaxInputLength="5" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Arena Id" Property_Value="{Binding MonsterStatSheet.ArenaId}" Minimum="-128" Maximum="127" MaxInputLength="4" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 								<WrapPanel>
-									<local:Property_Template Margin="5" Property_Label="Model Id" Property_Value="{Binding MonsterStatSheet.ModelId}" BorderWidth="200" ValueBorderWidth="50"/>
-									<local:Property_Template Margin="5" Property_Label="Sound Id" Property_Value="{Binding MonsterStatSheet.SoundId}" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Model Id" Property_Value="{Binding MonsterStatSheet.ModelId}" Maximum="65535" MaxInputLength="5" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Sound Id" Property_Value="{Binding MonsterStatSheet.SoundId}" Minimum="-32768" Maximum="32767" MaxInputLength="6" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 								<local:Property_Template Margin="5" HorizontalAlignment="Left" Property_Label="Ctb Icon Id" Property_Value="{Binding MonsterStatSheet.CtbIconId}" BorderWidth="200" ValueBorderWidth="50"/>
 							</StackPanel>
@@ -334,13 +334,18 @@
 					<StackPanel>
 						<Expander Header="Stats" IsExpanded="{Binding SelectorDM.LootStatsExpanded}" HorizontalAlignment="Stretch">
 							<StackPanel>
-								<local:GameIndex_Template Margin="5" GameIndex_Label="Ronso Rage" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RonsoRage}"/>
+								<StackPanel Margin="10" HorizontalAlignment="Center">
+									<TextBlock Margin="0,0,0,4" Text="Ronso Rage"/>
+									<ComboBox Width="260"
+											  ItemsSource="{Binding MonsterLoot.RonsoRageCommands}"
+											  SelectedItem="{Binding MonsterLoot.SelectedRonsoRage, Mode=TwoWay}"/>
+								</StackPanel>
 								<WrapPanel>
-									<local:Property_Template Margin="5" Property_Label="Gil" Property_Value="{Binding MonsterLoot.Gil}" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Gil" Property_Value="{Binding MonsterLoot.Gil}" Maximum="65535" MaxInputLength="5" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 								<WrapPanel>
-									<local:Property_Template Margin="5" Property_Label="Ap" Property_Value="{Binding MonsterLoot.Ap}" BorderWidth="200" ValueBorderWidth="50"/>
-									<local:Property_Template Margin="5" Property_Label="Ap Overkill" Property_Value="{Binding MonsterLoot.ApOverkill}" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Ap" Property_Value="{Binding MonsterLoot.Ap}" Maximum="65535" MaxInputLength="5" BorderWidth="200" ValueBorderWidth="50"/>
+									<local:Property_Template Margin="5" Property_Label="Ap Overkill" Property_Value="{Binding MonsterLoot.ApOverkill}" Maximum="65535" MaxInputLength="5" BorderWidth="200" ValueBorderWidth="50"/>
 								</WrapPanel>
 								<WrapPanel>
 									<local:Property_Template Margin="5" Property_Label="Zanmato Level" Property_Value="{Binding MonsterLoot.ZanmatoLevel}" BorderWidth="200" ValueBorderWidth="50"/>
@@ -362,25 +367,25 @@
 								<Label FontSize="20" FontWeight="Bold">Drops</Label>
 								<Separator/>
 								<WrapPanel>
-									<local:Loot_Template Margin="5" Loot_Label="Drop 1" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.Drop1}" Loot_Count="{Binding MonsterLoot.Drop1Count}"/>
-									<local:Loot_Template Margin="5" Loot_Label="Drop 1 Rare" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.Drop1Rare}" Loot_Count="{Binding MonsterLoot.Drop1RareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 1" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop1}" LootCount="{Binding MonsterLoot.Drop1Count}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 1 Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop1Rare}" LootCount="{Binding MonsterLoot.Drop1RareCount}"/>
 								</WrapPanel>
 
 								<WrapPanel>
-									<local:Loot_Template Margin="5" Loot_Label="Drop 2" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.Drop2}" Loot_Count="{Binding MonsterLoot.Drop2Count}"/>
-									<local:Loot_Template Margin="5" Loot_Label="Drop 2 Rare" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.Drop2Rare}" Loot_Count="{Binding MonsterLoot.Drop2RareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 2" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop2}" LootCount="{Binding MonsterLoot.Drop2Count}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 2 Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop2Rare}" LootCount="{Binding MonsterLoot.Drop2RareCount}"/>
 								</WrapPanel>
 
 								<Label FontSize="20" FontWeight="Bold">Drops Overkill</Label>
 								<Separator/>
 								<WrapPanel>
-									<local:Loot_Template Margin="5" Loot_Label="Drop Overkill" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.DropOverkill1}" Loot_Count="{Binding MonsterLoot.DropOverkillCount}"/>
-									<local:Loot_Template Margin="5" Loot_Label="Drop Overkill Rare" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.DropOverkill1Rare}" Loot_Count="{Binding MonsterLoot.DropOverkillRareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill1}" LootCount="{Binding MonsterLoot.DropOverkillCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill1Rare}" LootCount="{Binding MonsterLoot.DropOverkillRareCount}"/>
 								</WrapPanel>
 
 								<WrapPanel>
-									<local:Loot_Template Margin="5" Loot_Label="Drop Overkill 2" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.DropOverkill2}" Loot_Count="{Binding MonsterLoot.DropOverkill2Count}"/>
-									<local:Loot_Template Margin="5" Loot_Label="Drop Overkill 2 Rare" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.DropOverkill2Rare}" Loot_Count="{Binding MonsterLoot.DropOverkill2RareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill 2" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill2}" LootCount="{Binding MonsterLoot.DropOverkill2Count}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill 2 Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill2Rare}" LootCount="{Binding MonsterLoot.DropOverkill2RareCount}"/>
 								</WrapPanel>
 							</StackPanel>
 						</Expander>
@@ -391,13 +396,13 @@
 								<Label FontSize="20" FontWeight="Bold">Steal</Label>
 								<Separator/>
 								<WrapPanel>
-									<local:Loot_Template Margin="5" Loot_Label="Steal" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.Steal}" Loot_Count="{Binding MonsterLoot.StealCount}"/>
-									<local:Loot_Template Margin="5" Loot_Label="Steal Rare" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.StealRare}" Loot_Count="{Binding MonsterLoot.StealRareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Steal" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Steal}" LootCount="{Binding MonsterLoot.StealCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Steal Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.StealRare}" LootCount="{Binding MonsterLoot.StealRareCount}"/>
 								</WrapPanel>
 
 								<Label FontSize="20" FontWeight="Bold">Bribe</Label>
 								<Separator/>
-								<local:Loot_Template Margin="5" HorizontalAlignment="Left" Loot_Label="Bribe" CategOptions="{Binding CategoryOptions}" Loot_Object="{Binding MonsterLoot.Bribe}" Loot_Count="{Binding MonsterLoot.BribeCount}"/>
+								<local:MonsterLootItem_Template Margin="5" HorizontalAlignment="Left" LootLabel="Bribe" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Bribe}" LootCount="{Binding MonsterLoot.BribeCount}"/>
 							</StackPanel>
 						</Expander>
 
@@ -748,6 +753,7 @@
 											<Button x:Name="AiWorkerJumpButton" Width="90" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_GoToWorkerJump">Go to Jump</Button>
 											<Button x:Name="AiChangeWorkerJumpButton" Width="150" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_BeginWorkerJumpDestination" ToolTip.Tip="Enter destination-picking mode for the selected jump-table entry.">Choose Destination</Button>
 											<Button x:Name="AiAddWorkerJumpButton" Width="100" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_BeginAddWorkerJump" ToolTip.Tip="Append a jump-table entry to this worker and choose its destination.">Add Jump</Button>
+											<Button x:Name="AiAddWorkerVariableButton" Width="112" Height="28" Margin="4,20,4,0" Padding="8,2" Click="Button_AddWorkerVariable" ToolTip.Tip="Append an uninitialized variable slot to this worker.">Add Variable</Button>
 											<StackPanel x:Name="AiReturnOnlyManualInsertPanel" Margin="8,0,4,0" HorizontalAlignment="Left" IsVisible="False">
 												<TextBlock Margin="0,0,0,3">Manual code (hex):</TextBlock>
 												<StackPanel Orientation="Horizontal" Spacing="6">

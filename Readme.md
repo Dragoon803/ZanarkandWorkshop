@@ -13,8 +13,8 @@ An unofficial Final Fantasy X modding toolkit for Windows. Zanarkand Workshop
 uses its own version numbering beginning at v0.1.0 and was derived from FFX
 Project Editor v1.2.
 
-The current release is **v0.2.0**, featuring expanded Battle Script editing,
-safer recovery workflows, improved command editors, and clearer validation.
+The current release is **v0.3.0**, featuring Auto Ability editing, expanded
+Monster Editor controls, safer recovery workflows, and clearer validation.
 
 If you only want to use the Utilities, simply open the app when the game is open and use them, no need to set anything up.
 
@@ -48,7 +48,9 @@ Click **Open Project Folder...** and select your master folder. The app detects
 the running game automatically; the **FFX Connected** indicator shows the
 connection status.
 
-<img src="ReadmeAssets/ZW_Guide.png" alt="Zanarkand Workshop project and original-game-file guide" width="900"/>
+<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop editor guide" width="900"/>
+
+<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop text editing and project requirements guide" width="900"/>
 
 ## File Editors
 
@@ -80,6 +82,54 @@ and related properties.
 
 <img src="ReadmeAssets/ZW_Item_Editor.png" alt="Zanarkand Workshop Item Editor" width="900"/>
 
+### Rikku Mix Recipes
+
+Edit the result command produced by any two usable items. Recipes are loaded
+from `jppc/battle/kernel/prepare.bin` and command names come from
+`new_uspc/battle/kernel/command.bin`.
+
+Search or sort the recipe list, choose ingredients and results from dropdowns,
+then save the updated Mix table.
+
+### Auto Abilities
+
+Edit the Auto Abilities used by weapons and armor. The editor reads
+`new_uspc/battle/kernel/a_ability.bin` and the customization recipes stored in
+`jppc/battle/kernel/kaizou.bin`.
+
+Either file can be edited independently. If one is missing, its corresponding
+tab is disabled and saving updates only the file that was loaded. The editor
+refuses to open only when both files are missing.
+
+The **Properties & Effects** tab includes:
+
+* The ability name and description.
+* Basic display and grouping properties.
+* Elemental effects.
+* Permanent, temporary, and extra status effects.
+* Direct stat increases and the percentage increase amount.
+* Separate Strength, Magic, Defense, and Magic Defense calculation bonuses.
+* Confirmed special effects such as Sensor, Counterattack, Auto-Potion,
+  Break Damage Limit, No Encounters, and Capture.
+
+Direct stat increases change the stored combat stat and remain subject to that
+stat's normal cap. The four Bonus flags do not change the displayed combat stat;
+they apply separately during the game's calculations.
+
+The **Recipe** tab controls whether the ability is customized onto weapons or
+armor, the required item, and the required quantity. Recipe quantities are
+limited to the game's inventory maximum of 99.
+
+Names and descriptions use the same supported-character, cyan-formatting, and
+line-break rules described under **General text editing**. Saving rebuilds the
+text offsets in `a_ability.bin` and writes the corresponding recipe changes to
+`kaizou.bin`. Numeric fields support Enter to commit and Escape to restore the
+previous value. Save and **Restore Original in Current Editor** preserve the
+focused ability after reloading; recovery restores only the file belonging to
+the active tab.
+
+<img src="ReadmeAssets/ZW_Auto_Ability_Editor.png" alt="Zanarkand Workshop Auto Ability Editor" width="900"/>
+
 ### Player & Aeon Commands
 
 Edit the commands used by the party and Aeons.
@@ -98,11 +148,17 @@ Edit commands used by bosses.
 
 <img src="ReadmeAssets/ZW_Monmagic2_Editor.png" alt="Zanarkand Workshop Boss Command Editor" width="900"/>
 
+### Battle Formations
+
+Edit which monsters appear in a battle and adjust their positions.
+
+<img src="ReadmeAssets/ZW_Battle_Formation_Editor.png" alt="Zanarkand Workshop Battle Formation Editor" width="900"/>
+
 ## General text editing
 
 These rules apply across editable game-text fields in Zanarkand Workshop,
 including monster names, Sensor and Scan text, items, and command names and
-descriptions.
+descriptions, as well as Auto Ability names and descriptions.
 
 ### Cyan formatting
 
@@ -183,11 +239,11 @@ To create the ready-to-distribute, self-contained Windows ZIP used for GitHub
 Releases:
 
 ```powershell
-.\scripts\build-release.ps1 -Version 0.2.0
+.\scripts\build-release.ps1 -Version 0.3.0
 ```
 
-The package is written to `artifacts/ZanarkandWorkshop-v0.2.0-win-x64.zip`.
-Pushing a version tag such as `v0.2.0` runs the same packaging process on
+The package is written to `artifacts/ZanarkandWorkshop-v0.3.0-win-x64.zip`.
+Pushing a version tag such as `v0.3.0` runs the same packaging process on
 GitHub and creates a draft release for review.
 
 ## Project status

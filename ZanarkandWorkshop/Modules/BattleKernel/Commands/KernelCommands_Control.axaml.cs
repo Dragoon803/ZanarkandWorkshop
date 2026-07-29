@@ -28,10 +28,13 @@ public partial class KernelCommands_Control : UserControl
 
     private void SetIdentityColumnsReadOnly()
     {
-        foreach (DataGridColumn column in DGrid.Columns.Where(column =>
-                     column.Header?.ToString() is "Index" or "Name" or "Description"))
+        foreach (DataGridColumn column in DGrid.Columns)
         {
-            column.IsReadOnly = !DataModel.ShowDescription;
+            string? header = column.Header?.ToString();
+            if (header == "Index")
+                column.IsReadOnly = true;
+            else if (header is "Name" or "Description")
+                column.IsReadOnly = !DataModel.ShowDescription;
         }
 
         DGrid.FrozenColumnCount = DataModel.ShowDescription ? 3 : 2;
@@ -51,6 +54,49 @@ public partial class KernelCommands_Control : UserControl
     private void Button_LoadIngame(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         DataModel.LoadInGame();
+    }
+
+    private void Button_CloneAsNewCommand(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        try
+        {
+            if (DGrid.SelectedItem is not KernelCommands_Wrapper selected)
+            {
+                DataModel.RecoveryStatus = "Select a monster command to clone.";
+                return;
+            }
+
+            KernelCommands_Wrapper clone = DataModel.CloneAsNewCommand(selected);
+            DGrid.SelectedItem = clone;
+            DGrid.ScrollIntoView(clone, null);
+        }
+        catch (Exception ex)
+        {
+            DataModel.RecoveryStatus = "ERROR: " + ex.Message;
+        }
+    }
+
+    private void Button_DeleteClone(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        try
+        {
+            if (DGrid.SelectedItem is not KernelCommands_Wrapper selected)
+            {
+                DataModel.RecoveryStatus = "Select a cloned monster command to delete.";
+                return;
+            }
+
+            KernelCommands_Wrapper? nextSelection = DataModel.DeleteClonedCommand(selected);
+            if (nextSelection != null)
+            {
+                DGrid.SelectedItem = nextSelection;
+                DGrid.ScrollIntoView(nextSelection, null);
+            }
+        }
+        catch (Exception ex)
+        {
+            DataModel.RecoveryStatus = "ERROR: " + ex.Message;
+        }
     }
 
     private void Filter_Changed(object? sender, Avalonia.Controls.TextChangedEventArgs e)
@@ -102,7 +148,7 @@ public partial class KernelCommands_Control : UserControl
             $"This will immediately replace the complete {editorName} file with its original, unedited game file.\n\n" +
             "Every entry, name, description, property, target rule, animation setting, damage value, status effect, " +
             "menu setting, and other field in this editor will be restored. All current modifications in this file " +
-            "will be discarded. A one-time .bak captures the project file as it existed before its first save or restore.";
+            "will be discarded.";
         bool confirmed = await AiRevertConfirmationWindow.Show(owner, $"Restore Original {editorName}",
             explanation, originalPath, "Restore and Save",
             "Confirming will immediately validate and write the original file into the active project.");

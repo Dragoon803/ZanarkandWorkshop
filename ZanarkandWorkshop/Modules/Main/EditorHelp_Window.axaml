@@ -21,13 +21,25 @@
                             HorizontalAlignment="Stretch">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Monster Editor" FontSize="18" FontWeight="Bold"/>
-                        <TextBlock Text="Edits complete monster files, including combat stats, status and elemental properties, loot, rewards, and monster AI. The AI workspace provides translated logic, structured controls, worker and jump navigation, validation, and safe statement editing."
+                        <TextBlock Text="Edits complete monster files, including combat stats, status and elemental properties, loot, rewards, and battle behavior through Battle Scripts. The Battle Script workspace provides translated logic, structured controls, worker and jump navigation, validation, and safe statement editing."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Auto Ability Editor" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="Edits weapon and armor Auto Ability names, descriptions, properties, effects, stat increases, and customization recipes. Properties &amp; Effects uses a_ability.bin, while Recipe uses kaizou.bin; either tab remains available when only its corresponding file is present."
                                    TextWrapping="Wrap" Foreground="#DDDDDD"/>
                     </StackPanel>
 
                     <StackPanel Spacing="4">
                         <TextBlock Text="Items" FontSize="18" FontWeight="Bold"/>
                         <TextBlock Text="Views and edits the game’s item definitions stored in item.bin."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Rikku Mix Recipes" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="Changes the Mix produced by any two items. Search or sort the list, choose the result and ingredients from the dropdowns, then press Save. These recipes come from prepare.bin."
                                    TextWrapping="Wrap" Foreground="#DDDDDD"/>
                     </StackPanel>
 
@@ -46,6 +58,12 @@
                     <StackPanel Spacing="4">
                         <TextBlock Text="Boss Commands" FontSize="18" FontWeight="Bold"/>
                         <TextBlock Text="Views and edits commands used by bosses throughout the game. These entries come from monmagic2.bin."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Battle Formation Editor" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="Changes which monsters appear in a battle and where they stand. Select a formation, choose up to eight monsters, adjust their positions in the graph or coordinate fields, then press Save."
                                    TextWrapping="Wrap" Foreground="#DDDDDD"/>
                     </StackPanel>
 

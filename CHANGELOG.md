@@ -2,6 +2,33 @@
 
 All notable changes to Zanarkand Workshop will be documented here.
 
+## [0.3.0] - 2026-07-28
+
+### Added
+
+* Added an Auto Ability Editor for properties, effects, names, descriptions, and customization recipes.
+* Added a Rikku Mix Recipe Editor for searching, sorting, and changing ingredient pairs and result commands.
+* Added a Battle Formation Editor for changing enemy parties and editing formation coordinates visually or numerically.
+* Added expanded Monster Editor constraints and direct Enter/Escape numeric editing.
+* Added smoke-test projects for battle formations, command flags, command-slot expansion, and monster Battle Scripts.
+
+### Changed
+
+* Improved Monster Editor status, element, stat, basic-property, and loot layouts.
+* Restricted monster drops, steals, and bribes to project item data with current item names.
+* Added a dedicated Ronso Rage command selector using current Player and Aeon command names.
+* Corrected unsigned monster fields and reward limits to better match Fahrenheit and the game structures.
+* Expanded command editors to safely add command slots while preserving existing records and references.
+* Improved the in-app guide and GitHub documentation for the new editors.
+* Removed automatic `.bak` file creation to prevent backup files from accumulating beside edited game files.
+* Promoted the Battle Formation Editor from experimental status after extensive in-game formation testing.
+
+### Fixed
+
+* Correctly mapped Rikku Mix result IDs to their corresponding `command.bin` command names.
+* Improved fixed column sizing, sorting, filtering, and sticky headers in the Rikku Mix Recipe Editor.
+* Improved handling of missing files and folders in the Rikku Mix and Battle Formation editors.
+
 ## [0.2.0] - 2026-07-25
 
 ### Added

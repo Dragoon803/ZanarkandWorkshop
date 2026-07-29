@@ -19,7 +19,12 @@
 			  
 			  <DockPanel>
 				  <Label DockPanel.Dock="Left" VerticalAlignment="Center" Content="{TemplateBinding Property_Label}"/>
-				  <TextBox DockPanel.Dock="Right" Width="{TemplateBinding ValueBorderWidth}" HorizontalAlignment="Right" Text="{Binding Property_Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+				  <controls:LimitedNumericUpDown DockPanel.Dock="Right" Width="{TemplateBinding ValueBorderWidth}"
+								 HorizontalAlignment="Right"
+								 Value="{Binding Property_Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+								 Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+								 MaxInputLength="{TemplateBinding MaxInputLength}"
+								 FormatString="0" ShowButtonSpinner="False"/>
 			  </DockPanel>
 		  </Border>
 

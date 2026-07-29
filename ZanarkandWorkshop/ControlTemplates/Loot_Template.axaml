@@ -25,10 +25,14 @@
 					<Label Content="{TemplateBinding Loot_Label}" IsVisible="{TemplateBinding Loot_IsLabelVisible}"/>
 					<DockPanel>
 						<StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-							<TextBox Width="30" Margin="10 0 0 0" Text="{Binding Loot_Count, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+							<controls:LimitedNumericUpDown Width="55" Margin="10 0 0 0" MaxInputLength="2"
+										 Value="{Binding Loot_Count, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+										 Minimum="0" Maximum="99" FormatString="0" ShowButtonSpinner="False"/>
 							<Label VerticalAlignment="Center" Margin="10 0 10 0">X</Label>
 
-							<TextBox Width="30" Text="{Binding Loot_Object.Index, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+							<controls:LimitedNumericUpDown Width="65" MaxInputLength="4"
+										 Value="{Binding Loot_Object.Index, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+										 Minimum="0" Maximum="4095" FormatString="0" ShowButtonSpinner="False"/>
 							<StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
 								<ComboBox Width="220" HorizontalAlignment="Stretch"
 										  ItemsSource="{TemplateBinding CategOptions}"

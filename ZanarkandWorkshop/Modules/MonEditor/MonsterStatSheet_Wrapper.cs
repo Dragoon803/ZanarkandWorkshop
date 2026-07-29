@@ -124,10 +124,10 @@ namespace FFXProjectEditor.Modules.MonEditor
 
         [ObservableProperty] public GameIndex_Wrapper forcedAbility;
 
-        [ObservableProperty] public short monsterId;
-        [ObservableProperty] public short modelId;
+        [ObservableProperty] public ushort monsterId;
+        [ObservableProperty] public ushort modelId;
         [ObservableProperty] public byte ctbIconId;
-        [ObservableProperty] public sbyte doomCount;
+        [ObservableProperty] public byte doomCount;
         [ObservableProperty] public sbyte arenaId;
         [ObservableProperty] public byte arenaIdPadding;
         [ObservableProperty] public short soundId;

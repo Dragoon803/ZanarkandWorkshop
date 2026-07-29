@@ -5,9 +5,9 @@ namespace FFXProjectEditor.FfxLib.Monster
 {
     public class Monster_Loot
     {
-        [Data] public short Gil { get; set; }
-        [Data] public short Ap { get; set; }
-        [Data] public short ApOverkill { get; set; }
+        [Data] public ushort Gil { get; set; }
+        [Data] public ushort Ap { get; set; }
+        [Data] public ushort ApOverkill { get; set; }
         [Data] public ushort RonsoRageId { get; set; }
 
         // Drops
