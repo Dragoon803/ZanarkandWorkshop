@@ -4,25 +4,29 @@
   <img src="ZanarkandWorkshop/Assets/ZanarkandWorkshop.png" alt="Zanarkand Workshop logo" width="560"/>
 </p>
 
-> **Forked with permission from original author:** This project is based on
-> [osdanova/FFXProjectEditor](https://github.com/osdanova/FFXProjectEditor),
-> originally created by osdanova. This fork is independently maintained and is
-> not affiliated with or endorsed by Square Enix.
+## Modern all-in-one toolkit for editing Final Fantasy X HD Remaster game data. 
+Modify auto abilities, redesign monster battle AI, customize commands, adjust battle formations, and test changes live through an intuitive graphical interface.
 
-An unofficial Final Fantasy X modding toolkit for Windows. Zanarkand Workshop
-uses its own version numbering beginning at v0.1.0 and was derived from FFX
-Project Editor v1.2.
+Originally based on [osdanova/FFXProjectEditor](https://github.com/osdanova/FFXProjectEditor) v1.2, Zanarkand Workshop has evolved into a significantly expanded editor with new tools, improved workflows, and ongoing development.
 
 The current release is **v0.3.0**, featuring Auto Ability editing, expanded
 Monster Editor controls, safer recovery workflows, and clearer validation.
 
-If you only want to use the Utilities, simply open the app when the game is open and use them, no need to set anything up.
+## Features
+* Monster Editor
+* Monster Battle Script Editor
+* Auto Ability Editor
+* Item Editor
+* Player & Aeon Command Editor
+* Enemy Command Editor
+* Battle Formation Editor
+* Rikku Mix Editor
+* Live Memory Utilities
+* Inventory Tracker
+* Arena Tracker
+* Live Battle Tracker
 
-* Utilities are only compatible with the Windows Steam version.
-* Utilities are compatible with [Untitled Project X](https://steamcommunity.com/sharedfiles/filedetails/?id=683802394).
-* To refresh Utility data, it has to be reopened (excluding the Battle Tracker).
-
-## How to set it up
+## Getting Started
 
 Download the latest Windows package from the Releases section of this fork,
 extract it, and run `ZanarkandWorkshop.exe`.
@@ -48,13 +52,9 @@ Click **Open Project Folder...** and select your master folder. The app detects
 the running game automatically; the **FFX Connected** indicator shows the
 connection status.
 
-<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop editor guide" width="900"/>
+<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop editor guide" width="720"/>
 
-<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop text editing and project requirements guide" width="900"/>
-
-## File Editors
-
-* Available when a master file is selected and confirmed.
+<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop text editing and project requirements guide" width="720"/>
 
 ### Monster Editor
 
@@ -185,10 +185,14 @@ of writing damaged text. Replace unsupported smart quotes, symbols, or accented
 characters with a supported equivalent and save again.
 
 ## Utilities
+If you only want to use the Utilities, simply open the app when the game is open and use them, no need to set anything up.
 
 * Available only while an active session of FFX is running.
 * Zanarkand Workshop will automatically connect.
 * Check **FFX Connected** in the top-right corner for confirmation.
+* Utilities are only compatible with the Windows Steam version.
+* Utilities are compatible with [Untitled Project X](https://steamcommunity.com/sharedfiles/filedetails/?id=683802394).
+* To refresh Utility data, it has to be reopened (excluding the Battle Tracker).
 
 Tools to play around with the game.
 
