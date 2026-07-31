@@ -268,4 +268,6 @@ and their knowledge of monster Battle Script structure.
 
 Another big thanks to the
 [Cid's Salvage Ship](https://discord.gg/yAQc3ngwDF) Discord community. They've
-been an enormous help with FFX modding. Check them out if you're interested.
+been an enormous help with FFX modding. Check them out if you're interested.  
+## Contact  
+You can find me in the Cid's Salvage Ship community discord. Questions and feedback about Zanarkand Workshop are welcome there.
