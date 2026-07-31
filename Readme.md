@@ -5,9 +5,9 @@
 </p>
 
 ## Modern all-in-one toolkit for editing Final Fantasy X HD Remaster game data. 
-Modify auto abilities, redesign monster battle AI, customize commands, adjust battle formations, and test changes live through an intuitive graphical interface.
-
-Originally based on [osdanova/FFXProjectEditor](https://github.com/osdanova/FFXProjectEditor) v1.2, Zanarkand Workshop has evolved into a significantly expanded editor with new tools, improved workflows, and ongoing development.
+Zanarkand Workshop is under active development, with new tools, improved workflows, and ongoing enhancements. Originally based on osdanova/FFXProjectEditor v1.2, it has grown into a significantly expanded editor.  
+  
+Modify auto abilities, redesign monster battle AI, customize commands, adjust encounter formations, and more.
 
 The current release is **v0.3.0**, featuring Auto Ability editing, expanded
 Monster Editor controls, safer recovery workflows, and clearer validation.
