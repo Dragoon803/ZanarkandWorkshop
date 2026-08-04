@@ -54,9 +54,9 @@ Click **Open Project Folder...** and select your master folder. The app detects
 the running game automatically; the **FFX Connected** indicator shows the
 connection status.
 
-<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop editor guide" width="720"/>
+<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop editor guide" width="720"/>
 
-<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop text editing and project requirements guide" width="720"/>
+<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop text editing and project requirements guide" width="720"/>
 
 ### Monster Editor
 
@@ -120,13 +120,13 @@ they apply separately during the game's calculations.
 
 The **Recipe** tab controls whether the ability is customized onto weapons or
 armor, the required item, and the required quantity. Recipe quantities are
-limited to the game's inventory maximum of 99.
+limited to the game's inventory maximum of 99. Some auto abilities do not have  
+recipes and disable the Recipe tab.
 
 Names and descriptions use the same supported-character, cyan-formatting, and
 line-break rules described under **General text editing**. Saving rebuilds the
 text offsets in `a_ability.bin` and writes the corresponding recipe changes to
-`kaizou.bin`. Numeric fields support Enter to commit and Escape to restore the
-previous value. 
+`kaizou.bin`.
 
 Use **Restore Original Ability** to recover only the selected ability's
 properties, text, and matching recipe. Other Auto Abilities remain unchanged,
@@ -166,7 +166,9 @@ its link. The editor can also create nodes and links, find and replace node
 types, and undo changes before saving.
 
 Use **Recovery** to restore the game's original grids. Start a new game when
-testing a redesigned Sphere Grid so the game loads the new grid data cleanly.
+testing a redesigned Sphere Grid so the game loads the new grid data cleanly.  
+
+<img src="ReadmeAssets/ZW_Sphere_Grid_Editor.png" alt="Zanarkand Workshop Sphere Grid Editor" width="900"/>
 
 ### Treasure Chest Editor
 
@@ -178,7 +180,9 @@ weapons, and armor. Chest positions are shown for reference and are not edited.
 
 Required files: `jppc/battle/kernel/takara.bin`, `buki_get.bin`,
 `jppc/map` with `mapout.vpa` files, and `jppc/event/obj` with `.ebp` files.
-Only `takara.bin` is changed when you save.
+Only `takara.bin` is changed when you save.  
+
+<img src="ReadmeAssets/ZW_Treasure_Editor.png" alt="Zanarkand Workshop Treasure Editor" width="900"/>
 
 ## General text editing
 
