@@ -28,6 +28,9 @@ Monster Editor controls, safer recovery workflows, and clearer validation.
 * Arena Tracker
 * Live Battle Tracker
 
+## Known Bugs
+* Using the Add Node feature of the sphere grid currently causes the game to crash upon exiting the in-game sphere grid menu. 
+
 ## Getting Started
 
 Download the latest Windows package from the Releases section of this fork,
