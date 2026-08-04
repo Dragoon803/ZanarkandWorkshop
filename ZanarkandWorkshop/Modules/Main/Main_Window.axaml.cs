@@ -3,11 +3,14 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using FFXProjectEditor.FfxLib.SphereGrid;
 using FFXProjectEditor.Modules.BattleKernel.Commands;
 using FFXProjectEditor.Modules.BattleFormationEditor;
 using FFXProjectEditor.Modules.Main;
 using FFXProjectEditor.Modules.MixEditor;
 using FFXProjectEditor.Modules.MonEditor;
+using FFXProjectEditor.Modules.SphereGridEditor;
+using FFXProjectEditor.Modules.TreasureMapEditor;
 using FFXProjectEditor.Services;
 using FFXProjectEditor.Utils;
 using System;
@@ -16,6 +19,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace FFXProjectEditor;
 
@@ -110,6 +114,11 @@ public partial class Main_Window : Window
 			await kernelEditor.RestoreOriginalAsync(this);
 			return;
 		}
+		if (ContentFrame.Content is SphereGridEditor_Control sphereGridEditor)
+		{
+			await sphereGridEditor.RestoreOriginalAsync(this);
+			return;
+		}
 		if (ContentFrame.Content is MonEditorSelector_Control monsterSelector)
 		{
 			if (monsterSelector.ActiveMonsterEditor is MonEditor_Control monsterEditor)
@@ -171,6 +180,7 @@ public partial class Main_Window : Window
 			ContentFrame.Content is AutoAbilityEditor_Control ||
 			ContentFrame.Content is MixEditor_Control ||
 			ContentFrame.Content is KernelCommands_Control ||
+			ContentFrame.Content is SphereGridEditor_Control ||
 			ContentFrame.Content is MonEditorSelector_Control
 			{
 				ActiveMonsterEditor: not null
@@ -222,9 +232,7 @@ public partial class Main_Window : Window
             return;
         }
 
-        DataModel.LoadProjectFolder(filePath);
-        RememberRecentProject(filePath);
-        ShowProjectLoadStatus("SUCCESS: Master folder loaded successfully.", true);
+        await LoadProjectWithOverlay(filePath);
     }
 
     private async void Button_ProjectPath(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -248,9 +256,7 @@ public partial class Main_Window : Window
             return;
         }
 
-        DataModel.LoadProjectFolder(openDialogResults[0]);
-        RememberRecentProject(openDialogResults[0]);
-        ShowProjectLoadStatus("SUCCESS: Master folder loaded successfully.", true);
+        await LoadProjectWithOverlay(openDialogResults[0]);
     }
 
     private void LoadRecentProjects()
@@ -323,9 +329,26 @@ public partial class Main_Window : Window
             return;
         }
 
-        DataModel.LoadProjectFolder(path);
-        RememberRecentProject(path);
-        ShowProjectLoadStatus("SUCCESS: Master folder loaded successfully.", true);
+        await LoadProjectWithOverlay(path);
+    }
+
+    private async Task LoadProjectWithOverlay(string path)
+    {
+        if (!await ConfirmLeaveDirtyTreasureEditor()) return;
+        ShowLoading("Loading project", "Preparing the selected FFX master folder…");
+        try
+        {
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+            DataModel.LoadProjectFolder(path);
+            RememberRecentProject(path);
+            ShowProjectLoadStatus("SUCCESS: Master folder loaded successfully.", true);
+        }
+        catch (Exception ex)
+        {
+            ShowProjectLoadStatus("FAILED: " + ex.Message, false);
+            await RecoveryNotice_Window.Show(this, "Project could not be loaded", ex.Message, path, false);
+        }
+        finally { HideLoading(); }
     }
 
     private async System.Threading.Tasks.Task ShowProtectedVanillaProjectWarning(string path)
@@ -574,9 +597,130 @@ public partial class Main_Window : Window
             () => new BattleFormationEditor_Control());
     }
 
+    private async void MenuItem_SphereGridEditor(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!Project_Service.Instance.IsProjectLoaded)
+            return;
+
+        try
+        {
+            var mismatches = new List<SphereGridHeaderMismatch>();
+            foreach (SphereGridKind kind in Enum.GetValues<SphereGridKind>())
+            {
+                SphereGridFileSet files = SphereGridFileSet.FromDirectory(
+                    Project_Service.Instance.Path_SphereGrid, kind);
+                SphereGridHeaderMismatch? mismatch = SphereGridHeaderRepair.Inspect(files);
+                if (mismatch is not null)
+                    mismatches.Add(mismatch);
+            }
+
+            if (mismatches.Count > 0)
+            {
+                SphereGridHeaderMismatch? unsafeMismatch =
+                    mismatches.FirstOrDefault(mismatch => !mismatch.CanRepair);
+                if (unsafeMismatch is not null)
+                {
+                    await RecoveryNotice_Window.Show(
+                        this,
+                        "Sphere Grid Could Not Be Repaired",
+                        unsafeMismatch.Description + Environment.NewLine + Environment.NewLine +
+                        "The available node-type data does not exactly match the layout count. " +
+                        "Use Recovery to restore the original grids.",
+                        unsafeMismatch.Files.ContentPath,
+                        false);
+                    return;
+                }
+
+                string explanation =
+                    "The Sphere Grid files contain conflicting node counts:" +
+                    Environment.NewLine + Environment.NewLine +
+                    string.Join(Environment.NewLine, mismatches.Select(mismatch => mismatch.Description)) +
+                    Environment.NewLine + Environment.NewLine +
+                    "Complete node-type data is present, so the content header can be corrected safely.";
+                string sources = string.Join(
+                    Environment.NewLine,
+                    mismatches.Select(mismatch => mismatch.Files.ContentPath));
+                bool repair = await AiRevertConfirmationWindow.Show(
+                    this,
+                    "Sphere Grid Repair Required",
+                    explanation,
+                    sources,
+                    "Repair and Open",
+                    "Use Recovery if you need to restore the game's original Sphere Grid files.");
+                if (!repair)
+                    return;
+
+                foreach (SphereGridHeaderMismatch mismatch in mismatches)
+                    SphereGridHeaderRepair.Repair(mismatch);
+            }
+        }
+        catch (Exception ex)
+        {
+            await RecoveryNotice_Window.Show(
+                this,
+                "Sphere Grid Repair Failed",
+                ex.Message,
+                Project_Service.Instance.Path_SphereGrid,
+                false);
+            return;
+        }
+
+        await OpenProjectEditor("Sphere Grid Editor", Project_Service.Instance.Path_SphereGrid, true,
+            () => new SphereGridEditor_Control());
+    }
+
+    private async void MenuItem_TreasureMapEditor(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!Project_Service.Instance.IsProjectLoaded) return;
+        string required = Path.Combine(Project_Service.Instance.ProjectPath!, "jppc", "map");
+        await OpenProjectEditorAsync("Treasure Map Editor", required, true, async () =>
+        {
+            TreasureMapEditor_DataModel model = await Task.Run(() => new TreasureMapEditor_DataModel(message =>
+                Dispatcher.UIThread.Post(() => LoadingDetailText.Text = message)));
+            return new TreasureMapEditor_Control(model);
+        }, "Scanning map geometry, event scripts, and treasure locations…");
+    }
+
+	private async Task OpenProjectEditorAsync(
+		string editorName, string requiredPath, bool requiredIsDirectory,
+		Func<Task<Control>> createEditor, string detail)
+	{
+		if (!await ConfirmLeaveDirtyTreasureEditor()) return;
+		bool exists = requiredIsDirectory ? Directory.Exists(requiredPath) : File.Exists(requiredPath);
+		if (!exists)
+		{
+			await RecoveryNotice_Window.Show(this, editorName + " is unavailable",
+				requiredIsDirectory ? "This editor couldn’t be opened because a required folder is missing." : "This editor couldn’t be opened because a required file is missing.",
+				requiredPath, false);
+			return;
+		}
+		ShowLoading("Opening " + editorName, detail);
+		try
+		{
+			await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+			ContentFrame.Content = await createEditor();
+		}
+		catch (Exception ex)
+		{
+			await RecoveryNotice_Window.Show(this, editorName + " could not be opened",
+				"The required data exists, but the editor could not read it.\n\n" + ex.Message, requiredPath, false);
+		}
+		finally { HideLoading(); }
+	}
+
+	private void ShowLoading(string title, string detail)
+	{
+		LoadingTitleText.Text = title;
+		LoadingDetailText.Text = detail;
+		LoadingOverlay.IsVisible = true;
+	}
+
+	private void HideLoading() => LoadingOverlay.IsVisible = false;
+
 	private async System.Threading.Tasks.Task OpenProjectEditor(
 		string editorName, string requiredPath, bool requiredIsDirectory, Func<Control> createEditor)
 	{
+		if (!await ConfirmLeaveDirtyTreasureEditor()) return;
 		bool exists = requiredIsDirectory ? Directory.Exists(requiredPath) : File.Exists(requiredPath);
 		if (!exists)
 		{
@@ -590,6 +734,8 @@ public partial class Main_Window : Window
 
 		try
 		{
+			ShowLoading("Opening " + editorName, "Reading and validating project data…");
+			await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
 			ContentFrame.Content = createEditor();
 		}
 		catch (Exception ex)
@@ -598,6 +744,19 @@ public partial class Main_Window : Window
 				"The required data exists, but the editor could not read it.\n\n" + ex.Message,
 				requiredPath, false);
 		}
+		finally { HideLoading(); }
+	}
+
+	private async Task<bool> ConfirmLeaveDirtyTreasureEditor()
+	{
+		if (ContentFrame.Content is not TreasureMapEditor_Control { HasUnsavedChanges: true }) return true;
+		return await AiRevertConfirmationWindow.Show(
+			this,
+			"Discard Unsaved Treasure Changes?",
+			"The Treasure Map Editor contains changes that have not been saved. Leaving it now will discard those edits.",
+			Project_Service.Instance.ProjectPath ?? "",
+			"Discard Changes",
+			"Choose Cancel to return to the editor and save first.");
 	}
     private void MenuItem_DebugMenu(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -615,8 +774,6 @@ public partial class Main_Window : Window
     {
         ContentFrame.Content = new ArenaTracker_Control();
     }
-
-
     private void MenuItem_Test(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         ContentFrame.Content = new Test_Control();

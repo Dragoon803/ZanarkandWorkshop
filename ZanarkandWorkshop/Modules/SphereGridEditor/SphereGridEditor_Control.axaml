@@ -1,0 +1,213 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:FFXProjectEditor.Modules.SphereGridEditor"
+             xmlns:primitives="clr-namespace:Avalonia.Controls.Primitives;assembly=Avalonia.Controls"
+             mc:Ignorable="d"
+             d:DesignWidth="1400" d:DesignHeight="800"
+             x:Class="FFXProjectEditor.Modules.SphereGridEditor.SphereGridEditor_Control">
+    <Grid RowDefinitions="Auto,*,Auto,Auto">
+        <Border Grid.Row="0" Padding="12,8" BorderBrush="#3A3A3A"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto,*">
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Margin="0,0,12,0"
+                               VerticalAlignment="Center" FontSize="17"
+                               FontWeight="Bold" Text="Sphere Grid"/>
+                    <primitives:TabStrip x:Name="GridTabs"
+                                         SelectedIndex="1"
+                                         HorizontalAlignment="Left"
+                                         SelectionChanged="GridTabs_SelectionChanged">
+                        <primitives:TabStripItem Content="Original" MinWidth="88"/>
+                        <primitives:TabStripItem Content="Standard" MinWidth="88"/>
+                        <primitives:TabStripItem Content="Expert" MinWidth="88"/>
+                    </primitives:TabStrip>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Content="&#x2212;" Width="34" Click="ZoomOut_Click"/>
+                    <TextBlock Width="48" TextAlignment="Center"
+                               VerticalAlignment="Center"
+                               Text="{Binding #GridCanvas.ZoomPercent, StringFormat={}{0}%}"/>
+                    <Button Content="+" Width="34" Click="ZoomIn_Click"/>
+                    <Button Content="Center" MinWidth="64"
+                            Margin="4,0,0,0" Click="Fit_Click"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <local:SphereGridCanvas_Control x:Name="GridCanvas"
+                                            Graph="{Binding Graph}"
+                                            ColorOverrides="{Binding ColorOverrides}"
+                                            SelectedLinkIndex="{Binding HighlightedExperimentalLinkIndex}"
+                                            PreviewAnchorNodeIndex="{Binding ExperimentalPreviewAnchorIndex}"
+                                            SelectedNode="{Binding SelectedNode}"/>
+
+            <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                    Margin="10" Padding="9,6" CornerRadius="4"
+                    Background="#D914171C" BorderBrush="#454B55" BorderThickness="1">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="#4DDDF8"/><TextBlock Text="Tidus"/></StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="#F4F1EA"/><TextBlock Text="Yuna"/></StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="#E53935"/><TextBlock Text="Auron"/></StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="#3157D5"/><TextBlock Text="Kimahri"/></StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="#F97316"/><TextBlock Text="Wakka"/></StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="#C44ED6"/><TextBlock Text="Lulu"/></StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="#32C84A"/><TextBlock Text="Rikku"/></StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <TabControl x:Name="EditorTabs" Grid.Row="2" Margin="12,4,12,0" MinHeight="170"
+                    SelectionChanged="EditorTabs_SelectionChanged">
+          <TabItem Header="Node Editor">
+            <Border Padding="12,8" BorderBrush="#3A3A3A" BorderThickness="1">
+              <Grid RowDefinitions="Auto,Auto">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Top"
+                            Spacing="8" IsEnabled="{Binding HasSelectedNode}">
+                    <TextBlock VerticalAlignment="Center" Text="Node #"/>
+                    <TextBlock MinWidth="28" VerticalAlignment="Center" FontWeight="Bold"
+                               Text="{Binding SelectedNode.Index}"/>
+                    <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Text="Node Type"/>
+                    <ComboBox Width="170"
+                              ItemsSource="{Binding NodeTypeOptions}"
+                              SelectedItem="{Binding PendingNodeType}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Margin="10,0,0,0"
+                               VerticalAlignment="Center" Text="Section Color"/>
+                    <ComboBox Width="100"
+                              ItemsSource="{Binding CharacterOptions}"
+                              SelectedItem="{Binding PendingCharacter}"/>
+                    <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Text="Position X"/>
+                    <NumericUpDown Width="130"
+                                   Value="{Binding PendingX, Mode=TwoWay}"
+                                   Increment="5" Minimum="-32768" Maximum="32767"
+                                   FormatString="0"/>
+                    <TextBlock Margin="10,0,0,0"
+                               VerticalAlignment="Center" Text="Position Y"/>
+                    <NumericUpDown Width="130"
+                                   Value="{Binding PendingY, Mode=TwoWay}"
+                                   Increment="5" Minimum="-32768" Maximum="32767"
+                                   FormatString="0"/>
+                    <Button Content="Apply" MinWidth="70" Click="ApplyNode_Click"
+                            IsEnabled="{Binding CanApplySelectedNode}"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Margin="0,10,0,0"
+                            Orientation="Horizontal" Spacing="10">
+                  <Button Content="Create Node" Click="CreateNode_Click"
+                          IsEnabled="{Binding CanAddExperimentalNode}"/>
+                  <Border Padding="8,4" CornerRadius="4" VerticalAlignment="Center"
+                          Background="#102A3F" BorderBrush="#287FD1" BorderThickness="1">
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                               FontSize="12" FontWeight="SemiBold" Foreground="#70B7FF"
+                               Text="{Binding CreateNodeInstruction}"/>
+                  </Border>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </TabItem>
+          <TabItem Header="Link Editor">
+            <Border Padding="12,8" BorderBrush="#3A3A3A" BorderThickness="1">
+              <Grid RowDefinitions="Auto,Auto">
+                <StackPanel Grid.Row="0" Orientation="Horizontal"
+                            VerticalAlignment="Top" Spacing="8"
+                            IsEnabled="{Binding HasSelectedExperimentalLink}">
+                  <TextBlock VerticalAlignment="Center" Text="Link #"/>
+                  <TextBlock MinWidth="28" VerticalAlignment="Center" FontWeight="Bold"
+                             Text="{Binding SelectedLinkNumber}"/>
+                  <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Text="Node A idx"/>
+                  <NumericUpDown Width="140" Value="{Binding PendingLinkNodeA, Mode=TwoWay}"
+                                 Increment="1" Minimum="0" Maximum="1023" FormatString="0"/>
+                  <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Text="Node B idx"/>
+                  <NumericUpDown Width="140" Value="{Binding PendingLinkNodeB, Mode=TwoWay}"
+                                 Increment="1" Minimum="0" Maximum="1023" FormatString="0"/>
+                  <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Text="Anchor idx"/>
+                  <NumericUpDown Width="175" Value="{Binding PendingLinkAnchor, Mode=TwoWay}"
+                                 Increment="1" Minimum="0" Maximum="65535" FormatString="0"/>
+                  <Button Margin="8,0,0,0" Content="Apply" Click="ApplyExperimentalLink_Click"
+                          IsEnabled="{Binding CanApplyExperimentalLink}"/>
+                  <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Opacity="0.75"
+                             Text="Use 65535 for a straight link."/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Margin="0,10,0,0"
+                            Orientation="Horizontal" Spacing="10">
+                  <Button Content="Create Link" Click="CreateLink_Click"
+                          IsEnabled="{Binding CanCreateExperimentalLink}"/>
+                  <Border Padding="8,4" CornerRadius="4" VerticalAlignment="Center"
+                          Background="#102A3F" BorderBrush="#287FD1" BorderThickness="1">
+                    <TextBlock VerticalAlignment="Center" TextWrapping="Wrap"
+                               FontSize="12" FontWeight="SemiBold" Foreground="#70B7FF"
+                               Text="Creates a link between two existing nodes."/>
+                  </Border>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </TabItem>
+          <TabItem Header="Find &amp; Replace">
+            <Border Padding="12,10" BorderBrush="#3A3A3A" BorderThickness="1">
+              <Grid RowDefinitions="Auto,Auto"
+                    ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*">
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Find node type"/>
+                <ComboBox Grid.Column="1" Width="170" Margin="8,0,14,0"
+                          ItemsSource="{Binding NodeTypeOptions}"
+                          SelectedItem="{Binding FindNodeType}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="Replace with"/>
+                <ComboBox Grid.Column="3" Width="170" Margin="8,0,14,0"
+                          ItemsSource="{Binding NodeTypeOptions}"
+                          SelectedItem="{Binding ReplacementNodeType}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate><TextBlock Text="{Binding Name}"/></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="4" Margin="0,0,6,0" Content="Find Next"
+                        Click="FindNext_Click"/>
+                <Button Grid.Column="5" Margin="0,0,6,0" Content="Replace Selected"
+                        Click="ReplaceSelected_Click" IsEnabled="{Binding CanReplaceSelectedNode}"/>
+                <Button Grid.Column="6" Content="Replace All" Click="ReplaceAll_Click"
+                        IsEnabled="{Binding CanReplaceNodeTypes}"/>
+                <Border Grid.Row="1" Grid.ColumnSpan="8" Margin="0,10,0,0"
+                        HorizontalAlignment="Left"
+                        Padding="10,7" CornerRadius="3"
+                        Background="#181818" BorderBrush="#4A4A4A" BorderThickness="1">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock VerticalAlignment="Center" FontWeight="Bold"
+                               Foreground="#D95252" Text="Search Results"/>
+                    <TextBlock VerticalAlignment="Center" FontSize="15"
+                               FontWeight="SemiBold" Text="{Binding FindReplaceStatus}"/>
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+          </TabItem>
+        </TabControl>
+
+        <ContentControl Grid.Row="3" MinHeight="50">
+            <Grid ColumnDefinitions="*,Auto,Auto" Margin="20,4">
+                <TextBlock Grid.Column="1" Margin="12,0" VerticalAlignment="Center"
+                           Text="{Binding Status}" Foreground="#DDDDDD"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                            VerticalAlignment="Center">
+                    <Button Content="Undo" Click="Undo_Click"
+                            IsEnabled="{Binding CanUndo}"/>
+                    <Button Content="Undo All" Click="UndoAll_Click"
+                            IsEnabled="{Binding CanUndoAll}"/>
+                    <Button Content="Save" Click="SaveGrid_Click" IsEnabled="{Binding IsDirty}"
+                            ToolTip.Tip="Validate and write this grid's layout and node-content files"/>
+                </StackPanel>
+            </Grid>
+        </ContentControl>
+    </Grid>
+</UserControl>

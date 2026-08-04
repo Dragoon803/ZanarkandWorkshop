@@ -14,11 +14,16 @@ using System.IO;
 using System.Text.Json;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using System.Collections;
+using System.ComponentModel;
+using System.Reflection;
 
 namespace FFXProjectEditor;
 
 public partial class MonEditor_Control : UserControl
 {
+    public event EventHandler? DirtyStateChanged;
+    public bool IsDirty { get; private set; }
     private readonly MonEditor_DataModel DataModel;
     private string _lastSearch = "";
     private int _searchResultIndex;
@@ -183,6 +188,8 @@ public partial class MonEditor_Control : UserControl
         DataContext = DataModel;
 		LoadLogicVisibilityPreferences();
         InitializeComponent();
+        TrackEditableObjectGraph(DataModel.MonsterStatSheet);
+        TrackEditableObjectGraph(DataModel.MonsterLoot);
 		AiHideStatements.IsChecked = _hideStatementsPreference;
 		AiHideInstructions.IsChecked = _hideInstructionsPreference;
 		ApplyStoredLogicVisibility();
@@ -906,7 +913,52 @@ public partial class MonEditor_Control : UserControl
 		return (start, end);
 	}
 
-    private void Button_Save(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => RunAiAction(DataModel.Save);
+    public bool SaveChanges()
+    {
+        if (RunAiAction(DataModel.Save))
+        {
+            SetDirty(false);
+            return true;
+        }
+        return false;
+    }
+
+    private void SetDirty(bool value)
+    {
+        if (IsDirty == value) return;
+        IsDirty = value;
+        DirtyStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void TrackEditableObjectGraph(object root)
+    {
+        var visited = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        Track(root);
+
+        void Track(object? value)
+        {
+            if (value is null || value is string || !visited.Add(value)) return;
+            if (value is INotifyPropertyChanged observable)
+                observable.PropertyChanged += (_, _) => SetDirty(true);
+            if (value is IEnumerable items)
+            {
+                foreach (object? item in items) Track(item);
+                return;
+            }
+
+            Type type = value.GetType();
+            if (type.IsPrimitive || type.IsEnum || type.Namespace?.StartsWith("System") == true)
+                return;
+            foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (property.GetIndexParameters().Length != 0 || !property.CanRead) continue;
+                try { Track(property.GetValue(value)); }
+                catch { /* A display-only property is not part of dirty tracking. */ }
+            }
+        }
+    }
+
+    private void Button_Save(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => SaveChanges();
 
     private void Button_ValidateAi(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -1264,6 +1316,9 @@ public partial class MonEditor_Control : UserControl
     private void CompleteAiEdit(AiEditSnapshot before, int? preferredJumpIndex = null,
         bool neonMintRawChange = false)
     {
+        if (DataModel.AiDocument != null &&
+            !before.Bytes.SequenceEqual(DataModel.AiDocument.Bytes))
+            SetDirty(true);
         AiHexText.Text = DataModel.AiHex;
         AiSummaryText.Text = DataModel.AiSummary;
         _aiHexIsDirty = false;
@@ -2606,11 +2661,13 @@ public partial class MonEditor_Control : UserControl
             {
                 0x700B => ["Target", "Command"],
                 0x700F => ["Character", "Stat property"],
+                0x7009 => ["Value"],
                 0x7010 => ["Group", "Stat property", "Unused", "Selector"],
                 0x7018 => ["Character", "Stat property", "Value"],
                 0x701A => ["Command source", "Command property"],
                 0x701E => ["Group", "Character"],
                 0x7026 => ["Weak state"],
+                0x7029 => ["Value"],
                 0x7034 => ["Battle result"],
                 0x7037 => ["Character", "Command"],
                 0x7038 => ["Character", "Command"],
@@ -2646,6 +2703,8 @@ public partial class MonEditor_Control : UserControl
                             .Select(x => new OperandChoice(x.Value, x.Key, instruction.Opcode)).ToArray());
                 }
             }
+            if (role == "Value" && call.Operand is 0x7009 or 0x7029)
+                return (role, [new("False", 0x0000, instruction.Opcode), new("True", 0x0001, instruction.Opcode)]);
             return role switch
             {
 				"Target" or "Character" or "Group" => (role, GetTargetChoices(instruction)),

@@ -62,7 +62,7 @@ public partial class KernelCommands_Control : UserControl
         {
             if (DGrid.SelectedItem is not KernelCommands_Wrapper selected)
             {
-                DataModel.RecoveryStatus = "Select a monster command to clone.";
+                DataModel.RecoveryStatus = "Click a command to highlight it. Then click Clone Command.";
                 return;
             }
 
@@ -82,7 +82,7 @@ public partial class KernelCommands_Control : UserControl
         {
             if (DGrid.SelectedItem is not KernelCommands_Wrapper selected)
             {
-                DataModel.RecoveryStatus = "Select a cloned monster command to delete.";
+                DataModel.RecoveryStatus = "Click a cloned command to highlight it. Only the newest clone can be deleted, and original game commands cannot be removed.";
                 return;
             }
 

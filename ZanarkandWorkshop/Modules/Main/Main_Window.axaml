@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="FFXProjectEditor.Main_Window"
-		Title="Zanarkand Workshop v0.3.0"
+		Title="Zanarkand Workshop v0.4.0"
 		Width="1280" Height="720"
 		MinWidth="1280" MinHeight="720"
 		WindowStartupLocation="CenterScreen">
@@ -34,6 +34,7 @@
 		</Style>
 	</Window.Styles>
 
+	<Grid>
 	<DockPanel>
 
 		<!-- TOP TOOLBAR -->
@@ -61,9 +62,13 @@
 					<MenuItem Classes="flyoutEntry editorEntry" Header="Standard Monster Commands" Click="MenuItem_MonsterMagic1" />
 					<MenuItem Classes="flyoutEntry editorEntry" Header="Boss Commands" Click="MenuItem_MonsterMagic2" />
 					<Separator/>
-					<MenuItem Classes="flyoutEntry editorSectionHeader" Header="BATTLE DATA" IsEnabled="False"/>
+					<MenuItem Classes="flyoutEntry editorSectionHeader" Header="VISUAL EDITORS" IsEnabled="False"/>
 					<MenuItem Classes="flyoutEntry editorEntry" Header="Battle Formation Editor"
 							  Click="MenuItem_BattleFormationEditor" />
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Sphere Grid Editor"
+							  Click="MenuItem_SphereGridEditor" />
+					<MenuItem Classes="flyoutEntry editorEntry" Header="Treasure Map Editor"
+							  Click="MenuItem_TreasureMapEditor" />
 				</MenuItem>
 				<MenuItem Classes="topMenuEntry" Header="View">
 					<MenuItem x:Name="WindowSize1280MenuItem" Classes="flyoutEntry"
@@ -92,7 +97,7 @@
 					<Separator/>
 					<MenuItem Classes="flyoutEntry" x:Name="RestoreCurrentEditorMenuItem"
 							  Header="Restore Original in Current Editor" Click="MenuItem_RestoreCurrentEditor" IsEnabled="False"
-							  ToolTip.Tip="Restore the complete monster, Items, or Commands file currently open"/>
+							  ToolTip.Tip="Restore the original game data for the editor currently open"/>
 					<MenuItem Classes="flyoutEntry" x:Name="RestoreCurrentBattleFolderMenuItem"
 							  Header="Restore Current Battle Folder" Click="MenuItem_RestoreFolder" IsEnabled="False"
 							  ToolTip.Tip="Restore the currently open battle folder from the configured clean Master"/>
@@ -124,7 +129,7 @@
 				<StackPanel Spacing="14" HorizontalAlignment="Center">
 					<TextBlock Text="Zanarkand Workshop" FontSize="30" FontWeight="Bold"
 							   HorizontalAlignment="Center"/>
-					<TextBlock Text="v0.3.0" FontSize="12" Foreground="#999999"
+					<TextBlock Text="v0.4.0" FontSize="12" Foreground="#999999"
 							   Margin="0,-10,0,0" HorizontalAlignment="Center"/>
 					<TextBlock Text="Comprehensive tools for editing FFX battle data"
 							   FontSize="17" Foreground="#CCCCCC" HorizontalAlignment="Center"/>
@@ -147,5 +152,20 @@
 		</ContentControl>
 
 	</DockPanel>
+	<Border x:Name="LoadingOverlay" IsVisible="False" ZIndex="1000"
+			Background="#D9101114">
+		<Border HorizontalAlignment="Center" VerticalAlignment="Center"
+				Padding="34,26" MinWidth="360" Background="#F51B1D21"
+				BorderBrush="#666" BorderThickness="1" CornerRadius="8">
+			<StackPanel Spacing="14" HorizontalAlignment="Center">
+				<ProgressBar IsIndeterminate="True" Width="290" Height="8"/>
+				<TextBlock x:Name="LoadingTitleText" FontSize="19" FontWeight="SemiBold"
+						   Text="Loading…" TextAlignment="Center"/>
+				<TextBlock x:Name="LoadingDetailText" MaxWidth="430" Foreground="#BDBDBD"
+						   Text="Reading project data" TextAlignment="Center" TextWrapping="Wrap"/>
+			</StackPanel>
+		</Border>
+	</Border>
+	</Grid>
 	
 </Window>

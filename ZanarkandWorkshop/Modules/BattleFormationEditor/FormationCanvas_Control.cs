@@ -9,11 +9,16 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using FFXProjectEditor.FfxLib.Battlefield;
 
 namespace FFXProjectEditor.Modules.BattleFormationEditor;
 
 public sealed class FormationCanvas_Control : Control
 {
+    // The normal editing camera matches the former 400% view. This keeps the
+    // position markers comfortably separated while lower percentages remain
+    // available for viewing the complete battlefield footprint.
+    private const double DefaultCameraMultiplier = 5.6;
     public static readonly StyledProperty<IEnumerable<FormationPositionRow>?> ItemsProperty =
         AvaloniaProperty.Register<FormationCanvas_Control, IEnumerable<FormationPositionRow>?>(
             nameof(Items));
@@ -21,6 +26,13 @@ public sealed class FormationCanvas_Control : Control
     public static readonly StyledProperty<FormationPositionRow?> SelectedItemProperty =
         AvaloniaProperty.Register<FormationCanvas_Control, FormationPositionRow?>(
             nameof(SelectedItem), defaultBindingMode: BindingMode.TwoWay);
+
+    public static readonly StyledProperty<BattlefieldHeightMap?> BattlefieldProperty =
+        AvaloniaProperty.Register<FormationCanvas_Control, BattlefieldHeightMap?>(
+            nameof(Battlefield));
+
+    public static readonly StyledProperty<object?> CameraKeyProperty =
+        AvaloniaProperty.Register<FormationCanvas_Control, object?>(nameof(CameraKey));
 
     public static readonly DirectProperty<FormationCanvas_Control, int> ZoomPercentProperty =
         AvaloniaProperty.RegisterDirect<FormationCanvas_Control, int>(
@@ -50,6 +62,22 @@ public sealed class FormationCanvas_Control : Control
         set => SetValue(SelectedItemProperty, value);
     }
 
+    public BattlefieldHeightMap? Battlefield
+    {
+        get => GetValue(BattlefieldProperty);
+        set => SetValue(BattlefieldProperty, value);
+    }
+
+    /// <summary>
+    /// Identifies the content currently displayed by the canvas. A new key always
+    /// starts a fresh centered camera, even when the bound collections are reused.
+    /// </summary>
+    public object? CameraKey
+    {
+        get => GetValue(CameraKeyProperty);
+        set => SetValue(CameraKeyProperty, value);
+    }
+
     public int ZoomPercent
     {
         get => _zoomPercent;
@@ -58,7 +86,7 @@ public sealed class FormationCanvas_Control : Control
 
     static FormationCanvas_Control()
     {
-        AffectsRender<FormationCanvas_Control>(ItemsProperty, SelectedItemProperty);
+        AffectsRender<FormationCanvas_Control>(ItemsProperty, SelectedItemProperty, BattlefieldProperty);
     }
 
     public FormationCanvas_Control()
@@ -77,6 +105,16 @@ public sealed class FormationCanvas_Control : Control
         base.OnPropertyChanged(change);
         if (change.Property == ItemsProperty)
             ItemsChanged(change.NewValue as IEnumerable<FormationPositionRow>);
+        else if (change.Property == BattlefieldProperty)
+        {
+            ResetTransform();
+            InvalidateVisual();
+        }
+        else if (change.Property == CameraKeyProperty)
+        {
+            ResetTransform();
+            InvalidateVisual();
+        }
     }
 
     public override void Render(DrawingContext context)
@@ -88,11 +126,30 @@ public sealed class FormationCanvas_Control : Control
         FormationPositionRow[] points = Items?.ToArray() ?? Array.Empty<FormationPositionRow>();
         if (!_transform.IsValid || _transformSize != Bounds.Size)
         {
-            _transform = ViewTransform.Create(points, Bounds);
+            FormationPositionRow[] cameraPoints = points;
+            if (Battlefield is null)
+            {
+                FormationPositionRow[] activeCombatPoints = points.Where(point =>
+                    point.Kind is
+                        FfxLib.BattleFormation.FormationPositionKind.Party or
+                        FfxLib.BattleFormation.FormationPositionKind.Monster).ToArray();
+                if (activeCombatPoints.Length > 0)
+                    cameraPoints = activeCombatPoints;
+            }
+            ViewTransform fullField = ViewTransform.Create(cameraPoints, Battlefield, Bounds);
             _transformSize = Bounds.Size;
-            _fitScale = _transform.Scale;
-            ZoomPercent = 100;
+            // Battlefield previews use the closer editing camera requested for
+            // normal formations. When no surface exists, frame every available
+            // marker so unusual formations do not start with positions off-screen.
+            double cameraMultiplier = Battlefield is null ? 1 : DefaultCameraMultiplier;
+            _fitScale = fullField.Scale * cameraMultiplier;
+            int initialZoomPercent = Battlefield is null ? 50 : 100;
+            double initialScale = _fitScale * initialZoomPercent / 100d;
+            _transform = fullField.ZoomAt(
+                new Point(Bounds.Width / 2, Bounds.Height / 2), initialScale);
+            ZoomPercent = initialZoomPercent;
         }
+        DrawBattlefield(context);
         foreach (FormationPositionRow point in points)
         {
             Point screen = _transform.ToScreen(point.X, point.Z);
@@ -133,7 +190,8 @@ public sealed class FormationCanvas_Control : Control
     {
         UnsubscribeRows();
         SubscribeRows();
-        ResetTransform();
+        // Enemy-party edits can add or remove visible markers. Preserve the
+        // user's current camera while the formation itself remains selected.
         InvalidateVisual();
     }
 
@@ -158,11 +216,28 @@ public sealed class FormationCanvas_Control : Control
     {
         _transform = default;
         _transformSize = default;
+        _fitScale = 0;
+        _dragged = null;
+        _dragStarted = false;
+        _panning = false;
+        ZoomPercent = 100;
     }
 
     public void ZoomIn() => ZoomAt(new Point(Bounds.Width / 2, Bounds.Height / 2), 1.2);
 
     public void ZoomOut() => ZoomAt(new Point(Bounds.Width / 2, Bounds.Height / 2), 1 / 1.2);
+
+    public void CenterOn(FormationPositionRow? position)
+    {
+        if (position is null || !_transform.IsValid)
+            return;
+
+        Point screen = _transform.ToScreen(position.X, position.Z);
+        _transform = _transform.Translate(
+            Bounds.Width / 2 - screen.X,
+            Bounds.Height / 2 - screen.Y);
+        InvalidateVisual();
+    }
 
     public void Fit()
     {
@@ -183,7 +258,7 @@ public sealed class FormationCanvas_Control : Control
             return;
 
         double targetScale = Math.Clamp(
-            _transform.Scale * factor, _fitScale * 0.25, _fitScale * 4);
+            _transform.Scale * factor, _fitScale * 0.15, _fitScale * 12);
         _transform = ClampToVisiblePoints(
             _transform.ZoomAt(anchor, targetScale).ClampToBounds(Bounds));
         ZoomPercent = (int)Math.Round(targetScale / _fitScale * 100);
@@ -310,6 +385,52 @@ public sealed class FormationCanvas_Control : Control
             context.DrawLine(pen, new Point(0, y), new Point(Bounds.Width, y));
     }
 
+    private void DrawBattlefield(DrawingContext context)
+    {
+        if (Battlefield is not { } battlefield || !_transform.IsValid)
+            return;
+
+        var fill = new SolidColorBrush(Color.Parse("#262A8391"));
+        var boundaryPen = new Pen(new SolidColorBrush(Color.Parse("#C054C7D8")), 2);
+        IReadOnlyList<BattlefieldVertex> vertices = battlefield.Vertices;
+        var edgeCounts = new Dictionary<(ushort A, ushort B), int>();
+        foreach (BattlefieldTriangle triangle in battlefield.Triangles)
+        {
+            Point a = _transform.ToScreen(vertices[triangle.A].X, vertices[triangle.A].Z);
+            Point b = _transform.ToScreen(vertices[triangle.B].X, vertices[triangle.B].Z);
+            Point c = _transform.ToScreen(vertices[triangle.C].X, vertices[triangle.C].Z);
+            var geometry = new StreamGeometry();
+            using (StreamGeometryContext path = geometry.Open())
+            {
+                path.BeginFigure(a, true);
+                path.LineTo(b);
+                path.LineTo(c);
+                path.EndFigure(true);
+            }
+            context.DrawGeometry(fill, null, geometry);
+
+            CountEdge(edgeCounts, triangle.A, triangle.B);
+            CountEdge(edgeCounts, triangle.B, triangle.C);
+            CountEdge(edgeCounts, triangle.C, triangle.A);
+        }
+
+        foreach (((ushort a, ushort b), int count) in edgeCounts)
+        {
+            if (count != 1)
+                continue;
+            Point start = _transform.ToScreen(vertices[a].X, vertices[a].Z);
+            Point end = _transform.ToScreen(vertices[b].X, vertices[b].Z);
+            context.DrawLine(boundaryPen, start, end);
+        }
+    }
+
+    private static void CountEdge(
+        Dictionary<(ushort A, ushort B), int> counts, ushort first, ushort second)
+    {
+        (ushort A, ushort B) edge = first < second ? (first, second) : (second, first);
+        counts[edge] = counts.TryGetValue(edge, out int count) ? count + 1 : 1;
+    }
+
     private static IBrush BrushFor(FfxLib.BattleFormation.FormationPositionKind kind) => kind switch
     {
         FfxLib.BattleFormation.FormationPositionKind.Party => Brushes.DodgerBlue,
@@ -335,22 +456,35 @@ public sealed class FormationCanvas_Control : Control
     {
         public bool IsValid => Scale > 0;
 
-        public static ViewTransform Create(FormationPositionRow[] points, Rect bounds)
+        public static ViewTransform Create(
+            FormationPositionRow[] points,
+            BattlefieldHeightMap? battlefield,
+            Rect bounds)
         {
-            if (points.Length == 0)
+            BattlefieldVertex[] surface = battlefield?.Vertices.ToArray() ?? [];
+            if (points.Length == 0 && surface.Length == 0)
                 return new ViewTransform(
                     -1, -1, 1, 20, 20,
                     Math.Max(1, bounds.Width - 40), Math.Max(1, bounds.Height - 40));
-            double minX = points.Min(point => (double)point.X);
-            double maxX = points.Max(point => (double)point.X);
-            double minZ = points.Min(point => (double)point.Z);
-            double maxZ = points.Max(point => (double)point.Z);
+            double minX = Math.Min(
+                points.Length == 0 ? double.PositiveInfinity : points.Min(point => (double)point.X),
+                surface.Length == 0 ? double.PositiveInfinity : surface.Min(point => (double)point.X));
+            double maxX = Math.Max(
+                points.Length == 0 ? double.NegativeInfinity : points.Max(point => (double)point.X),
+                surface.Length == 0 ? double.NegativeInfinity : surface.Max(point => (double)point.X));
+            double minZ = Math.Min(
+                points.Length == 0 ? double.PositiveInfinity : points.Min(point => (double)point.Z),
+                surface.Length == 0 ? double.PositiveInfinity : surface.Min(point => (double)point.Z));
+            double maxZ = Math.Max(
+                points.Length == 0 ? double.NegativeInfinity : points.Max(point => (double)point.Z),
+                surface.Length == 0 ? double.NegativeInfinity : surface.Max(point => (double)point.Z));
             double rawWidth = Math.Max(1, maxX - minX);
             double rawHeight = Math.Max(1, maxZ - minZ);
 
-            // Reserve the same amount of world-coordinate editing room in every
-            // direction instead of fitting the outermost points to the canvas.
-            double editingMargin = Math.Max(rawWidth, rawHeight) * 0.25;
+            // Keep a small proportional editing margin. Screen-space padding below
+            // provides the main breathing room, so compact battlefields still use
+            // most of the viewer at the default 100% camera.
+            double editingMargin = Math.Max(rawWidth, rawHeight) * 0.05;
             minX -= editingMargin;
             maxX += editingMargin;
             minZ -= editingMargin;

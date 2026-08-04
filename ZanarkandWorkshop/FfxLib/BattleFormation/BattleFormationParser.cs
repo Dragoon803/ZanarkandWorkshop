@@ -20,6 +20,8 @@ public static class BattleFormationParser
 
         int encounterOffset = ReadOffset(bytes, 0x0C, "encounter table");
         int positionHeaderOffset = ReadOffset(bytes, 0x10, "position header");
+        if (positionHeaderOffset < 0x14)
+            throw new InvalidDataException("The file does not contain an editable battle-formation header.");
         RequireRange(bytes, encounterOffset, 28, "encounter record");
         RequireRange(bytes, positionHeaderOffset, 36, "position header");
 
@@ -32,19 +34,25 @@ public static class BattleFormationParser
         byte aeonCount = bytes[positionHeaderOffset + 5];
         byte monsterCount = bytes[positionHeaderOffset + 6];
 
-        int partyStart = AddRelativeOffset(bytes, positionHeaderOffset, 16, "party-position table");
+        int? partyStart = TryAddRelativeOffset(bytes, positionHeaderOffset, 16);
         int monsterStart = AddRelativeOffset(bytes, positionHeaderOffset, 32, "monster-position table");
+        int monsterRunStart = AddRelativeOffset(bytes, positionHeaderOffset, 36, "monster run-away-position table");
+        int? chunkEnd = TryAddRelativeOffset(bytes, positionHeaderOffset, 44);
 
         var positions = new List<FormationPosition>(
             partyCount * 2 + aeonCount + monsterCount * 2);
-        int cursor = partyStart;
-        ReadPositions(bytes, positions, FormationPositionKind.Party, partyCount, ref cursor);
-        ReadPositions(bytes, positions, FormationPositionKind.PartySecondary, partyCount, ref cursor);
-        ReadPositions(bytes, positions, FormationPositionKind.Aeon, aeonCount, ref cursor);
+        if (partyStart is int readablePartyStart)
+        {
+            int partyCursor = readablePartyStart;
+            ReadPositions(bytes, positions, FormationPositionKind.Party, partyCount, ref partyCursor);
+            ReadPositions(bytes, positions, FormationPositionKind.PartySecondary, partyCount, ref partyCursor);
+            ReadPositions(bytes, positions, FormationPositionKind.Aeon, aeonCount, ref partyCursor);
+        }
 
-        cursor = monsterStart;
-        ReadPositions(bytes, positions, FormationPositionKind.Monster, monsterCount, ref cursor);
-        ReadPositions(bytes, positions, FormationPositionKind.MonsterSecondary, monsterCount, ref cursor);
+        int monsterCursor = monsterStart;
+        ReadPositions(bytes, positions, FormationPositionKind.Monster, monsterCount, ref monsterCursor);
+        int monsterRunCursor = monsterRunStart;
+        ReadPositions(bytes, positions, FormationPositionKind.MonsterSecondary, monsterCount, ref monsterRunCursor);
 
         return new BattleFormationFile
         {
@@ -56,7 +64,9 @@ public static class BattleFormationParser
             Positions = positions,
             PartyCount = partyCount,
             AeonCount = aeonCount,
-            MonsterCount = monsterCount
+            MonsterCount = monsterCount,
+            CanResizeMonsterTables = monsterRunStart == monsterStart + monsterCount * PositionSize &&
+                chunkEnd is int end && end >= monsterRunStart + monsterCount * PositionSize
         };
     }
 
@@ -111,6 +121,14 @@ public static class BattleFormationParser
             throw new InvalidDataException(
                 $"{label} relative offset 0x{relative:X} resolves outside the file.");
         return (int)absolute;
+    }
+
+    private static int? TryAddRelativeOffset(byte[] bytes, int baseOffset, int fieldOffset)
+    {
+        if (baseOffset + fieldOffset < 0 || baseOffset + fieldOffset > bytes.Length - 4) return null;
+        uint relative = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(baseOffset + fieldOffset, 4));
+        long absolute = (long)baseOffset + relative;
+        return absolute >= 0 && absolute < bytes.Length ? (int)absolute : null;
     }
 
     private static void RequireRange(byte[] bytes, int offset, int length, string label)

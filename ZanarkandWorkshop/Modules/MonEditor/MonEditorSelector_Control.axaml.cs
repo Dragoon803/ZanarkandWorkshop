@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using FFXProjectEditor.Modules.MonEditor;
+using FFXProjectEditor.Services;
 using static FFXProjectEditor.Modules.MonEditor.MonEditorSelector_DataModel;
 
 namespace FFXProjectEditor;
@@ -50,6 +51,11 @@ public partial class MonEditorSelector_Control : UserControl
 		{
 			DataModel.LoadMonster(selected, ContentFrame);
 			_lastSuccessfulSelection = selected;
+			if (ActiveMonsterEditor is { } editor)
+			{
+				editor.DirtyStateChanged += (_, _) => SaveButton.IsEnabled = editor.IsDirty;
+				SaveButton.IsEnabled = editor.IsDirty;
+			}
 		}
 		catch (System.Exception ex)
 		{
@@ -81,5 +87,11 @@ public partial class MonEditorSelector_Control : UserControl
     private void Filter_Changed(object? sender, Avalonia.Controls.TextChangedEventArgs e)
     {
         DataModel.ApplyFilter();
+    }
+
+    private void Save_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (ActiveMonsterEditor?.SaveChanges() == true)
+            SaveStatusText.Text = EditorSaveStatus.Success("Monster");
     }
 }

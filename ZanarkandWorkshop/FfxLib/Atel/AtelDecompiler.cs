@@ -11,7 +11,12 @@ internal static class AtelDecompiler
 
     private static readonly Dictionary<ushort, CallInfo> Calls = new()
     {
-        [0x0000] = C("Common.wait", "frames"), [0x005F] = C("Common.halt"), [0x00A9] = C("Common.GetRandomValue"),
+        [0x0000] = C("Common.wait", "frames"), [0x0001] = C("Event.loadModel", "model"),
+        [0x0013] = C("Event.setPosition", "x", "y", "z"),
+        [0x005F] = C("Common.halt"), [0x00A9] = C("Common.GetRandomValue"),
+        [0x0134] = C("Event.loadModel2", "model"),
+        [0x015B] = C("Event.obtainTreasure", "messageWindow", "treasureId"),
+        [0x01A7] = C("Event.obtainTreasureSilently", "treasureId"),
         [0x6004] = C("Camera.camSetPolar", "p1", "p2", "p3"), [0x6010] = C("Camera.camMove", "frames"),
         [0x6016] = C("Camera.camResetMove"), [0x601A] = C("Camera.camWait"), [0x602E] = C("Camera.refMove", "frames"),
         [0x6034] = C("Camera.refResetMove"), [0x6038] = C("Camera.refWait"), [0x603A] = C("Camera.camSetRoll", "roll"),
@@ -20,7 +25,9 @@ internal static class AtelDecompiler
         [0x6044] = C("Camera.camSetBtlPolar2", "p1", "p2", "p3", "p4", "p5", "p6"),
         [0x7000] = C("Battle.btlTerminateAction"), [0x7003] = C("Battle.btlDirTarget", "p1", "p2"),
         [0x7006] = C("Battle.btlDirBasic", "p1", "p2"), [0x7007] = C("Battle.startMotion", "motion"),
-        [0x7008] = C("Battle.awaitMotion"), [0x700A] = C("Battle.setHeight", "heightType", "height"),
+        [0x7008] = C("Battle.awaitMotion"),
+        [0x7009] = new("Self.AffectedByGravity", ["value"], true),
+        [0x700A] = C("Battle.setHeight", "heightType", "height"),
         [0x700B] = C("Battle.performCommand", "target", "command"), [0x700C] = C("Battle.btlMove", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"),
         [0x700F] = C("Battle.readCharacterProperty", "character", "property"),
         [0x7010] = C("Battle.findMatchingCharacter", "group", "property", "unused", "selector"),
@@ -28,6 +35,7 @@ internal static class AtelDecompiler
         [0x7019] = C("Battle.usedCommand"), [0x701A] = C("Battle.readCommandProperty", "command", "property"),
         [0x701E] = C("Battle.countCharacterOverlap", "group", "character"), [0x7021] = C("Battle.dereferenceCharacter", "character"),
         [0x7026] = C("Battle.setWeakState", "state"), [0x7028] = C("Battle.scaleOwnSize", "x", "y", "z"),
+        [0x7029] = new("Self.floating", ["value"], true),
         [0x702D] = C("Battle.resetMove"), [0x7034] = C("Battle.endBattle", "result"),
         [0x7037] = C("Battle.addCommand", "character", "command"), [0x7038] = C("Battle.removeCommand", "character", "command"),
         [0x7039] = C("Battle.terminateDeath"), [0x703B] = C("Battle.setCommandDisabled", "character", "command", "disabled"),
@@ -194,6 +202,8 @@ internal static class AtelDecompiler
                     argument.SemanticOperandDisplay = FormatSelector(raw);
                 else if (parameter == "command")
                     argument.SemanticOperandDisplay = FormatCommand(raw, commandNameResolver);
+                else if (callInstruction.Operand is 0x7009 or 0x7029 && parameter == "value")
+                    argument.SemanticOperandDisplay = $"Value: {FormatBooleanValue(raw)}";
                 else if (callInstruction.Operand == 0x7028 && parameter is "x" or "y" or "z")
                 {
                     string value = argument.Opcode == 0xAF
@@ -329,6 +339,8 @@ internal static class AtelDecompiler
             values[1] = FormatStatValue(values[0], values[1], commandNameResolver);
             return $"Set Self.{values[0]} = {values[1]}";
         }
+        if (info.IsAccessorWrite && values.Length == 1 && target is 0x7009 or 0x7029)
+            return $"Set {info.Name} = {FormatBooleanValue(values[0])}";
         if (info.IsAccessorWrite && values.Length == 2 && target == 0x70B2)
             return $"Set Self.{values[0]} = {values[1]}";
         if (info.IsAccessorWrite && values.Length == 2)
@@ -350,6 +362,12 @@ internal static class AtelDecompiler
     {
         if (!TryReadValue(value, out ushort raw) || !names.TryGetValue(raw, out string? name)) return value;
         return $"{name} [0x{raw:X4}]";
+    }
+
+    private static string FormatBooleanValue(string value)
+    {
+        if (!TryReadValue(value, out ushort raw)) return value;
+        return $"{(raw == 0 ? "False" : raw == 1 ? "True" : $"Boolean({raw})")} [0x{raw:X4}]";
     }
 
     private static string FormatStatValue(string propertyText, string value, Func<ushort, string?>? commandNameResolver)

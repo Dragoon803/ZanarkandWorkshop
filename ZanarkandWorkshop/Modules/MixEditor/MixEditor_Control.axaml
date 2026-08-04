@@ -3,16 +3,10 @@
              x:Class="FFXProjectEditor.MixEditor_Control">
   <Grid RowDefinitions="Auto,*,Auto">
     <Border Grid.Row="0" BorderBrush="#555555" BorderThickness="0,0,0,1" Padding="12,10">
-      <Grid ColumnDefinitions="Auto,*,Auto">
+      <Grid>
         <StackPanel>
           <TextBlock Text="Rikku Mix Recipes" FontSize="22" FontWeight="Bold"/>
         </StackPanel>
-        <TextBox Grid.Column="1" Watermark="Filter by ingredient, result name, ID, or item index..."
-                 Text="{Binding FilterText, Mode=TwoWay}" TextChanged="Filter_Changed"
-                 MinWidth="350" MaxWidth="500" Margin="12,0"
-                 HorizontalAlignment="Right" VerticalAlignment="Center"/>
-        <Button Grid.Column="2" Content="Clear Filter" Click="ClearFilter_Click"
-                Padding="14,7" VerticalAlignment="Center"/>
       </Grid>
     </Border>
 
@@ -57,9 +51,16 @@
       </DataGrid.Columns>
     </DataGrid>
 
-    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="12,8">
-      <TextBlock Text="{Binding Status}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-      <Button Grid.Column="1" Content="Save" Click="Save_Click" Padding="20,8"/>
-    </Grid>
+    <ContentControl Grid.Row="2" MinHeight="50">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,4">
+        <TextBox Grid.Column="0" Width="200" HorizontalAlignment="Left" VerticalAlignment="Center"
+                 Watermark="Search..." Text="{Binding FilterText}"
+                 TextChanged="Filter_Changed"/>
+        <TextBlock Grid.Column="1" Margin="12,0" VerticalAlignment="Center"
+                   HorizontalAlignment="Right" Text="{Binding Status}" Foreground="#DDDDDD"/>
+        <Button Grid.Column="2" Content="Save" Click="Save_Click"
+                VerticalAlignment="Center" IsEnabled="{Binding IsDirty}"/>
+      </Grid>
+    </ContentControl>
   </Grid>
 </UserControl>

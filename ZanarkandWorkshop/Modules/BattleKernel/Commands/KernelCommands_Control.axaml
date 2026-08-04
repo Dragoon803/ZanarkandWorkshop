@@ -14,7 +14,7 @@
 		<local:HitCalcType_Converter x:Key="HitCalcTypeConverter"/>
 	</UserControl.Resources>
 
-	<Grid RowDefinitions="Auto,*,50">
+	<Grid RowDefinitions="Auto,*,Auto">
 		<WrapPanel Grid.Row="0" Margin="20,4,10,4">
 			<CheckBox Margin="10,0,0,0" IsChecked="{Binding ShowDescription}">Name &amp; Description Editor</CheckBox>
 			<CheckBox Margin="10,0,0,0" IsChecked="{Binding ShowAnimations}">Animations</CheckBox>
@@ -248,27 +248,31 @@
 			</DataGrid.Columns>
 
 		</DataGrid>
-		<Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
-			<StackPanel Grid.Column="0" Orientation="Horizontal">
-				<TextBox VerticalAlignment="Center" Width="200" Margin="20,0,10,0"
+		<ContentControl Grid.Row="2" MinHeight="50">
+		<Grid ColumnDefinitions="Auto,*,Auto" Margin="20,4">
+			<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+				<TextBox VerticalAlignment="Center" Width="200"
 						 Watermark="Search..." Text="{Binding FilterText}" TextChanged="Filter_Changed"/>
 				<Button Click="Button_CloneAsNewCommand"
-						Margin="0,0,10,0"
 						VerticalAlignment="Center"
-						IsVisible="{Binding IsMonsterCommandEditor}">Clone as New Command</Button>
+						IsVisible="{Binding IsMonsterCommandEditor}"
+						ToolTip.Tip="Click a command to highlight it. Then click Clone Command.">Clone Command</Button>
 				<Button Click="Button_DeleteClone"
-						Margin="0,0,10,0"
 						VerticalAlignment="Center"
 						IsEnabled="{Binding CanDeleteSelectedClone}"
-						IsVisible="{Binding IsMonsterCommandEditor}">Delete Clone</Button>
+						IsVisible="{Binding IsMonsterCommandEditor}"
+						ToolTip.ShowOnDisabled="True"
+						ToolTip.Tip="Deletes the highlighted cloned command. Only the newest clone can be deleted, and original game commands cannot be removed. Save to write the deletion to disk.">Delete Command</Button>
 			</StackPanel>
 			<TextBlock Grid.Column="1" Margin="12,0" VerticalAlignment="Center"
 					   Text="{Binding RecoveryStatus}" TextWrapping="Wrap" Foreground="#DDDDDD"/>
-			<StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-				<Button Click="Button_LoadIngame" Margin="0,0,30,0" IsEnabled="{Binding ProcService.IsAlive}">Load Ingame</Button>
-				<Button Click="Button_Save" Margin="0,0,30,0">Save</Button>
+			<StackPanel Grid.Column="2" Orientation="Horizontal"
+						HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="8">
+				<Button Click="Button_LoadIngame" IsEnabled="{Binding ProcService.IsAlive}">Load Ingame</Button>
+				<Button Click="Button_Save" IsEnabled="{Binding IsDirty}">Save</Button>
 			</StackPanel>
 		</Grid>
+		</ContentControl>
 	</Grid>
 	
 </UserControl>

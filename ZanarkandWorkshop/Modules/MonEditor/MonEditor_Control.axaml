@@ -47,22 +47,10 @@
 		</Style>
 	</UserControl.Styles>
 
-	<Grid RowDefinitions="*,Auto" MinHeight="0">
-
-		<!-- Bottom bar -->
-		<ContentControl Grid.Row="1" MinHeight="50">
-			<Grid ColumnDefinitions="*,Auto" Margin="20,4">
-				<Button x:Name="AiRevertButton" Grid.Column="0" HorizontalAlignment="Left" Margin="0,2,6,2" Click="Button_RestoreOriginalAi" Background="#6B2525" ToolTip.Tip="Discard all Battle Script changes made since this monster was opened, then save the restored script.">Revert</Button>
-				<WrapPanel Grid.Column="1" Classes="compactLower" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-					<Button x:Name="AiUndoButton" Margin="0,2,6,2" Click="Button_UndoAi" ToolTip.Tip="Undo the most recent Battle Script editing action from this monster's current session">Undo</Button>
-					<Button x:Name="AiRedoButton" Margin="0,2,6,2" Click="Button_RedoAi" ToolTip.Tip="Redo the most recently undone Battle Script editing action from this monster's current session">Redo</Button>
-					<Button Margin="8,2,0,2" Click="Button_Save" BorderThickness="1" BorderBrush="AliceBlue" CornerRadius="5">Save</Button>
-				</WrapPanel>
-			</Grid>
-		</ContentControl>
+	<Grid MinHeight="0">
 
 		<!-- Editor -->
-		<TabControl x:Name="MonsterEditorTabs" Grid.Row="0" MinHeight="0"
+		<TabControl x:Name="MonsterEditorTabs" MinHeight="0"
 					SelectedIndex="{Binding SelectorDM.SelectedTab}"
 					SelectionChanged="MonsterEditorTabs_SelectionChanged">
 
@@ -634,7 +622,14 @@
 			<!-- MONSTER ATEL AI -->
 			<TabItem Header="Battle Script">
 				<Grid RowDefinitions="Auto,*,Auto" Margin="5" MinHeight="0">
-					<TextBlock x:Name="AiSummaryText" Grid.Row="0" Text="{Binding AiSummary}" IsVisible="False"/>
+					<Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,5">
+						<TextBlock x:Name="AiSummaryText" Grid.Column="0" Text="{Binding AiSummary}" IsVisible="False"/>
+						<WrapPanel Grid.Column="1" Classes="compactLower" Orientation="Horizontal" HorizontalAlignment="Right">
+							<Button x:Name="AiRevertButton" Margin="0,2,6,2" Click="Button_RestoreOriginalAi" Background="#6B2525" ToolTip.Tip="Discard all Battle Script changes made since this monster was opened, then save the restored script.">Revert</Button>
+							<Button x:Name="AiUndoButton" Margin="0,2,6,2" Click="Button_UndoAi" ToolTip.Tip="Undo the most recent Battle Script editing action from this monster's current session">Undo</Button>
+							<Button x:Name="AiRedoButton" Margin="0,2,0,2" Click="Button_RedoAi" ToolTip.Tip="Redo the most recently undone Battle Script editing action from this monster's current session">Redo</Button>
+						</WrapPanel>
+					</Grid>
 					<Grid Grid.Row="1" ColumnDefinitions="480,*" MinHeight="0">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="190" MinHeight="185"/>

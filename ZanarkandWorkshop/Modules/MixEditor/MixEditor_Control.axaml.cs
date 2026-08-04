@@ -23,13 +23,6 @@ public partial class MixEditor_Control : UserControl
 
     private void Filter_Changed(object? sender, TextChangedEventArgs e) => DataModel.ApplyFilter();
 
-    private void ClearFilter_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (string.IsNullOrEmpty(DataModel.FilterText))
-            return;
-        DataModel.FilterText = "";
-    }
-
     private void Save_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         try { DataModel.Save(); }

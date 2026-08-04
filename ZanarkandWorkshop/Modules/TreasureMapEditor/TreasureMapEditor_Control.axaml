@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:FFXProjectEditor.Modules.TreasureMapEditor"
+             x:Class="FFXProjectEditor.Modules.TreasureMapEditor.TreasureMapEditor_Control">
+  <Grid RowDefinitions="*,Auto" Margin="12">
+    <Grid RowDefinitions="Auto,*">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="250" MinWidth="200" MaxWidth="420"/>
+        <ColumnDefinition Width="5"/>
+        <ColumnDefinition Width="*" MinWidth="420"/>
+        <ColumnDefinition Width="300"/>
+      </Grid.ColumnDefinitions>
+      <Grid Grid.RowSpan="2" RowDefinitions="Auto,*">
+        <TextBlock Margin="0,0,0,8" FontSize="17" FontWeight="Bold" Text="Treasure Maps"/>
+        <ListBox x:Name="FieldList" Grid.Row="1" ItemsSource="{Binding Fields}"
+                 SelectedItem="{Binding SelectedField, Mode=OneWay}"
+                 SelectionChanged="FieldList_SelectionChanged">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Margin="3,5" Text="{Binding Display}" TextWrapping="Wrap"/>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+      <GridSplitter Grid.Column="1" Grid.RowSpan="2" Width="5" HorizontalAlignment="Stretch"
+                    ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                    Background="#444" Cursor="SizeWestEast"
+                    ToolTip.Tip="Drag to resize the treasure map list"/>
+      <Grid Grid.Column="2" Grid.Row="0" Margin="12,0,12,8" ClipToBounds="True">
+        <Grid ColumnDefinitions="*,Auto,*">
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock FontWeight="SemiBold" Text="{Binding SelectedField.Display}" TextWrapping="Wrap"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                      HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Button Content="−" Width="34" IsEnabled="{Binding HasCurrentModel}" Click="ZoomOut_Click"/>
+            <TextBlock Width="48" TextAlignment="Center" VerticalAlignment="Center"
+                       Text="{Binding #MapCanvas.ZoomPercent, StringFormat={}{0}%}"/>
+            <Button Content="+" Width="34" IsEnabled="{Binding HasCurrentModel}" Click="ZoomIn_Click"/>
+            <Button Content="Center" MinWidth="64" Margin="4,0,0,0"
+                    IsEnabled="{Binding HasCurrentModel}" Click="Fit_Click"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center"
+                      Orientation="Horizontal" Spacing="5" IsVisible="{Binding HasMultipleMapStates}">
+            <Button Content="Previous" Click="PreviousMap_Click" IsEnabled="{Binding CanPreviousMapState}"
+                    ToolTip.Tip="Previous map"/>
+            <TextBlock VerticalAlignment="Center" Text="{Binding MapStateNavigationText}"/>
+            <Button Content="Next" Click="NextMap_Click" IsEnabled="{Binding CanNextMapState}"
+                    ToolTip.Tip="Next map"/>
+          </StackPanel>
+        </Grid>
+      </Grid>
+      <StackPanel Grid.Column="3" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Orientation="Horizontal" Spacing="5" Margin="8,0,0,8" ClipToBounds="True">
+        <Button Content="Previous chest" Click="PreviousChest_Click" IsEnabled="{Binding CanPreviousChest}"/>
+        <TextBlock VerticalAlignment="Center" Text="{Binding ChestNavigationText}"/>
+        <Button Content="Next chest" Click="NextChest_Click" IsEnabled="{Binding CanNextChest}"/>
+      </StackPanel>
+      <Border Grid.Column="2" Grid.Row="1" Margin="12,0" BorderBrush="#404040" BorderThickness="1" CornerRadius="5">
+          <Grid>
+            <local:TreasureMapCanvas_Control x:Name="MapCanvas" Model="{Binding CurrentModel}" Items="{Binding MapChests}" SelectedItem="{Binding SelectedChest}"/>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10" IsHitTestVisible="False">
+              <ProgressBar Width="260" Height="7" IsIndeterminate="True" IsVisible="{Binding IsFieldLoading}"/>
+              <TextBlock MaxWidth="440" TextAlignment="Center" TextWrapping="Wrap" Foreground="#BBBBBB" Text="{Binding EmptyStateText}"/>
+            </StackPanel>
+          </Grid>
+      </Border>
+      <Border Grid.Column="3" Grid.Row="1" Padding="12" Background="#0CFFFFFF" CornerRadius="5">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="8">
+          <TextBlock FontSize="16" FontWeight="Bold" Text="{Binding SelectedChest.Label}"/>
+          <TextBlock FontWeight="SemiBold" Text="Map coordinates"/>
+          <TextBlock Text="{Binding SelectedChest.PositionText}" TextWrapping="Wrap"/>
+          <Separator/>
+          <TextBlock FontWeight="SemiBold" Text="Chest contents"/>
+          <Border Padding="8" Background="#152A3340" CornerRadius="4"
+                  IsVisible="{Binding !SelectedChest.HasMultipleRewards}">
+            <TextBlock FontWeight="SemiBold" Foreground="Gold"
+                       Text="{Binding SelectedChest.FriendlyContents}" TextWrapping="Wrap"/>
+          </Border>
+          <ComboBox MinWidth="0" HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding SelectedChest.AvailableRewards}"
+                    SelectedItem="{Binding SelectedChest.ActiveReward}"
+                    IsVisible="{Binding SelectedChest.HasMultipleRewards}" MaxDropDownHeight="360">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding Display}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock VerticalAlignment="Center" Text="Reward type"/><ComboBox Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch" ItemsSource="{Binding SelectedChest.ActiveReward.KindOptions}" SelectedItem="{Binding SelectedChest.ActiveReward.SelectedKind}" IsEnabled="{Binding SelectedChest.CanEditContents}"/>
+            <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="Reward"/>
+            <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding SelectedChest.ActiveReward.RewardOptions}"
+                      SelectedItem="{Binding SelectedChest.ActiveReward.SelectedReward}"
+                      IsEnabled="{Binding SelectedChest.CanEditContents}" MaxDropDownHeight="360">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding Display}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="{Binding SelectedChest.ActiveReward.AmountLabel}"/><NumericUpDown Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding SelectedChest.ActiveReward.Quantity}" IsEnabled="{Binding SelectedChest.CanEditContents}"/>
+          </Grid>
+          <Button HorizontalAlignment="Right" Content="Restore Original Reward"
+                  Background="#8B2F2F" BorderBrush="#D95252" BorderThickness="1"
+                  IsEnabled="{Binding SelectedChest.CanEditContents}"
+                  Click="RestoreChestReward_Click"
+                  ToolTip.Tip="Restore only this reward from Original Game Files"/>
+          <Separator Margin="0,6,0,0"/>
+          <TextBlock FontWeight="SemiBold" Text="NPC rewards"/>
+          <ComboBox MinWidth="0" HorizontalAlignment="Stretch"
+                    ItemsSource="{Binding NpcRewards}" SelectedItem="{Binding SelectedNpcReward}"
+                    PlaceholderText="NONE" MaxDropDownHeight="300">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding Display}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto"
+                IsVisible="{Binding !HasNoNpcRewards}">
+            <TextBlock VerticalAlignment="Center" Text="Reward type"/>
+            <ComboBox Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding SelectedNpcReward.KindOptions}"
+                      SelectedItem="{Binding SelectedNpcReward.SelectedKind}"/>
+            <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="Reward"/>
+            <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding SelectedNpcReward.RewardOptions}"
+                      SelectedItem="{Binding SelectedNpcReward.SelectedReward}" MaxDropDownHeight="360">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding Display}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="{Binding SelectedNpcReward.AmountLabel}"/>
+            <NumericUpDown Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="255"
+                           Value="{Binding SelectedNpcReward.Quantity}"/>
+          </Grid>
+          <Button HorizontalAlignment="Right" Content="Restore Original Reward"
+                  Background="#8B2F2F" BorderBrush="#D95252" BorderThickness="1"
+                  IsVisible="{Binding !HasNoNpcRewards}" IsEnabled="{Binding !HasNoNpcRewards}"
+                  Click="RestoreNpcReward_Click"
+                  ToolTip.Tip="Restore only this reward from Original Game Files"/>
+          <TextBlock Foreground="#BBBBBB" Text="No NPC rewards were detected on this map."
+                     TextWrapping="Wrap" IsVisible="{Binding HasNoNpcRewards}"/>
+        </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+    <ContentControl Grid.Row="1" MinHeight="50">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,4">
+        <TextBox Grid.Column="0" Width="200" VerticalAlignment="Center"
+                 Watermark="Search fields..."
+                 Text="{Binding FieldFilterText, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Grid.Column="1" Margin="12,0" VerticalAlignment="Center"
+                   HorizontalAlignment="Right" Text="{Binding Status}" Foreground="#DDDDDD"/>
+        <Button Grid.Column="2" Content="Save" VerticalAlignment="Center"
+                IsEnabled="{Binding IsDirty}" Click="Save_Click"
+                ToolTip.Tip="Save treasure chest content changes"/>
+      </Grid>
+    </ContentControl>
+  </Grid>
+</UserControl>

@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "0.3.0"
+    [string]$Version = "0.4.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -43,6 +43,7 @@ Get-ChildItem -LiteralPath $publishDirectory -Filter "*.pdb" |
 
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "Readme.md") -Destination $publishDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "CHANGELOG.md") -Destination $publishDirectory
+Copy-Item -LiteralPath (Join-Path $repositoryRoot "LICENSE") -Destination $publishDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "NOTICE.md") -Destination $publishDirectory
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "ReadmeAssets") `
     -Destination (Join-Path $publishDirectory "ReadmeAssets") -Recurse

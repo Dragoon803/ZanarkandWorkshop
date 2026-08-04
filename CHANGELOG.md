@@ -2,15 +2,18 @@
 
 All notable changes to Zanarkand Workshop will be documented here.
 
-## [0.3.0] - 2026-07-28
+## [0.4.0] - 2026-08-04
 
 ### Added
 
 * Added an Auto Ability Editor for properties, effects, names, descriptions, and customization recipes.
 * Added a Rikku Mix Recipe Editor for searching, sorting, and changing ingredient pairs and result commands.
 * Added a Battle Formation Editor for changing enemy parties and editing formation coordinates visually or numerically.
+* Added a visual Sphere Grid Editor for nodes, links, types, positions, sections, find-and-replace, and undo.
+* Added a Treasure Map Editor for viewing mapped chests and changing individual rewards.
+* Added single-entry recovery for Auto Abilities and treasure rewards.
 * Added expanded Monster Editor constraints and direct Enter/Escape numeric editing.
-* Added smoke-test projects for battle formations, command flags, command-slot expansion, and monster Battle Scripts.
+* Added smoke tests for battle formations, battlefields, command flags, Sphere Grids, Treasure Maps, command-slot expansion, and monster Battle Scripts.
 
 ### Changed
 
@@ -28,6 +31,7 @@ All notable changes to Zanarkand Workshop will be documented here.
 * Correctly mapped Rikku Mix result IDs to their corresponding `command.bin` command names.
 * Improved fixed column sizing, sorting, filtering, and sticky headers in the Rikku Mix Recipe Editor.
 * Improved handling of missing files and folders in the Rikku Mix and Battle Formation editors.
+* Fixed Auto Ability text recovery so manually changed primary and alternate offsets are rebuilt safely.
 
 ## [0.2.0] - 2026-07-25
 

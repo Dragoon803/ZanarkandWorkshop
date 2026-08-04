@@ -17,6 +17,8 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
     private byte[] _recipeFile = Array.Empty<byte>();
     private int _abilityStart;
     private int _abilityCount;
+    private byte[] _baselineAbility = Array.Empty<byte>();
+    private byte[] _baselineRecipe = Array.Empty<byte>();
 
     public List<AutoAbilityEntry> AllAbilities { get; } = new();
     public ObservableCollection<AutoAbilityEntry> DisplayedAbilities { get; } = new();
@@ -26,9 +28,11 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
 
     [ObservableProperty] private string filterText = "";
     [ObservableProperty] private AutoAbilityEntry? selectedAbility;
+    public bool HasSelectedAbility => SelectedAbility is not null;
     [ObservableProperty] private string status = "";
     [ObservableProperty] private bool hasAbilityFile;
     [ObservableProperty] private bool hasRecipeFile;
+    [ObservableProperty] private bool isDirty;
     public string PropertiesTabHeader => HasAbilityFile
         ? "Properties & Effects"
         : "Properties & Effects (a_ability.bin missing)";
@@ -41,6 +45,9 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
     {
         Load();
     }
+
+    partial void OnSelectedAbilityChanged(AutoAbilityEntry? value) =>
+        OnPropertyChanged(nameof(HasSelectedAbility));
 
     public void Load()
     {
@@ -123,12 +130,14 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
             throw new InvalidDataException(
                 "No kaizou.bin recipes matched the auto-ability IDs in a_ability.bin.");
         ApplyFilter();
-        SelectedAbility = DisplayedAbilities.FirstOrDefault();
         Status = HasAbilityFile && HasRecipeFile
             ? $"Loaded {AllAbilities.Count} auto abilities; matched {matchedRecipeCount} customization recipes."
             : HasAbilityFile
                 ? $"Loaded {AllAbilities.Count} auto abilities. Recipe editing is unavailable because kaizou.bin is missing."
                 : $"Loaded {AllAbilities.Count} customization recipes. Property editing is unavailable because a_ability.bin is missing.";
+        _baselineAbility = HasAbilityFile ? BuildAbilityFile() : Array.Empty<byte>();
+        _baselineRecipe = _recipeFile.ToArray();
+        IsDirty = false;
     }
 
     public void ApplyFilter()
@@ -167,11 +176,14 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
                 DisplayedAbilities.FirstOrDefault(entry => entry.Id == selectedAbilityId.Value);
             if (restoredSelection != null) SelectedAbility = restoredSelection;
         }
-        Status = savedAbilityFile && savedRecipeFile
-            ? "Saved and verified a_ability.bin and kaizou.bin."
-            : savedAbilityFile
-                ? "Saved and verified a_ability.bin. kaizou.bin was missing and was not created."
-                : "Saved kaizou.bin. a_ability.bin was missing and was not created.";
+        Status = EditorSaveStatus.Success("Auto Ability");
+    }
+
+    public void RefreshDirtyState()
+    {
+        byte[] ability = HasAbilityFile ? BuildAbilityFile() : Array.Empty<byte>();
+        IsDirty = !ability.SequenceEqual(_baselineAbility) ||
+                  !_recipeFile.SequenceEqual(_baselineRecipe);
     }
 
     public void RestoreOriginalAndSave(string originalPath, bool restoreAbilityFile)
@@ -193,6 +205,71 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
             if (restoredSelection != null) SelectedAbility = restoredSelection;
         }
         Status = $"Restored and reloaded the original {expectedName}.";
+    }
+
+    public void RestoreSelectedOriginalAbility(string originalAbilityPath, string? originalRecipePath)
+    {
+        AutoAbilityEntry selected = SelectedAbility ??
+            throw new InvalidOperationException("Select an Auto Ability to restore.");
+        if (!HasAbilityFile)
+            throw new InvalidOperationException("a_ability.bin is required to restore an Auto Ability.");
+        if (!File.Exists(originalAbilityPath))
+            throw new FileNotFoundException("The original a_ability.bin could not be found.", originalAbilityPath);
+
+        byte[] originalFile = File.ReadAllBytes(originalAbilityPath);
+        (int start, int count, ushort minimumId) = ReadAbilityTable(originalFile, "original a_ability.bin");
+        int rawId = selected.Id - 0x8000;
+        int originalIndex = rawId - minimumId;
+        if (originalIndex < 0 || originalIndex >= count)
+            throw new InvalidOperationException(
+                $"{selected.DisplayId} does not exist in the original a_ability.bin.");
+
+        int originalRecordOffset = start + originalIndex * 0x6C;
+        int originalTextStart = start + count * 0x6C;
+        byte[][] originalScripts = ReadTextScripts(originalFile, originalRecordOffset, originalTextStart);
+        byte[] originalRecord = originalFile.Skip(originalRecordOffset).Take(0x6C).ToArray();
+        selected.ApplyOriginalRecord(originalRecord, originalScripts,
+            DecodeText(originalScripts[0], selected.Name), DecodeText(originalScripts[4], ""));
+
+        bool restoredRecipe = false;
+        if (selected.Recipe != null && HasRecipeFile &&
+            !string.IsNullOrWhiteSpace(originalRecipePath) && File.Exists(originalRecipePath))
+        {
+            byte[] originalRecipes = File.ReadAllBytes(originalRecipePath);
+            if (originalRecipes.Length < 0x14 + 125 * 8)
+                throw new InvalidDataException("The original kaizou.bin does not contain 125 complete recipes.");
+            for (int index = 0; index < 125; index++)
+            {
+                int offset = 0x14 + index * 8;
+                if (BitConverter.ToUInt16(originalRecipes, offset + 2) != selected.Id) continue;
+                selected.Recipe.ApplyOriginalRecord(originalRecipes.AsSpan(offset, 8));
+                restoredRecipe = true;
+                break;
+            }
+        }
+
+        ApplyFilter();
+        SelectedAbility = selected;
+        RefreshDirtyState();
+        Status = restoredRecipe
+            ? $"Restored {selected.Name} properties, text, and recipe in memory. Press Save to write the changes."
+            : $"Restored {selected.Name} properties and text in memory. Press Save to write the changes.";
+    }
+
+    private static (int Start, int Count, ushort MinimumId) ReadAbilityTable(byte[] file, string label)
+    {
+        if (file.Length < 0x14) throw new InvalidDataException($"The {label} is too short.");
+        ushort minimumId = BitConverter.ToUInt16(file, 0x08);
+        ushort maximumId = BitConverter.ToUInt16(file, 0x0A);
+        ushort recordSize = BitConverter.ToUInt16(file, 0x0C);
+        int start = BitConverter.ToInt32(file, 0x10);
+        if (maximumId < minimumId) throw new InvalidDataException($"The {label} has an invalid ID range.");
+        int count = maximumId - minimumId + 1;
+        if (recordSize != 0x6C)
+            throw new InvalidDataException($"The {label} uses record size 0x{recordSize:X}, not 0x6C.");
+        if (start < 0x14 || start + count * recordSize > file.Length)
+            throw new InvalidDataException($"The Auto Ability table is outside the {label}.");
+        return (start, count, minimumId);
     }
 
     private void Validate()
@@ -319,6 +396,27 @@ internal sealed class AutoAbilityEntry : ObservableObject
         if (_nameDirty) scripts[0] = FfxEncoding.EncodeTextScript(Name, FfxEncoding.UsEncoder);
         if (_descriptionDirty) scripts[4] = FfxEncoding.EncodeTextScript(Description, FfxEncoding.UsEncoder);
         return scripts;
+    }
+
+    internal void ApplyOriginalRecord(
+        byte[] originalRecord, byte[][] originalScripts, string originalName, string originalDescription)
+    {
+        if (originalRecord.Length != 0x6C || originalScripts.Length != 8)
+            throw new InvalidDataException("The original Auto Ability record is incomplete.");
+
+        // Text pointers belong to the source file. Restore only the structured data here;
+        // BuildAbilityFile recalculates every pointer for the adjusted destination file.
+        Array.Copy(originalRecord, 0x10, _file, _offset + 0x10, 0x5C);
+        for (int index = 0; index < _textScripts.Length; index++)
+            _textScripts[index] = originalScripts[index].ToArray();
+        _name = originalName;
+        _description = originalDescription;
+        _nameDirty = false;
+        _descriptionDirty = false;
+        _statusEffects = null;
+        _extraStatusEffects = null;
+        _effects = null;
+        OnPropertyChanged(string.Empty);
     }
 
     private bool Bit(int relativeOffset, int bit) => (_file[_offset + relativeOffset] & (1 << bit)) != 0;
@@ -524,6 +622,12 @@ internal sealed class RecipeRecord : ObservableObject
     }
     private void WriteUInt16(int offset, ushort value)
     { _file[offset] = (byte)value; _file[offset + 1] = (byte)(value >> 8); }
+    internal void ApplyOriginalRecord(ReadOnlySpan<byte> record)
+    {
+        if (record.Length != 8) throw new InvalidDataException("The original recipe record is incomplete.");
+        record.CopyTo(_file.AsSpan(_offset, 8));
+        OnPropertyChanged(string.Empty);
+    }
 }
 
 internal sealed record RecipeItemOption(ushort Id, string Name)

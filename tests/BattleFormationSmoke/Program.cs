@@ -65,10 +65,22 @@ Assert(reparsed.EnemyIds[7] == ushort.MaxValue, "Empty enemy slot");
 Assert(reparsed.Positions[3].X == -123.5f, "Edited position");
 Assert(changed.Length == original.Length, "Fixed-size writer changed file length");
 
+// Retail files may deliberately have fewer active enemy IDs than monster
+// position pairs. Replacing an ID must remain a fixed-size edit.
+ushort[] sparseIds = (ushort[])parsed.EnemyIds.Clone();
+sparseIds[0] = 0x2222;
+sparseIds[1] = ushort.MaxValue;
+byte[] sparseReplacement = BattleFormationWriter.Write(parsed, sparseIds, parsed.Positions);
+Assert(sparseReplacement.Length == original.Length,
+    "A like-for-like replacement with spare retail positions resized the file");
+BattleFormationFile sparseParsed = BattleFormationParser.Read(sparseReplacement, "sparse-replacement.bin");
+Assert(sparseParsed.EnemyIds[0] == 0x2222 && sparseParsed.MonsterCount == parsed.MonsterCount,
+    "A sparse like-for-like replacement changed the position count");
+
 FormationPosition[] unsafePositions = parsed.Positions.ToArray();
 unsafePositions[0] = unsafePositions[0] with
 {
-    X = BattleFormationWriter.AbsoluteCoordinateLimit + 1
+    X = float.NaN
 };
 bool rejectedUnsafeCoordinate = false;
 try
@@ -79,7 +91,7 @@ catch (InvalidDataException)
 {
     rejectedUnsafeCoordinate = true;
 }
-Assert(rejectedUnsafeCoordinate, "Unsafe coordinates must be rejected");
+Assert(rejectedUnsafeCoordinate, "Non-finite coordinates must be rejected");
 
 var expandedPositions = parsed.Positions.ToList();
 expandedPositions.Add(new FormationPosition(
@@ -96,19 +108,66 @@ Assert(expandedParsed.Positions.Single(position =>
     position.Kind == FormationPositionKind.Monster && position.Index == 1).X == 25,
     "Expanded monster position");
 
+bool rejectedEmptyFormation = false;
+try
+{
+    _ = BattleFormationWriter.Write(parsed, expandedIds,
+        parsed.Positions.Where(position => position.Kind is not FormationPositionKind.Monster and not FormationPositionKind.MonsterSecondary).ToArray());
+}
+catch (InvalidDataException ex) when (ex.Message.Contains("at least one monster", StringComparison.Ordinal))
+{
+    rejectedEmptyFormation = true;
+}
+Assert(rejectedEmptyFormation, "Zero-monster formations must be rejected");
+
+bool rejectedEmptyEnemySlots = false;
+try
+{
+    _ = BattleFormationWriter.Write(parsed,
+        Enumerable.Repeat(ushort.MaxValue, 8).ToArray(), parsed.Positions);
+}
+catch (InvalidDataException ex) when (ex.Message.Contains("monster slot", StringComparison.Ordinal))
+{
+    rejectedEmptyEnemySlots = true;
+}
+Assert(rejectedEmptyEnemySlots,
+    "An empty enemy party with leftover position records must be rejected");
+
 if (args.Length == 1 && Directory.Exists(args[0]))
 {
     int ok = 0;
+    int excluded = 0;
     var failures = new List<string>();
     var wStats = new Dictionary<FormationPositionKind, (int Records, int NonZero)>();
     var nonZeroWExamples = new List<string>();
     foreach (string path in Directory.EnumerateFiles(args[0], "*.bin", SearchOption.AllDirectories))
     {
+        BattleFormationFile file;
+        try { file = BattleFormationParser.Read(path); }
+        catch { excluded++; continue; }
+        if (file.MonsterCount is < 1 or > 8 ||
+            !file.EnemyIds.Any(id => id != ushort.MaxValue))
+        {
+            excluded++;
+            continue;
+        }
         try
         {
-            BattleFormationFile file = BattleFormationParser.Read(path);
             byte[] roundTrip = BattleFormationWriter.WriteFixedSize(file, file.EnemyIds, file.Positions);
             Assert(file.OriginalBytes.SequenceEqual(roundTrip), "Round trip differs");
+            if (file.CanResizeMonsterTables)
+            {
+                int targetCount = file.MonsterCount == 8 ? 7 : file.MonsterCount + 1;
+                FormationPosition[] resizedPositions = ResizeMonsterPositions(file.Positions, targetCount);
+                ushort[] resizedIds = (ushort[])file.EnemyIds.Clone();
+                for (int i = 0; i < resizedIds.Length; i++)
+                    resizedIds[i] = i < targetCount
+                        ? (resizedIds.FirstOrDefault(id => id != ushort.MaxValue) is ushort id && id != 0 ? id : (ushort)1)
+                        : ushort.MaxValue;
+                byte[] resized = BattleFormationWriter.Write(file, resizedIds, resizedPositions);
+                BattleFormationFile resizedFile = BattleFormationParser.Read(resized, path);
+                Assert(resizedFile.MonsterCount == targetCount, "Resized monster count differs");
+            }
             foreach (FormationPosition position in file.Positions)
             {
                 wStats.TryGetValue(position.Kind, out (int Records, int NonZero) stats);
@@ -129,7 +188,7 @@ if (args.Length == 1 && Directory.Exists(args[0]))
             failures.Add($"{path}: {ex.Message}");
         }
     }
-    Console.WriteLine($"Corpus scan: {ok} passed, {failures.Count} failed.");
+    Console.WriteLine($"Corpus scan: {ok} editable formations passed, {excluded} non-formations excluded, {failures.Count} failed.");
     foreach (var pair in wStats.OrderBy(pair => pair.Key))
         Console.WriteLine($"{pair.Key}: {pair.Value.NonZero}/{pair.Value.Records} nonzero W values.");
     foreach (string example in nonZeroWExamples)
@@ -141,4 +200,21 @@ if (args.Length == 1 && Directory.Exists(args[0]))
 else
 {
     Console.WriteLine("Synthetic battle-formation smoke tests passed.");
+}
+
+static FormationPosition[] ResizeMonsterPositions(
+    IReadOnlyList<FormationPosition> source, int targetCount)
+{
+    FormationPosition[] monsters = source.Where(position => position.Kind == FormationPositionKind.Monster).ToArray();
+    FormationPosition[] run = source.Where(position => position.Kind == FormationPositionKind.MonsterSecondary).ToArray();
+    var result = source.Where(position => position.Kind is not FormationPositionKind.Monster and not FormationPositionKind.MonsterSecondary).ToList();
+    FormationPosition monsterTemplate = monsters.FirstOrDefault() ?? new FormationPosition(FormationPositionKind.Monster, 0, -1, 0, 0, 60, 0);
+    FormationPosition runTemplate = run.FirstOrDefault() ?? new FormationPosition(FormationPositionKind.MonsterSecondary, 0, -1, 90, 0, -60, 0);
+    for (int i = 0; i < targetCount; i++)
+        result.Add((i < monsters.Length ? monsters[i] : monsterTemplate) with
+        { Kind = FormationPositionKind.Monster, Index = i, FileOffset = i < monsters.Length ? monsters[i].FileOffset : -1 });
+    for (int i = 0; i < targetCount; i++)
+        result.Add((i < run.Length ? run[i] : runTemplate) with
+        { Kind = FormationPositionKind.MonsterSecondary, Index = i, FileOffset = i < run.Length ? run[i].FileOffset : -1 });
+    return result.ToArray();
 }

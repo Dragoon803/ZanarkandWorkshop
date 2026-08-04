@@ -822,12 +822,11 @@ namespace FFXProjectEditor.Modules.MonEditor
             if (rebuiltKernel != null)
             {
                 File.WriteAllBytes(kernelPath, rebuiltKernel);
-                AiStatus = $"Saved and verified m{_monsterId:000} plus English monster text.";
+                AiStatus = EditorSaveStatus.Success("Monster");
             }
             else
             {
-                AiStatus = $"Localized monster file was not present. Saved and verified m{_monsterId:000}, " +
-                    "including its local Name, Sensor, and Scan text.";
+                AiStatus = EditorSaveStatus.Success("Monster");
             }
         }
 

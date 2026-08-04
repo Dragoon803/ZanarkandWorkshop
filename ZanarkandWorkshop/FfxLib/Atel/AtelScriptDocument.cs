@@ -1223,6 +1223,8 @@ public sealed class AtelWorker
     public int EventType { get; init; }
     public int VariableCount { get; init; }
     public int IntegerConstantCount { get; init; }
+    public IReadOnlyList<int> IntegerConstantValues { get; init; } = [];
+    public int IntegerConstantOffset { get; init; }
     public int FloatConstantCount { get; init; }
     public int FunctionCount { get; init; }
     public int JumpCount { get; init; }
@@ -1348,6 +1350,9 @@ public sealed class AtelWorker
             EventType = AtelScriptDocument.ReadUInt16(bytes, offset),
             VariableCount = AtelScriptDocument.ReadUInt16(bytes, offset + 0x02),
             IntegerConstantCount = AtelScriptDocument.ReadUInt16(bytes, offset + 0x04),
+            IntegerConstantOffset = AtelScriptDocument.ReadInt32(bytes, offset + 0x18),
+            IntegerConstantValues = ReadInt32Table(bytes, AtelScriptDocument.ReadInt32(bytes, offset + 0x18),
+                AtelScriptDocument.ReadUInt16(bytes, offset + 0x04), $"worker {index} integer constants"),
             FloatConstantCount = AtelScriptDocument.ReadUInt16(bytes, offset + 0x06),
             FunctionCount = functionCount,
             JumpCount = jumpCount,

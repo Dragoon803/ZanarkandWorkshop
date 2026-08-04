@@ -31,4 +31,5 @@ public sealed class BattleFormationFile
     public required byte PartyCount { get; init; }
     public required byte AeonCount { get; init; }
     public required byte MonsterCount { get; init; }
+    public required bool CanResizeMonsterTables { get; init; }
 }

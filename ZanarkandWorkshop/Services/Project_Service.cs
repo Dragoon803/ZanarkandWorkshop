@@ -67,6 +67,7 @@ namespace FFXProjectEditor.Services
         public string Path_KernelCustomization => Path.Combine(Path_Kernel, "kaizou.bin");
         public string Path_KernelMixRecipes => Path.Combine(Path_Kernel, "prepare.bin");
         public string Path_Mon => Path.Combine(ProjectPath, "jppc", "battle", "mon");
+        public string Path_SphereGrid => Path.Combine(ProjectPath, "jppc", "menu", "abmap");
 
         public string GetPathKernelMonsterUs(int monsterId)
         {

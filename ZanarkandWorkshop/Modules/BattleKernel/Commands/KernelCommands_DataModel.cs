@@ -43,6 +43,8 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public string recoveryStatus = "";
         [ObservableProperty] public string filterText = "";
         [ObservableProperty] public KernelCommands_Wrapper? selectedCommand;
+        [ObservableProperty] public bool isDirty;
+        private byte[] _baselineFile = Array.Empty<byte>();
 
         public List<string> CharacterOptions => new Character_Converter().Options.Values.ToList();
         public List<string> HitCalcTypeOptions => new HitCalcType_Converter().Options.Values.ToList();
@@ -89,6 +91,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         public void LoadCommands()
         {
             byte[] byteFile = File.ReadAllBytes(GetFilePath());
+            _baselineFile = byteFile.ToArray();
             CommandsList = Ability_Command.ReadList(byteFile, HasExtraInfo());
 
             LoadedCommands.Clear();
@@ -96,8 +99,10 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             {
                 KernelCommands_Wrapper wrapper = KernelCommands_Wrapper.Wrap(CommandsList[i]);
                 wrapper.Index = i;
+                wrapper.PropertyChanged += CommandChanged;
                 LoadedCommands.Add(wrapper);
             }
+            IsDirty = false;
         }
 
         public void ApplyFilter()
@@ -135,6 +140,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             KernelCommands_Wrapper wrapper = KernelCommands_Wrapper.Wrap(clone);
             wrapper.Name = $"{source.Name} - clone";
             wrapper.Index = LoadedCommands.Count;
+            wrapper.PropertyChanged += CommandChanged;
             LoadedCommands.Add(wrapper);
 
             FilterText = "";
@@ -144,6 +150,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             RecoveryStatus =
                 $"Cloned command {sourceIndex} into new slot {wrapper.Index} " +
                 $"(reference 0x{commandReference:X4}). Save to write it to disk.";
+            RefreshDirtyState();
             return wrapper;
         }
 
@@ -170,6 +177,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             ApplyFilter();
             RecoveryStatus =
                 $"Deleted cloned command {actualIndex}. Save to write the removal to disk.";
+            RefreshDirtyState();
             return LoadedCommands.Count > 0 ? LoadedCommands[^1] : null;
         }
 
@@ -179,7 +187,9 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             byte[] rebuilt = BuildFile();
             _ = Ability_Command.ReadList(rebuilt, HasExtraInfo());
             File.WriteAllBytes(path, rebuilt);
-            RecoveryStatus = "Saved and verified.";
+            _baselineFile = rebuilt.ToArray();
+            IsDirty = false;
+            RecoveryStatus = EditorSaveStatus.Success("Player & Aeon Commands");
         }
 
         public void RestoreOriginalAndSave(string originalPath)
@@ -236,6 +246,12 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
 
             return Ability_Command.WriteList(commandList, hasExtraInfo);
         }
+
+        private void CommandChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+            RefreshDirtyState();
+
+        private void RefreshDirtyState() =>
+            IsDirty = !BuildFile().SequenceEqual(_baselineFile);
 
         public string GetFilePath()
         {

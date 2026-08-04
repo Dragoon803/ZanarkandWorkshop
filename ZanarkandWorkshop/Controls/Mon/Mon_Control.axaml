@@ -21,13 +21,12 @@
 			<TextBox Text="{Binding StealRareId}"></TextBox>
 		</StackPanel>
 		
-		<Grid Grid.Row="2" ColumnDefinitions="*,*">
-			<StackPanel Grid.Column="0" Orientation="Horizontal">
-			</StackPanel>
-			<StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-				<Button Click="Button_Save" Margin="0,0,30,0">Save</Button>
-			</StackPanel>
-		</Grid>
+		<ContentControl Grid.Row="2" MinHeight="50">
+			<Grid ColumnDefinitions="*,Auto" Margin="20,4">
+				<Button Grid.Column="1" Click="Button_Save"
+						VerticalAlignment="Center">Save</Button>
+			</Grid>
+		</ContentControl>
 	</Grid>
 	
 </UserControl>

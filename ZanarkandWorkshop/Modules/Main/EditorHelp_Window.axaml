@@ -27,7 +27,7 @@
 
                     <StackPanel Spacing="4">
                         <TextBlock Text="Auto Ability Editor" FontSize="18" FontWeight="Bold"/>
-                        <TextBlock Text="Edits weapon and armor Auto Ability names, descriptions, properties, effects, stat increases, and customization recipes. Properties &amp; Effects uses a_ability.bin, while Recipe uses kaizou.bin; either tab remains available when only its corresponding file is present."
+                        <TextBlock Text="Edits Auto Ability text, properties, effects, stat increases, and recipes. Properties &amp; Effects uses a_ability.bin and Recipe uses kaizou.bin; either tab works independently. Restore Original Ability recovers only the selected entry."
                                    TextWrapping="Wrap" Foreground="#DDDDDD"/>
                     </StackPanel>
 
@@ -65,6 +65,20 @@
                         <TextBlock Text="Battle Formation Editor" FontSize="18" FontWeight="Bold"/>
                         <TextBlock Text="Changes which monsters appear in a battle and where they stand. Select a formation, choose up to eight monsters, adjust their positions in the graph or coordinate fields, then press Save."
                                    TextWrapping="Wrap" Foreground="#DDDDDD"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Sphere Grid Editor" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="Visually edits the Original, Standard, and Expert Sphere Grids. Select a node to change its type, section color, or position; select a connecting line to edit its link. You can also create nodes and links, find and replace node types, undo changes, and restore the original grids through Recovery. Save your work and start a new game when testing a redesigned grid."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Treasure Chest Editor" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="Shows treasure chests on interactive maps reconstructed from your own game files. Select a field, click a chest icon, or use Previous Chest and Next Chest to inspect every detected chest. You can change its reward type, reward, and quantity, including Gil, items, key items, weapons, and armor. Chest positions are shown for reference and are not edited."
+                                   TextWrapping="Wrap" Foreground="#DDDDDD"/>
+                        <TextBlock Text="Required: jppc\battle\kernel\takara.bin and buki_get.bin; jppc\map with mapout.vpa files; and jppc\event\obj with .ebp files. Only takara.bin is changed when you save."
+                                   TextWrapping="Wrap" Foreground="#BBBBBB"/>
                     </StackPanel>
 
                     <Border Height="1" Background="#555555"/>

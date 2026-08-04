@@ -77,5 +77,6 @@ namespace FFXProjectEditor.Services
             if (enc == null) enc = _defaultEncoding;
             MemSharp.WriteString((IntPtr)offset, text, enc, isRelative);
         }
+
     }
 }

@@ -20,6 +20,7 @@ internal partial class MixEditor_DataModel : ObservableObject
     internal const ushort CommandCategory = 0x3000;
 
     private byte[] _file = Array.Empty<byte>();
+    private byte[] _baselineFile = Array.Empty<byte>();
     public List<MixRecipeEntry> AllRecipes { get; } = new();
     public ObservableCollection<MixRecipeEntry> DisplayedRecipes { get; } = new();
     public IReadOnlyList<MixResultOption> ResultOptions { get; private set; } =
@@ -30,6 +31,7 @@ internal partial class MixEditor_DataModel : ObservableObject
 
     [ObservableProperty] private string filterText = "";
     [ObservableProperty] private string status = "";
+    [ObservableProperty] private bool isDirty;
 
     public MixEditor_DataModel() => Load();
 
@@ -37,6 +39,7 @@ internal partial class MixEditor_DataModel : ObservableObject
     {
         string path = Project_Service.Instance.Path_KernelMixRecipes;
         _file = File.ReadAllBytes(path);
+        _baselineFile = _file.ToArray();
         ValidateFile(_file);
         ResultOptions = LoadResultOptions();
         OnPropertyChanged(nameof(ResultOptions));
@@ -46,15 +49,19 @@ internal partial class MixEditor_DataModel : ObservableObject
         {
             for (int low = 0; low <= high; low++)
             {
-                AllRecipes.Add(new MixRecipeEntry(
+                var recipe = new MixRecipeEntry(
                     IngredientOptions[low], IngredientOptions[high], _file, ResultOptions,
-                    IngredientOptions));
+                    IngredientOptions);
+                recipe.PropertyChanged += (_, _) =>
+                    IsDirty = !_file.SequenceEqual(_baselineFile);
+                AllRecipes.Add(recipe);
             }
         }
 
         ApplyFilter();
         Status = $"Loaded {AllRecipes.Count:N0} recipes using {IngredientCount} ingredients and " +
                  $"{ResultOptions.Count} Mix results.";
+        IsDirty = false;
     }
 
     public void ApplyFilter()
@@ -87,7 +94,9 @@ internal partial class MixEditor_DataModel : ObservableObject
         ValidateFile(verified);
         if (!_file.SequenceEqual(verified))
             throw new InvalidDataException("The saved Mix recipe file did not verify byte-for-byte.");
-        Status = "Saved and verified prepare.bin.";
+        Status = EditorSaveStatus.Success("Rikku Mix");
+        _baselineFile = _file.ToArray();
+        IsDirty = false;
     }
 
     public void RestoreOriginalAndSave(string originalPath)

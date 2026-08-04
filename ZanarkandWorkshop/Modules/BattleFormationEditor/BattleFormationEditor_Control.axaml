@@ -7,15 +7,20 @@
              d:DesignWidth="1400" d:DesignHeight="800"
              x:Class="FFXProjectEditor.Modules.BattleFormationEditor.BattleFormationEditor_Control">
     <Grid RowDefinitions="*,Auto">
-        <Grid Grid.Row="0" ColumnDefinitions="250,5,*" Margin="12">
+        <Grid Grid.Row="0" Margin="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" MinWidth="200" MaxWidth="320"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="*" MinWidth="700"/>
+            </Grid.ColumnDefinitions>
+
             <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto">
-                <StackPanel Grid.Row="0" Margin="0,0,0,10" Spacing="6">
-                    <TextBlock FontSize="17" FontWeight="Bold" Text="Battle Formations"/>
-                    <TextBox Watermark="Search formations..."
-                             Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
-                </StackPanel>
+                <TextBlock Grid.Row="0" Margin="0,0,0,10"
+                           FontSize="17" FontWeight="Bold" Text="Battle Formations"/>
                 <ListBox Grid.Row="1" ItemsSource="{Binding Files}"
-                         SelectedItem="{Binding SelectedFile}">
+                         SelectedItem="{Binding SelectedFile, Mode=OneWay}"
+                         SelectionChanged="FormationList_SelectionChanged"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="2,4" Spacing="1">
@@ -29,119 +34,146 @@
                         Click="Rescan_Click"/>
             </Grid>
 
-            <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                          ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                          Background="#444" Cursor="SizeWestEast"
+                          ToolTip.Tip="Drag to resize the formation list"/>
 
-            <Grid Grid.Column="2" Margin="14,0,0,0">
-                <TabControl>
-                    <TabItem Header="Formation">
-                        <Grid RowDefinitions="Auto,*" Margin="10">
-                            <Border Grid.Row="0" Padding="12" Margin="0,0,0,10"
-                                    Background="#12FFFFFF" CornerRadius="5">
-                                <StackPanel Spacing="7">
-                                    <TextBlock FontSize="14" FontWeight="SemiBold" Text="Enemy Party"/>
-                                    <ItemsControl ItemsSource="{Binding EnemySlots}">
-                                        <ItemsControl.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <UniformGrid Columns="4"/>
-                                            </ItemsPanelTemplate>
-                                        </ItemsControl.ItemsPanel>
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Margin="0,2,10,3">
-                                                    <TextBlock Opacity="0.7" FontSize="11"
-                                                               Text="{Binding SlotNumber, StringFormat=Slot {0}}"/>
-                                                    <ComboBox ItemsSource="{Binding $parent[UserControl].DataContext.EnemyOptions}"
-                                                              SelectedItem="{Binding SelectedEnemy}"
-                                                              HorizontalAlignment="Stretch"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </Border>
+            <Grid Grid.Column="2" Margin="14,0,0,0" RowDefinitions="Auto,*,Auto">
+                <Grid Grid.Row="0" Margin="2,0,2,8" ColumnDefinitions="*,Auto,*">
+                    <StackPanel VerticalAlignment="Top" Spacing="2">
+                        <TextBlock FontSize="17" FontWeight="SemiBold" Text="Position layout"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                VerticalAlignment="Center" Spacing="5">
+                        <Button Content="−" Width="32" Click="ZoomOut_Click"
+                                ToolTip.Tip="Zoom out"/>
+                        <TextBlock Width="42" TextAlignment="Center" VerticalAlignment="Center"
+                                   Text="{Binding #FormationCanvas.ZoomPercent, StringFormat={}{0}%}"/>
+                        <Button Content="+" Width="32" Click="ZoomIn_Click"
+                                ToolTip.Tip="Zoom in"/>
+                        <Button Content="Center" MinWidth="66" Padding="10,4"
+                                Click="ZoomFit_Click"
+                                ToolTip.Tip="Return to the default centered view"/>
+                    </StackPanel>
+                    <Border Grid.Column="2" MaxWidth="380" Margin="12,0,0,0"
+                            Padding="10,5" CornerRadius="4"
+                            HorizontalAlignment="Right" VerticalAlignment="Center"
+                            Background="#3A2A10" BorderBrush="#D99A2B" BorderThickness="1"
+                            IsVisible="{Binding ShowBattlefieldNote}">
+                        <TextBlock TextAlignment="Right" TextWrapping="Wrap"
+                                   FontSize="12" FontWeight="SemiBold" Foreground="#FFD166"
+                                   Text="{Binding BattlefieldNote}"/>
+                    </Border>
+                </Grid>
 
-                            <Grid Grid.Row="1" RowDefinitions="50,*">
-                                <Grid Grid.Row="0" Margin="2,0,2,8" ColumnDefinitions="*,Auto,*">
-                                    <StackPanel VerticalAlignment="Top" Spacing="2">
-                                        <TextBlock FontSize="14" FontWeight="SemiBold" Text="Position layout"/>
-                                        <TextBlock FontSize="11" Opacity="0.7" TextWrapping="Wrap"
-                                                   Text="Drag a point to move it. Drag empty grid space to pan."/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
-                                                VerticalAlignment="Center" Spacing="5">
-                                        <Button Content="−" Width="32" Click="ZoomOut_Click"
-                                                ToolTip.Tip="Zoom out"/>
-                                        <TextBlock Width="42" TextAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   Text="{Binding #FormationCanvas.ZoomPercent, StringFormat={}{0}%}"/>
-                                        <Button Content="+" Width="32" Click="ZoomIn_Click"
-                                                ToolTip.Tip="Zoom in"/>
-                                        <Button Content="Center" MinWidth="66" Padding="10,4"
-                                                Click="ZoomFit_Click"
-                                                ToolTip.Tip="Fit and center the complete formation"/>
-                                    </StackPanel>
-                                </Grid>
-                                <Grid Grid.Row="1" ColumnDefinitions="*,190"
-                                      Height="320" VerticalAlignment="Top">
-                                    <local:FormationCanvas_Control x:Name="FormationCanvas"
-                                                                   Items="{Binding Positions}"
-                                                                   SelectedItem="{Binding SelectedPosition}"
-                                                                   Height="320"/>
-                                    <Border Grid.Column="1" Margin="10,0,0,0" Padding="12"
-                                            BorderBrush="#404040" BorderThickness="1" CornerRadius="5"
-                                            Background="#0CFFFFFF">
-                                        <StackPanel Spacing="7">
-                                            <TextBlock FontSize="14" FontWeight="SemiBold" Text="Legend"/>
-                                            <TextBlock Foreground="DodgerBlue" Text="● Party position"/>
-                                            <TextBlock Foreground="Cyan" Text="● Party run-away"/>
-                                            <TextBlock Foreground="Orange" Text="● Aeon position"/>
-                                            <TextBlock Foreground="Crimson" Text="● Monster position"/>
-                                            <TextBlock Foreground="IndianRed" Text="● Monster run-away"/>
-                                            <Separator Margin="0,4"/>
-                                            <TextBlock FontSize="11" Opacity="0.7" TextWrapping="Wrap"
-                                                       Text="Drag points on the grid or use Advanced Coordinates for exact values."/>
+                <Grid Grid.Row="1">
+                    <local:FormationCanvas_Control x:Name="FormationCanvas"
+                                                   Items="{Binding GridPositions}"
+                                                   Battlefield="{Binding Battlefield}"
+                                                   CameraKey="{Binding SelectedFile}"
+                                                   SelectedItem="{Binding SelectedPosition}"/>
+
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            Margin="10" Padding="9,6" CornerRadius="4"
+                            Background="#D914171C" BorderBrush="#454B55" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="DodgerBlue"/><TextBlock Text="Party"/></StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="Cyan"/><TextBlock Text="Party run-away"/></StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="Orange"/><TextBlock Text="Aeon"/></StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="Crimson"/><TextBlock Text="Monster"/></StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="4"><Ellipse Width="9" Height="9" Fill="IndianRed"/><TextBlock Text="Monster run-away"/></StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <TabControl Grid.Row="2" Margin="0,8,0,0" Height="180"
+                            IsEnabled="{Binding HasLoadedFile}">
+                    <TabItem Header="Enemy Party">
+                        <Border Padding="12,8" VerticalAlignment="Stretch"
+                                BorderBrush="#3A3A3A" BorderThickness="1">
+                            <ItemsControl ItemsSource="{Binding EnemySlots}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Columns="4"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,2,10,3">
+                                            <TextBlock Opacity="0.7" FontSize="11"
+                                                       Text="{Binding SlotNumber, StringFormat=Slot {0}}"/>
+                                            <ComboBox ItemsSource="{Binding $parent[UserControl].DataContext.EnemyOptions}"
+                                                      SelectedItem="{Binding SelectedEnemy}"
+                                                      HorizontalAlignment="Stretch"/>
                                         </StackPanel>
-                                    </Border>
-                                </Grid>
-                            </Grid>
-                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
                     </TabItem>
 
-                    <TabItem Header="Advanced Coordinates">
-                        <Grid RowDefinitions="Auto,*" Margin="10">
-                            <StackPanel Grid.Row="0" Margin="2,0,0,10">
-                                <TextBlock FontSize="14" FontWeight="SemiBold" Text="Exact position data"/>
-                                <TextBlock Opacity="0.65" Text="{Binding StructureSummary}" TextWrapping="Wrap"/>
-                            </StackPanel>
-                            <DataGrid Grid.Row="1" ItemsSource="{Binding Positions}"
-                                      SelectedItem="{Binding SelectedPosition}"
-                                      AutoGenerateColumns="False" IsReadOnly="False"
-                                      GridLinesVisibility="Horizontal" BorderThickness="1" BorderBrush="#404040">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Position" IsReadOnly="True" Width="180"
-                                                        Binding="{Binding Label}"/>
-                                    <DataGridTextColumn Header="X" Width="*" Binding="{Binding X}"/>
-                                    <DataGridTextColumn Header="Y / Height" Width="*" Binding="{Binding Y}"/>
-                                    <DataGridTextColumn Header="Z" Width="*" Binding="{Binding Z}"/>
-                                    <DataGridTextColumn Header="Offset" IsReadOnly="True" Width="100"
-                                                        Binding="{Binding FileOffset, StringFormat=0x{0:X}}"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Grid>
+                    <TabItem Header="Coordinates">
+                        <Border Padding="12,8" VerticalAlignment="Stretch"
+                                BorderBrush="#3A3A3A" BorderThickness="1">
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,170,Auto,170,Auto,170,*,Auto">
+                                <Grid Grid.Row="0" Grid.ColumnSpan="8" Margin="0,0,0,12"
+                                      ColumnDefinitions="Auto,*,Auto">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock VerticalAlignment="Center" Text="Selected position"/>
+                                        <ComboBox Width="280"
+                                                  ItemsSource="{Binding GridPositions}"
+                                                  SelectedItem="{Binding SelectedPosition, Mode=TwoWay}"
+                                                  DropDownClosed="PositionSelector_DropDownClosed">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding DisplayName}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Grid>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0"
+                                           VerticalAlignment="Center" Text="X"/>
+                                <NumericUpDown Grid.Row="1" Grid.Column="1"
+                                               Value="{Binding SelectedPosition.X, Mode=TwoWay}"
+                                               IsEnabled="{Binding HasSelectedPosition}"
+                                               Increment="5" Minimum="-2147483647" Maximum="2147483647"
+                                               FormatString="0.###"/>
+                                <TextBlock Grid.Row="1" Grid.Column="2" Margin="18,0,8,0"
+                                           VerticalAlignment="Center" Text="Y"/>
+                                <NumericUpDown Grid.Row="1" Grid.Column="3"
+                                               Value="{Binding SelectedPosition.Y, Mode=TwoWay}"
+                                               IsEnabled="{Binding HasSelectedPosition}"
+                                               Increment="5" Minimum="-2147483647" Maximum="2147483647"
+                                               FormatString="0.###"/>
+                                <TextBlock Grid.Row="1" Grid.Column="4" Margin="18,0,8,0"
+                                           VerticalAlignment="Center" Text="Z"/>
+                                <NumericUpDown Grid.Row="1" Grid.Column="5"
+                                               Value="{Binding SelectedPosition.Z, Mode=TwoWay}"
+                                               IsEnabled="{Binding HasSelectedPosition}"
+                                               Increment="5" Minimum="-2147483647" Maximum="2147483647"
+                                               FormatString="0.###"/>
+                                <Button Grid.Row="1" Grid.Column="7" Margin="18,0,0,0"
+                                        Content="Reset position" MinWidth="120"
+                                        IsEnabled="{Binding CanResetSelectedPosition}"
+                                        Click="ResetPosition_Click"
+                                        ToolTip.Tip="Restore this position to its loaded coordinates"/>
+                            </Grid>
+                        </Border>
                     </TabItem>
                 </TabControl>
             </Grid>
         </Grid>
 
-        <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="#333" Padding="12,8">
-        <Grid ColumnDefinitions="*,Auto">
-            <TextBlock VerticalAlignment="Center" Opacity="0.75" FontSize="12"
-                       Text="{Binding Status}" TextWrapping="Wrap"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Content="Save" IsEnabled="{Binding HasLoadedFile}" Click="Save_Click"
+        <ContentControl Grid.Row="1" MinHeight="50">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,4">
+                <TextBox Grid.Column="0" Width="230" VerticalAlignment="Center"
+                         Watermark="Search..."
+                         Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="2" Content="Save" VerticalAlignment="Center"
+                        IsEnabled="{Binding IsDirty}" Click="Save_Click"
                         ToolTip.Tip="Validates and replaces the project file"/>
-            </StackPanel>
-        </Grid>
-        </Border>
+            </Grid>
+        </ContentControl>
     </Grid>
 </UserControl>

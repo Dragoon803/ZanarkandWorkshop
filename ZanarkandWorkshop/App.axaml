@@ -13,6 +13,11 @@
 			<Setter Property="OnContent" Value=""/>
 			<Setter Property="OffContent" Value=""/>
 		</Style>
+
+		<!-- Disabled actions use one clear visual treatment throughout every editor. -->
+		<Style Selector="Button:disabled">
+			<Setter Property="Opacity" Value="0.42"/>
+		</Style>
 		
     </Application.Styles>
 

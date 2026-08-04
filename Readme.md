@@ -9,7 +9,7 @@ Zanarkand Workshop is under active development, with new tools, improved workflo
   
 Modify auto abilities, redesign monster battle AI, customize commands, adjust encounter formations, and more.
 
-The current release is **v0.3.0**, featuring Auto Ability editing, expanded
+The current release is **v0.4.0**, featuring Auto Ability editing, expanded
 Monster Editor controls, safer recovery workflows, and clearer validation.
 
 ## Features
@@ -21,6 +21,8 @@ Monster Editor controls, safer recovery workflows, and clearer validation.
 * Enemy Command Editor
 * Battle Formation Editor
 * Rikku Mix Editor
+* Sphere Grid Editor
+* Treasure Chest Editor
 * Live Memory Utilities
 * Inventory Tracker
 * Arena Tracker
@@ -126,6 +128,10 @@ text offsets in `a_ability.bin` and writes the corresponding recipe changes to
 `kaizou.bin`. Numeric fields support Enter to commit and Escape to restore the
 previous value. 
 
+Use **Restore Original Ability** to recover only the selected ability's
+properties, text, and matching recipe. Other Auto Abilities remain unchanged,
+and Save rebuilds valid text offsets for the current file.
+
 <img src="ReadmeAssets/ZW_Auto_Ability_Editor.png" alt="Zanarkand Workshop Auto Ability Editor" width="900"/>
 
 ### Player & Aeon Commands
@@ -151,6 +157,28 @@ Edit commands used by bosses.
 Edit which monsters appear in a battle and adjust their positions.
 
 <img src="ReadmeAssets/ZW_Battle_Formation_Editor.png" alt="Zanarkand Workshop Battle Formation Editor" width="900"/>
+
+### Sphere Grid Editor
+
+Visually edit the Original, Standard, and Expert Sphere Grids. Select a node to
+change its type, section color, or position, or select a connecting line to edit
+its link. The editor can also create nodes and links, find and replace node
+types, and undo changes before saving.
+
+Use **Recovery** to restore the game's original grids. Start a new game when
+testing a redesigned Sphere Grid so the game loads the new grid data cleanly.
+
+### Treasure Chest Editor
+
+View treasure chests on interactive maps reconstructed from your own game
+files. Select a field, click a chest icon, or use **Previous Chest** and
+**Next Chest** to inspect every detected chest—even one without a visible map
+icon. Change the reward type, reward, and quantity for Gil, items, key items,
+weapons, and armor. Chest positions are shown for reference and are not edited.
+
+Required files: `jppc/battle/kernel/takara.bin`, `buki_get.bin`,
+`jppc/map` with `mapout.vpa` files, and `jppc/event/obj` with `.ebp` files.
+Only `takara.bin` is changed when you save.
 
 ## General text editing
 
@@ -241,11 +269,11 @@ To create the ready-to-distribute, self-contained Windows ZIP used for GitHub
 Releases:
 
 ```powershell
-.\scripts\build-release.ps1 -Version 0.3.0
+.\scripts\build-release.ps1 -Version 0.4.0
 ```
 
-The package is written to `artifacts/ZanarkandWorkshop-v0.3.0-win-x64.zip`.
-Pushing a version tag such as `v0.3.0` runs the same packaging process on
+The package is written to `artifacts/ZanarkandWorkshop-v0.4.0-win-x64.zip`.
+Pushing a version tag such as `v0.4.0` runs the same packaging process on
 GitHub and creates a draft release for review.
 
 ## Project status

@@ -9,13 +9,13 @@ namespace FFXProjectEditor.FfxLib.BattleFormation;
 public static class BattleFormationWriter
 {
     private const int PositionSize = 16;
-    public const float AbsoluteCoordinateLimit = 1000f;
 
     public static byte[] Write(
         BattleFormationFile source,
         IReadOnlyList<ushort> enemyIds,
         IReadOnlyList<FormationPosition> positions)
     {
+        ValidateEnemyParty(enemyIds);
         int newMonsterCount = positions.Count(position =>
             position.Kind == FormationPositionKind.Monster);
         int newRunCount = positions.Count(position =>
@@ -23,12 +23,17 @@ public static class BattleFormationWriter
         if (newMonsterCount != newRunCount)
             throw new InvalidDataException(
                 "Every monster position must have a matching run-away position.");
+        if (newMonsterCount < 1)
+            throw new InvalidDataException("A formation must contain at least one monster.");
         if (newMonsterCount > 8)
             throw new InvalidDataException("A formation cannot contain more than eight monsters.");
         var expectedOffsets = source.Positions.Select(position => position.FileOffset).ToHashSet();
         if (newMonsterCount == source.MonsterCount &&
             positions.All(position => expectedOffsets.Contains(position.FileOffset)))
             return WriteFixedSize(source, enemyIds, positions);
+        if (!source.CanResizeMonsterTables)
+            throw new InvalidDataException(
+                "This formation uses a fixed-size retail layout. Monsters can be replaced, but slots cannot be added or removed.");
         return WriteResizedMonsterTables(source, enemyIds, positions, newMonsterCount);
     }
 
@@ -38,6 +43,7 @@ public static class BattleFormationWriter
         IReadOnlyList<FormationPosition> positions)
     {
         ArgumentNullException.ThrowIfNull(source);
+        ValidateEnemyParty(enemyIds);
         if (enemyIds.Count != 8)
             throw new InvalidDataException("A battle formation must contain exactly eight enemy slots.");
         if (positions.Count != source.Positions.Count)
@@ -84,7 +90,8 @@ public static class BattleFormationWriter
         if (enemyRunStart != enemyStart + oldMonsterBytes ||
             chunkEnd < enemyRunStart + oldMonsterBytes)
             throw new InvalidDataException(
-                "This formation’s monster position block is not safely resizable.");
+                "This file’s monster position tables do not match the supported retail layout. " +
+                "Restore this formation from a clean master copy, then try adding or removing the monster again.");
 
         int oldTablesEnd = enemyRunStart + oldMonsterBytes;
         int newMonsterBytes = checked(newMonsterCount * PositionSize);
@@ -151,10 +158,6 @@ public static class BattleFormationWriter
         if (!float.IsFinite(value))
             throw new InvalidDataException(
                 $"{position.Kind} {position.Index + 1} has a non-finite {coordinate} coordinate.");
-        if (Math.Abs(value) > AbsoluteCoordinateLimit)
-            throw new InvalidDataException(
-                $"{position.Kind} {position.Index + 1} has {coordinate}={value}, outside the safe " +
-                $"editing range of -{AbsoluteCoordinateLimit:N0} to {AbsoluteCoordinateLimit:N0}.");
     }
 
     private static void WriteSingle(byte[] output, int offset, float value)
@@ -163,5 +166,12 @@ public static class BattleFormationWriter
             throw new InvalidDataException("Formation coordinates must be finite numbers.");
         BinaryPrimitives.WriteInt32LittleEndian(
             output.AsSpan(offset, 4), BitConverter.SingleToInt32Bits(value));
+    }
+
+    private static void ValidateEnemyParty(IReadOnlyList<ushort> enemyIds)
+    {
+        if (enemyIds.Count(id => id != ushort.MaxValue) == 0)
+            throw new InvalidDataException(
+                "At least one monster slot must be filled before saving.");
     }
 }
