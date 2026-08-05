@@ -9,7 +9,7 @@ Zanarkand Workshop is under active development, with new tools, improved workflo
   
 Modify auto abilities, redesign monster battle AI, customize commands, adjust encounter formations, and more.
 
-The current release is **v0.4.0**, featuring Auto Ability editing, expanded
+The current release is **v0.4.1**, featuring Auto Ability editing, expanded
 Monster Editor controls, safer recovery workflows, and clearer validation.
 
 ## Features
@@ -169,6 +169,10 @@ change its type, section color, or position, or select a connecting line to edit
 its link. The editor can also create nodes and links, find and replace node
 types, and undo changes before saving.
 
+For game stability, grids are limited to 860 nodes. Standard and Original grids
+support up to 1,021 total links, Expert supports up to 934, and each node can
+have up to five usable connections.
+
 Use **Recovery** to restore the game's original grids. Start a new game when
 testing a redesigned Sphere Grid so the game loads the new grid data cleanly.  
 
@@ -277,11 +281,11 @@ To create the ready-to-distribute, self-contained Windows ZIP used for GitHub
 Releases:
 
 ```powershell
-.\scripts\build-release.ps1 -Version 0.4.0
+.\scripts\build-release.ps1 -Version 0.4.1
 ```
 
-The package is written to `artifacts/ZanarkandWorkshop-v0.4.0-win-x64.zip`.
-Pushing a version tag such as `v0.4.0` runs the same packaging process on
+The package is written to `artifacts/ZanarkandWorkshop-v0.4.1-win-x64.zip`.
+Pushing a version tag such as `v0.4.1` runs the same packaging process on
 GitHub and creates a draft release for review.
 
 ## Project status

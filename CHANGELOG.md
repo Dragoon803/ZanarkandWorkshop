@@ -2,6 +2,20 @@
 
 All notable changes to Zanarkand Workshop will be documented here.
 
+## [0.4.1] - 2026-08-05
+
+### Changed
+
+* Limited Sphere Grids to 860 nodes when creating or saving game-compatible grids. Larger grids can corrupt the game's Sphere Grid visual memory and crash when the grid closes.
+* Limited Standard/Original grids to 1,021 total links and Expert grids to 934 total links, based on successful in-game testing.
+* Limited each node to five links so all displayed connections remain functional for movement and activation.
+* Added a caution before creating a node or link explaining that saved structures cannot currently be deleted in the editor.
+* Added a **Don't show this warning again** preference for the creation caution.
+
+### Fixed
+
+* Prevented the Sphere Grid Editor from producing node counts known to be unsafe in game.
+
 ## [0.4.0] - 2026-08-04
 
 ### Added

@@ -69,7 +69,7 @@
 
                     <StackPanel Spacing="4">
                         <TextBlock Text="Sphere Grid Editor" FontSize="18" FontWeight="Bold"/>
-                        <TextBlock Text="Visually edits the Original, Standard, and Expert Sphere Grids. Select a node to change its type, section color, or position; select a connecting line to edit its link. You can also create nodes and links, find and replace node types, undo changes, and restore the original grids through Recovery. Save your work and start a new game when testing a redesigned grid."
+                        <TextBlock Text="Visually edits the Original, Standard, and Expert Sphere Grids. Select a node to change its type, section color, or position; select a connecting line to edit its link. You can also create nodes and links, find and replace node types, undo changes, and restore the original grids through Recovery. For game stability, grids are limited to 860 nodes, Standard/Original to 1,021 links, Expert to 934 links, and each node to five connections. Save your work and start a new game when testing a redesigned grid."
                                    TextWrapping="Wrap" Foreground="#DDDDDD"/>
                     </StackPanel>
 

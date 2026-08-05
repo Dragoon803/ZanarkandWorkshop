@@ -96,9 +96,10 @@
           <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto">
             <TextBlock VerticalAlignment="Center" Text="Reward type"/><ComboBox Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch" ItemsSource="{Binding SelectedChest.ActiveReward.KindOptions}" SelectedItem="{Binding SelectedChest.ActiveReward.SelectedKind}" IsEnabled="{Binding SelectedChest.CanEditContents}"/>
             <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="Reward"/>
-            <ComboBox Grid.Row="1" Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch"
+            <ComboBox x:Name="ChestRewardCombo" Grid.Row="1" Grid.Column="1" MinWidth="0" HorizontalAlignment="Stretch"
                       ItemsSource="{Binding SelectedChest.ActiveReward.RewardOptions}"
-                      SelectedItem="{Binding SelectedChest.ActiveReward.SelectedReward}"
+                      SelectedItem="{Binding SelectedChest.ActiveReward.SelectedReward, Mode=OneWay}"
+                      SelectionChanged="ChestReward_SelectionChanged"
                       IsEnabled="{Binding SelectedChest.CanEditContents}" MaxDropDownHeight="360">
               <ComboBox.ItemTemplate>
                 <DataTemplate>

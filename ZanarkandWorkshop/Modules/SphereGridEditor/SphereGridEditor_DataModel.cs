@@ -32,7 +32,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     [ObservableProperty] private decimal newNodeX;
     [ObservableProperty] private decimal newNodeY;
     [ObservableProperty] private string experimentalStatus =
-        "Select an existing node to use as the connection point.";
+        "Select an existing node whose section settings the new node should reuse.";
     [ObservableProperty] private decimal selectedExperimentalLinkIndex;
     [ObservableProperty] private decimal? pendingLinkNodeA;
     [ObservableProperty] private decimal? pendingLinkNodeB;
@@ -55,9 +55,12 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             .ToArray();
 
     public bool HasSelectedNode => SelectedNode is not null;
-    public string CreateNodeInstruction => SelectedNode is null
-        ? "Select a nearby node on the grid before creating a new node."
-        : $"Creates an unconnected node in the same grid group as Node #{SelectedNode.Index}.";
+    public string CreateNodeInstruction => Graph is not null &&
+        Graph.File.Nodes.Count >= SphereGridValidator.MaximumGameCompatibleNodes
+            ? $"This grid has reached the safe in-game limit of {SphereGridValidator.MaximumGameCompatibleNodes} nodes."
+            : SelectedNode is null
+                ? "Select a nearby node on the grid before creating a new node."
+                : $"Creates an unconnected node using Node #{SelectedNode.Index}'s section settings.";
     public string SelectedLinkNumber => HasSelectedExperimentalLink
         ? decimal.ToInt32(decimal.Round(SelectedExperimentalLinkIndex)).ToString()
         : "";
@@ -75,13 +78,13 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     public bool CanReplaceSelectedNode => HasSelectedNode && CanReplaceNodeTypes;
     public bool CanAddExperimentalNode =>
         SelectedNode is not null && !HasPreview && Graph is not null &&
-        Graph.File.Nodes.Count < SphereGridValidator.MaximumNodes;
+        Graph.File.Nodes.Count < SphereGridValidator.MaximumGameCompatibleNodes;
     public bool CanAddExperimentalLink
     {
         get
         {
             if (Graph is null || HasPreview ||
-                Graph.File.Links.Count >= SphereGridValidator.MaximumLinks)
+                Graph.File.Links.Count >= CurrentGameCompatibleLinkLimit)
                 return false;
             if (PendingLinkNodeA is not decimal pendingA ||
                 PendingLinkNodeB is not decimal pendingB ||
@@ -97,11 +100,43 @@ public partial class SphereGridEditor_DataModel : ObservableObject
                 return false;
             return !Graph.File.Links.Any(link =>
                 (link.NodeAIndex == a && link.NodeBIndex == b) ||
-                (link.NodeAIndex == b && link.NodeBIndex == a));
+                (link.NodeAIndex == b && link.NodeBIndex == a)) &&
+                HasUsableEndpointCapacity(a, b);
         }
     }
+    public int CurrentGameCompatibleLinkLimit =>
+        SphereGridValidator.GetGameCompatibleLinkLimit(SelectedGrid);
     public bool CanCreateExperimentalLink => Graph is not null && !HasPreview &&
-        Graph.File.Links.Count < SphereGridValidator.MaximumLinks;
+        Graph.File.Links.Count < CurrentGameCompatibleLinkLimit;
+    public string NodeCapacityText => Graph is null ? "Nodes: 0 / 860" :
+        $"Nodes: {Graph.File.Nodes.Count} / {SphereGridValidator.MaximumGameCompatibleNodes:N0}";
+    public string LinkCapacityText => Graph is null ? "Links: 0" :
+        $"Links: {Graph.File.Links.Count} / {CurrentGameCompatibleLinkLimit}";
+    public string LinkPointBudgetText
+    {
+        get
+        {
+            if (Graph is null)
+                return "Link Points: 0 / 4,096";
+            SphereGridLinkPointBudget budget =
+                SphereGridLinkPointBudget.Calculate(Graph.File.Links);
+            return budget.MinimumPoints == budget.MaximumPoints
+                ? $"Link Points: {budget.MinimumPoints:N0} / {SphereGridLinkPointBudget.Capacity:N0}"
+                : $"Link Points: {budget.MinimumPoints:N0}-{budget.MaximumPoints:N0} / " +
+                  $"{SphereGridLinkPointBudget.Capacity:N0} (diagnostic)";
+        }
+    }
+    public string SelectedNodeConnectionText
+    {
+        get
+        {
+            if (Graph is null || SelectedNode is null)
+                return $"Selected Node Connections: - / {SphereGridValidator.MaximumUsableLinksPerNode}";
+            int count = Graph.File.Links.Count(link =>
+                link.NodeAIndex == SelectedNode.Index || link.NodeBIndex == SelectedNode.Index);
+            return $"Selected Node Connections: {count} / {SphereGridValidator.MaximumUsableLinksPerNode}";
+        }
+    }
 
     public bool TryValidateNewLink(
         int nodeA, int nodeB, int anchor, out string message)
@@ -111,9 +146,10 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             message = "No sphere grid is loaded.";
             return false;
         }
-        if (Graph.File.Links.Count >= SphereGridValidator.MaximumLinks)
+        if (Graph.File.Links.Count >= CurrentGameCompatibleLinkLimit)
         {
-            message = $"This grid has reached the {SphereGridValidator.MaximumLinks}-link limit.";
+            message = $"This {SelectedGrid} grid has reached its tested " +
+                      $"{CurrentGameCompatibleLinkLimit}-link limit.";
             return false;
         }
         if (nodeA < 0 || nodeA >= Graph.File.Nodes.Count ||
@@ -139,8 +175,35 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             message = "A link already connects these two nodes.";
             return false;
         }
+        if (!HasUsableEndpointCapacity(nodeA, nodeB))
+        {
+            message = $"FFX only allows movement or activation through " +
+                      $"{SphereGridValidator.MaximumUsableLinksPerNode} links on one node.";
+            return false;
+        }
         message = "";
         return true;
+    }
+
+    private bool HasUsableEndpointCapacity(int nodeA, int nodeB, int excludedLinkIndex = -1)
+    {
+        if (Graph is null)
+            return false;
+
+        int countA = 0;
+        int countB = 0;
+        foreach (SphereGridLink link in Graph.File.Links)
+        {
+            if (link.Index == excludedLinkIndex)
+                continue;
+            if (link.NodeAIndex == nodeA || link.NodeBIndex == nodeA)
+                countA++;
+            if (link.NodeAIndex == nodeB || link.NodeBIndex == nodeB)
+                countB++;
+        }
+
+        return countA < SphereGridValidator.MaximumUsableLinksPerNode &&
+               countB < SphereGridValidator.MaximumUsableLinksPerNode;
     }
     public string ExperimentalConnectionSummary => SelectedNode is null
         ? "No connection node selected"
@@ -611,6 +674,11 @@ public partial class SphereGridEditor_DataModel : ObservableObject
                 "Apply or discard that preview before saving the grid.");
 
         EditSession session = _sessions[SelectedGrid];
+        SphereGridValidator.ValidateGameCompatibleNodeCount(
+            session.Graph.File.Nodes.Count);
+        SphereGridValidator.ValidateGameCompatibleLinkCount(
+            SelectedGrid, session.Graph.File.Links.Count);
+        SphereGridValidator.ValidateGameCompatibleLinkDegree(session.Graph.File);
         SphereGridWriteResult output = SphereGridWriter.Write(
             session.SourceFile,
             session.Graph.File.Clusters,
@@ -674,6 +742,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
 
     partial void OnSelectedNodeChanged(SphereGridNode? value)
     {
+        OnPropertyChanged(nameof(SelectedNodeConnectionText));
         if (!_restoringSelection &&
             value is not null &&
             _previewNodeIndex is int previewIndex &&
@@ -712,7 +781,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             NewNodeX = value.X + 40;
             NewNodeY = value.Y;
             ExperimentalStatus =
-                $"Ready to append a node connected to node #{value.Index}.";
+                $"Ready to append an unconnected node using Node #{value.Index}'s section settings.";
         }
         else
         {
@@ -728,6 +797,24 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     partial void OnColorOverridesChanged(
         IReadOnlyDictionary<int, SphereGridCharacter> value) =>
         OnPropertyChanged(nameof(SelectedNodeSummary));
+
+    partial void OnSelectedGridChanged(SphereGridKind value)
+    {
+        OnPropertyChanged(nameof(CurrentGameCompatibleLinkLimit));
+        OnPropertyChanged(nameof(LinkCapacityText));
+        OnPropertyChanged(nameof(CanAddExperimentalLink));
+        OnPropertyChanged(nameof(CanCreateExperimentalLink));
+    }
+
+    partial void OnGraphChanged(SphereGridGraph? value)
+    {
+        OnPropertyChanged(nameof(CreateNodeInstruction));
+        OnPropertyChanged(nameof(CanAddExperimentalNode));
+        OnPropertyChanged(nameof(NodeCapacityText));
+        OnPropertyChanged(nameof(LinkCapacityText));
+        OnPropertyChanged(nameof(LinkPointBudgetText));
+        OnPropertyChanged(nameof(SelectedNodeConnectionText));
+    }
 
     partial void OnFindNodeTypeChanged(SphereGridNodeTypeInfo? value)
     {
@@ -877,6 +964,11 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             return;
         }
         SphereGridLink current = Graph.File.Links[index];
+        if (!HasUsableEndpointCapacity(a, b, index))
+        {
+            CanApplyExperimentalLink = false;
+            return;
+        }
         CanApplyExperimentalLink = current.NodeAIndex != a ||
             current.NodeBIndex != b || current.AnchorNodeIndex != anchor;
     }
@@ -913,7 +1005,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             return;
         string dirty = IsDirty ? "  ·  Modified" : "";
         Status = message ??
-            $"{SelectedGrid}  ·  {Graph.VisibleNodes.Count} nodes  ·  " +
+            $"{SelectedGrid}  ·  {Graph.File.Nodes.Count} nodes  ·  " +
             $"{Graph.File.Links.Count} links  ·  {Graph.File.Clusters.Count} clusters" +
             dirty;
     }

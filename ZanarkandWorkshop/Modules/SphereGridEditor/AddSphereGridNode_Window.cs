@@ -36,7 +36,7 @@ internal sealed class AddSphereGridNode_Window : Window
             ItemsSource = model.NodeTypeOptions,
             SelectedItem = model.NewNodeType ?? model.NodeTypeOptions[0],
             ItemTemplate = new FuncDataTemplate<SphereGridNodeTypeInfo>((item, _) =>
-                new TextBlock { Text = item.Name })
+                new TextBlock { Text = item?.Name ?? string.Empty })
         };
         _character = new ComboBox
         {
@@ -68,7 +68,7 @@ internal sealed class AddSphereGridNode_Window : Window
                     new TextBlock { Text = "Create Node", FontSize = 24, FontWeight = FontWeight.Bold },
                     new TextBlock
                     {
-                        Text = $"The new node will reuse Cluster {model.SelectedNode!.ClusterIndex} from Node #{model.SelectedNode.Index}. It will not create a link.",
+                        Text = $"The new node will reuse Cluster {model.SelectedNode!.ClusterIndex}. It will not create a link.",
                         TextWrapping = TextWrapping.Wrap,
                         Foreground = Brushes.LightGray
                     },

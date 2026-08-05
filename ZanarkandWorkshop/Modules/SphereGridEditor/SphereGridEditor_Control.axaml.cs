@@ -210,6 +210,8 @@ public partial class SphereGridEditor_Control : UserControl
     {
         if (TopLevel.GetTopLevel(this) is not Window owner || Model.SelectedNode is null)
             return;
+        if (!await SphereGridCreationCaution_Window.Confirm(owner, "Node"))
+            return;
         AddSphereGridNodeResult? result = await AddSphereGridNode_Window.Show(owner, Model);
         if (result is null)
             return;
@@ -230,6 +232,8 @@ public partial class SphereGridEditor_Control : UserControl
         object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+        if (!await SphereGridCreationCaution_Window.Confirm(owner, "Link"))
             return;
         AddSphereGridLinkResult? result = await AddSphereGridLink_Window.Show(owner, Model);
         if (result is not null)

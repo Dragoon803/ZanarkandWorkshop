@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="FFXProjectEditor.Main_Window"
-		Title="Zanarkand Workshop v0.4.0"
+		Title="Zanarkand Workshop v0.4.1"
 		Width="1280" Height="720"
 		MinWidth="1280" MinHeight="720"
 		WindowStartupLocation="CenterScreen">
@@ -129,7 +129,7 @@
 				<StackPanel Spacing="14" HorizontalAlignment="Center">
 					<TextBlock Text="Zanarkand Workshop" FontSize="30" FontWeight="Bold"
 							   HorizontalAlignment="Center"/>
-					<TextBlock Text="v0.4.0" FontSize="12" Foreground="#999999"
+					<TextBlock Text="v0.4.1" FontSize="12" Foreground="#999999"
 							   Margin="0,-10,0,0" HorizontalAlignment="Center"/>
 					<TextBlock Text="Comprehensive tools for editing FFX battle data"
 							   FontSize="17" Foreground="#CCCCCC" HorizontalAlignment="Center"/>

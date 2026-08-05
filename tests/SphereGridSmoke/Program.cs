@@ -185,6 +185,23 @@ Assert(reparsedExpanded.Links[2].NodeBIndex == 3, "Appended link second endpoint
 Assert(reparsedExpanded.Links[2].AnchorNodeIndex == ushort.MaxValue, "Appended link is straight");
 TestHeaderRepair(expanded);
 
+SphereGridValidator.ValidateCapacities(1, 1024, 0);
+AssertThrows<InvalidDataException>(
+    () => SphereGridValidator.ValidateCapacities(1, 1025, 0),
+    "The Sphere Grid runtime node storage limit is 1024");
+SphereGridValidator.ValidateGameCompatibleNodeCount(860);
+AssertThrows<InvalidDataException>(
+    () => SphereGridValidator.ValidateGameCompatibleNodeCount(861),
+    "The safe in-game Sphere Grid node limit is 860");
+SphereGridValidator.ValidateGameCompatibleLinkCount(SphereGridKind.Standard, 1021);
+AssertThrows<InvalidDataException>(
+    () => SphereGridValidator.ValidateGameCompatibleLinkCount(SphereGridKind.Standard, 1022),
+    "The tested Standard Sphere Grid link limit is 1021");
+SphereGridValidator.ValidateGameCompatibleLinkCount(SphereGridKind.Expert, 934);
+AssertThrows<InvalidDataException>(
+    () => SphereGridValidator.ValidateGameCompatibleLinkCount(SphereGridKind.Expert, 935),
+    "The tested Expert Sphere Grid link limit is 934");
+
 SphereGridNode[] invalidClusterNodes = synthetic.Nodes.ToArray();
 invalidClusterNodes[0] = invalidClusterNodes[0] with { ClusterIndex = 1 };
 AssertThrows<InvalidDataException>(
@@ -249,6 +266,13 @@ if (args.Length == 1 && Directory.Exists(args[0]))
             $"{kind}: {grid.Clusters.Count} clusters, {grid.Nodes.Count} nodes, " +
             $"{grid.Links.Count} links, {grid.Nodes.Count(node => !node.ContentMatchesLayout)} " +
             $"content mismatches. Routes: {routeCounts}.");
+        int straightLinks = grid.Links.Count(link => !link.IsCurved);
+        int curvedLinks = grid.Links.Count - straightLinks;
+        int minimumPoints = straightLinks * 2 + curvedLinks * 4;
+        int maximumPoints = straightLinks * 2 + curvedLinks * 8;
+        Console.WriteLine(
+            $"  Link-point bounds: {straightLinks} straight, {curvedLinks} curved; " +
+            $"{minimumPoints:N0}-{maximumPoints:N0} of 4,096 points before edits.");
     }
 }
 else

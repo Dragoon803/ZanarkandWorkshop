@@ -49,6 +49,10 @@ public partial class TreasureChestRow : ObservableObject
         get => _activeReward;
         set
         {
+            // A two-way ComboBox binding briefly publishes null while its parent
+            // SelectedChest binding moves to another row. Do not let that
+            // transient UI state erase a valid reward from the new chest.
+            if (value is null && AvailableRewards.Count > 0) return;
             if (!SetProperty(ref _activeReward, value)) return;
             OnPropertyChanged(nameof(TreasureId));
             OnPropertyChanged(nameof(FriendlyContents));

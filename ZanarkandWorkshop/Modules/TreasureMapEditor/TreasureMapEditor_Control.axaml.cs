@@ -1,7 +1,10 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
+using FFXProjectEditor.FfxLib.TreasureMap;
 using FFXProjectEditor.Modules.Main;
 using FFXProjectEditor.Modules.MonEditor;
 using System;
+using System.ComponentModel;
 
 namespace FFXProjectEditor.Modules.TreasureMapEditor;
 
@@ -10,7 +13,12 @@ public partial class TreasureMapEditor_Control : UserControl
     private bool _restoringFieldSelection;
     private TreasureMapEditor_DataModel Model => (TreasureMapEditor_DataModel)DataContext!;
     public TreasureMapEditor_Control() : this(new TreasureMapEditor_DataModel()) { }
-    public TreasureMapEditor_Control(TreasureMapEditor_DataModel model) { InitializeComponent(); DataContext = model; }
+    public TreasureMapEditor_Control(TreasureMapEditor_DataModel model)
+    {
+        InitializeComponent();
+        DataContext = model;
+        model.PropertyChanged += Model_PropertyChanged;
+    }
     public bool HasUnsavedChanges => Model.IsDirty;
     private async void FieldList_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -48,6 +56,29 @@ public partial class TreasureMapEditor_Control : UserControl
     {
         Model.NextChest(1);
         MapCanvas.CenterOn(Model.SelectedChest);
+    }
+    private void ChestReward_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        // Keep transient ComboBox clearing during a chest change out of the
+        // nested reward model, while still applying deliberate user choices.
+        if (sender is ComboBox { SelectedItem: TreasureRewardOption selected } &&
+            Model.SelectedChest?.ActiveReward is NpcTreasureRow reward &&
+            reward.RewardOptions.Contains(selected))
+            reward.SelectedReward = selected;
+    }
+    private void Model_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(TreasureMapEditor_DataModel.SelectedChest)) return;
+
+        // ItemsSource and SelectedItem are independent bindings. When a chest
+        // changes, Avalonia can evaluate SelectedItem against the old item list
+        // and leave the control visually empty. Reapply it after both bindings
+        // have processed the new chest.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (Model.SelectedChest?.ActiveReward is NpcTreasureRow reward)
+                ChestRewardCombo.SelectedItem = reward.SelectedReward;
+        }, DispatcherPriority.DataBind);
     }
     private void PreviousMap_Click(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Model.NextModel(-1);
     private void NextMap_Click(object? s, Avalonia.Interactivity.RoutedEventArgs e) => Model.NextModel(1);
