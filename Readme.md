@@ -28,9 +28,9 @@ Monster Editor controls, safer recovery workflows, and clearer validation.
 * Arena Tracker
 * Live Battle Tracker
 
-## Known Bugs
-* Using the Add Node feature of the sphere grid currently causes the game to crash upon exiting the in-game sphere grid menu.
-* Clicking Previous Chest on certain maps causes the chest data to empty.
+## Bug fixes
+* Added several safety features to prevent in-game crashes with Sphere Grid editor. See sphere grid section for more details.
+* Fixed the Previous Chest button in the Treasure Chest Editor. Users can now safely cycle between previous and next chest.
 
 ## Getting Started
 
@@ -58,9 +58,9 @@ Click **Open Project Folder...** and select your master folder. The app detects
 the running game automatically; the **FFX Connected** indicator shows the
 connection status.
 
-<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop editor guide" width="720"/>
+<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop editor guide" width="720"/>
 
-<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop text editing and project requirements guide" width="720"/>
+<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop text editing and project requirements guide" width="720"/>
 
 ### Monster Editor
 
@@ -175,6 +175,12 @@ have up to five usable connections.
 
 Use **Recovery** to restore the game's original grids. Start a new game when
 testing a redesigned Sphere Grid so the game loads the new grid data cleanly.  
+
+Current limitations:
+* Max of 860 nodes per grid.
+* Max of 1,021 links for the Standard grid.
+* Max of 934 links for the Expert grid.
+* Only 5 links can connect to a single node.
 
 <img src="ReadmeAssets/ZW_Sphere_Grid_Editor.png" alt="Zanarkand Workshop Sphere Grid Editor" width="900"/>
 
