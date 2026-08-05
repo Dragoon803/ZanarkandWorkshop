@@ -29,7 +29,8 @@ Monster Editor controls, safer recovery workflows, and clearer validation.
 * Live Battle Tracker
 
 ## Known Bugs
-* Using the Add Node feature of the sphere grid currently causes the game to crash upon exiting the in-game sphere grid menu. 
+* Using the Add Node feature of the sphere grid currently causes the game to crash upon exiting the in-game sphere grid menu.
+* Clicking Previous Chest on certain maps causes the chest data to empty.
 
 ## Getting Started
 
