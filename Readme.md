@@ -35,6 +35,11 @@ Monster Editor controls, safer recovery workflows, and clearer validation.
 * Added several safety features to prevent in-game crashes with Sphere Grid editor. See sphere grid section for more details.
 * Fixed the Previous Chest button in the Treasure Chest Editor. Users can now safely cycle between previous and next chest.
 
+## Future Updates planned  
+* Add a meta data folder.
+* Add a weapon editor.
+* Add a ply_save Editor.
+
 ## Getting Started
 
 Download the latest Windows package from the Releases section of this fork,
