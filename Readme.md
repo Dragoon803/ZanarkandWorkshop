@@ -28,6 +28,9 @@ Monster Editor controls, safer recovery workflows, and clearer validation.
 * Arena Tracker
 * Live Battle Tracker
 
+## Known Bugs  
+* Colors changes do not properly save to the sphere grid editor.  
+
 ## Bug fixes
 * Added several safety features to prevent in-game crashes with Sphere Grid editor. See sphere grid section for more details.
 * Fixed the Previous Chest button in the Treasure Chest Editor. Users can now safely cycle between previous and next chest.
