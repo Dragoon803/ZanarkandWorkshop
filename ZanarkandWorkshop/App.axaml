@@ -28,6 +28,8 @@
 				<ResourceInclude Source="/ControlTemplates/Property_Template.axaml"/>
 				<ResourceInclude Source="/ControlTemplates/PropertyBool_Template.axaml"/>
 				<ResourceInclude Source="/ControlTemplates/GameIndex_Template.axaml"/>
+				<ResourceInclude Source="/ControlTemplates/MenuAbility_Template.axaml"/>
+				<ResourceInclude Source="/ControlTemplates/AutoAbilityDrop_Template.axaml"/>
 				<ResourceInclude Source="/ControlTemplates/Loot_Template.axaml"/>
 				<ResourceInclude Source="/ControlTemplates/MonsterLootItem_Template.axaml"/>
 			</ResourceDictionary.MergedDictionaries>

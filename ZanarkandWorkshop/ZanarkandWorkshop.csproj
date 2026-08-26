@@ -7,10 +7,10 @@
     <Product>Zanarkand Workshop</Product>
     <Title>Zanarkand Workshop</Title>
     <Description>An unofficial Final Fantasy X modding toolkit.</Description>
-    <Version>0.4.1</Version>
-    <AssemblyVersion>0.4.1.0</AssemblyVersion>
-    <FileVersion>0.4.1.0</FileVersion>
-    <InformationalVersion>0.4.1</InformationalVersion>
+    <Version>0.4.2</Version>
+    <AssemblyVersion>0.4.2.0</AssemblyVersion>
+    <FileVersion>0.4.2.0</FileVersion>
+    <InformationalVersion>0.4.2</InformationalVersion>
     <Authors>DragonQ</Authors>
     <Company>Zanarkand Workshop contributors</Company>
     <Copyright>Based on FFX Project Editor by osdanova</Copyright>
@@ -25,10 +25,6 @@
     <Content Include="Assets\ZanarkandWorkshop.ico" />
     <Content Include="Assets\ZanarkandWorkshop.png" />
 	<Content Include="Assets\trusted-vanilla-manifest.json" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="CommandFlagsSmoke" />
   </ItemGroup>
 
   <ItemGroup>
@@ -52,6 +48,12 @@
     <ItemGroup>
       <Compile Update="ControlTemplates\GameIndex_Template.axaml.cs">
         <DependentUpon>GameIndex_Template.axaml</DependentUpon>
+      </Compile>
+      <Compile Update="ControlTemplates\MenuAbility_Template.axaml.cs">
+        <DependentUpon>MenuAbility_Template.axaml</DependentUpon>
+      </Compile>
+      <Compile Update="ControlTemplates\AutoAbilityDrop_Template.axaml.cs">
+        <DependentUpon>AutoAbilityDrop_Template.axaml</DependentUpon>
       </Compile>
       <Compile Update="ControlTemplates\Loot_Template.axaml.cs">
         <DependentUpon>Loot_Template.axaml</DependentUpon>

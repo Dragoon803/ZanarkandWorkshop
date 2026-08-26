@@ -1,7 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using FFXProjectEditor.Utils;
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace FFXProjectEditor.Services
 {
@@ -12,7 +16,9 @@ namespace FFXProjectEditor.Services
          ******************************************/
         // master folder
         [ObservableProperty][NotifyPropertyChangedFor(nameof(IsProjectLoaded))] public string? projectPath; // This should be private set but can't do it with ObservableProperty
+        [ObservableProperty][NotifyPropertyChangedFor(nameof(IsProjectRegistered))] public ProjectManifest? activeProject;
         public bool IsProjectLoaded => ProjectPath != null && ProjectPath != "" && Directory.Exists(ProjectPath);
+        public bool IsProjectRegistered => ActiveProject is not null;
 
         /******************************************
          * Public functions
@@ -48,7 +54,24 @@ namespace FFXProjectEditor.Services
             if (!string.Equals(Path.GetFileName(normalizedPath), "master", System.StringComparison.OrdinalIgnoreCase))
                 throw new System.Exception("[Project_Service] Provided folder is not master folder");
 
+            // Complete every fallible filesystem/registry operation before
+            // publishing the new active path. A failed switch therefore leaves
+            // the previous project and its visible editor consistently active.
+            ProjectManifest? preparedProject = ProjectRegistry_Service.FindByPath(normalizedPath);
+            ProgramMetadata_Service.MigrateKnownFiles();
+            if (preparedProject is not null)
+                ProjectRegistry_Service.MarkOpened(preparedProject);
+
             ProjectPath = normalizedPath;
+            ActiveProject = preparedProject;
+        }
+
+        public ProjectManifest RegisterActiveProject(string name)
+        {
+            CheckProject();
+            if (ActiveProject is not null) return ActiveProject;
+            ActiveProject = ProjectRegistry_Service.Register(name, ProjectPath!);
+            return ActiveProject;
         }
 
         /******************************************
@@ -68,6 +91,49 @@ namespace FFXProjectEditor.Services
         public string Path_KernelMixRecipes => Path.Combine(Path_Kernel, "prepare.bin");
         public string Path_Mon => Path.Combine(ProjectPath, "jppc", "battle", "mon");
         public string Path_SphereGrid => Path.Combine(ProjectPath, "jppc", "menu", "abmap");
+        public string Path_ZanarkandWorkshopMetadata
+        {
+            get
+            {
+                if (ActiveProject is not null)
+                    return Path.Combine(ProjectRegistry_Service.ProjectsRoot, ActiveProject.Name);
+                string projectPath = ProjectPath ??
+                    throw new System.InvalidOperationException("No project is loaded.");
+                string normalizedPath = Path.GetFullPath(projectPath).ToUpperInvariant();
+                string projectHash = Convert.ToHexString(
+                    SHA256.HashData(Encoding.UTF8.GetBytes(normalizedPath)))[..12]
+                    .ToLowerInvariant();
+                string projectName = Path.GetFileName(
+                    Directory.GetParent(projectPath)?.FullName ?? projectPath);
+                string safeProjectName = new(
+                    projectName.Select(character =>
+                        Path.GetInvalidFileNameChars().Contains(character) ? '_' : character)
+                    .ToArray());
+                return Path.Combine(
+                    ProgramMetadata_Service.RootPath,
+                    "projects",
+                    $"{safeProjectName}-{projectHash}");
+            }
+        }
+
+        public string Path_PathHashedProjectMetadata
+        {
+            get
+            {
+                string projectPath = ProjectPath ??
+                    throw new InvalidOperationException("No project is loaded.");
+                string normalizedPath = Path.GetFullPath(projectPath).ToUpperInvariant();
+                string projectHash = Convert.ToHexString(
+                    SHA256.HashData(Encoding.UTF8.GetBytes(normalizedPath)))[..12].ToLowerInvariant();
+                string projectName = Path.GetFileName(Directory.GetParent(projectPath)?.FullName ?? projectPath);
+                string safeProjectName = new(projectName.Select(character =>
+                    Path.GetInvalidFileNameChars().Contains(character) ? '_' : character).ToArray());
+                return Path.Combine(ProgramMetadata_Service.RootPath, "projects", $"{safeProjectName}-{projectHash}");
+            }
+        }
+
+        public string Path_LegacyProjectMetadata =>
+            Path.Combine(ProjectPath, ".zanarkand-workshop", "metadata");
 
         public string GetPathKernelMonsterUs(int monsterId)
         {
