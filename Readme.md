@@ -38,12 +38,10 @@ expanded Sphere Grid, Treasure Map, Battle Formation, and Monster tools.
 
 * Added named project management and **File > Save As**, which creates a complete
   copy in a new project folder.
-* Added consistent **Undo**, **Redo**, **Undo All**, and **Save** controls across
+* Added **Undo**, **Redo**, **Undo All**, and **Save** controls across
   the editors, with detailed history feedback and pending-change protection.
-* Expanded Sphere Grid node/link creation, editing, search, colors, and safety
-  checks.
-* Improved Treasure Map navigation and filtering, command-editor view handling,
-  Monster history reporting, and Battle Formation battlefield previews.
+* Reworked the Sphere Grid link creator feature.
+* Dropdown menus now use the active names for things like Auto Abilities, monster names, commands, etc instead of static ones.
 
 ## Future updates planned
 
