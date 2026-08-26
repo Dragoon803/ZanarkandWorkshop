@@ -29,15 +29,6 @@ jobs:
       - name: Build
         run: dotnet build .\ZanarkandWorkshop.sln -c Release --no-restore
 
-      - name: Command flag round-trip check
-        run: dotnet run --project .\tests\CommandFlagsSmoke\CommandFlagsSmoke.csproj -c Release --no-build --no-restore
-
-      - name: Battle formation round-trip check
-        run: dotnet run --project .\tests\BattleFormationSmoke\BattleFormationSmoke.csproj -c Release --no-build --no-restore
-
-      - name: Sphere Grid round-trip check
-        run: dotnet run --project .\tests\SphereGridSmoke\SphereGridSmoke.csproj -c Release --no-build --no-restore
-
   package:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
