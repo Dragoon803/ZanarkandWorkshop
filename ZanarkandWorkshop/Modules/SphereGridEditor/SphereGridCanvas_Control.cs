@@ -14,6 +14,9 @@ namespace FFXProjectEditor.Modules.SphereGridEditor;
 public sealed class SphereGridCanvas_Control : Control
 {
     public event EventHandler<SphereGridNode>? NodeSelectionRequested;
+    public event EventHandler<int>? NodeDragStarted;
+    public event EventHandler<NodePositionPreviewEventArgs>? NodePositionPreviewRequested;
+    public event EventHandler<int>? NodeDragCompleted;
     public event EventHandler<int>? LinkSelectionRequested;
     public event EventHandler? EmptySpaceSelectionRequested;
 
@@ -38,6 +41,18 @@ public sealed class SphereGridCanvas_Control : Control
         AvaloniaProperty.Register<SphereGridCanvas_Control, int>(
             nameof(PreviewAnchorNodeIndex), -1);
 
+    public static readonly StyledProperty<int> PreviewLinkNodeAIndexProperty =
+        AvaloniaProperty.Register<SphereGridCanvas_Control, int>(
+            nameof(PreviewLinkNodeAIndex), -1);
+
+    public static readonly StyledProperty<int> PreviewLinkNodeBIndexProperty =
+        AvaloniaProperty.Register<SphereGridCanvas_Control, int>(
+            nameof(PreviewLinkNodeBIndex), -1);
+
+    public static readonly StyledProperty<bool> IsLinkCreationModeProperty =
+        AvaloniaProperty.Register<SphereGridCanvas_Control, bool>(
+            nameof(IsLinkCreationMode));
+
     public static readonly DirectProperty<SphereGridCanvas_Control, int> ZoomPercentProperty =
         AvaloniaProperty.RegisterDirect<SphereGridCanvas_Control, int>(
             nameof(ZoomPercent), control => control.ZoomPercent);
@@ -48,6 +63,10 @@ public sealed class SphereGridCanvas_Control : Control
     private int _zoomPercent = 100;
     private bool _panning;
     private Point _lastPanPoint;
+    private int _dragNodeIndex = -1;
+    private Point _dragStartPoint;
+    private Vector _dragOffset;
+    private bool _nodeDragStarted;
     private SphereGridGraph? _renderedGraph;
 
     public SphereGridGraph? Graph
@@ -80,6 +99,24 @@ public sealed class SphereGridCanvas_Control : Control
         set => SetValue(PreviewAnchorNodeIndexProperty, value);
     }
 
+    public int PreviewLinkNodeAIndex
+    {
+        get => GetValue(PreviewLinkNodeAIndexProperty);
+        set => SetValue(PreviewLinkNodeAIndexProperty, value);
+    }
+
+    public int PreviewLinkNodeBIndex
+    {
+        get => GetValue(PreviewLinkNodeBIndexProperty);
+        set => SetValue(PreviewLinkNodeBIndexProperty, value);
+    }
+
+    public bool IsLinkCreationMode
+    {
+        get => GetValue(IsLinkCreationModeProperty);
+        set => SetValue(IsLinkCreationModeProperty, value);
+    }
+
     public int ZoomPercent
     {
         get => _zoomPercent;
@@ -90,7 +127,8 @@ public sealed class SphereGridCanvas_Control : Control
     {
         AffectsRender<SphereGridCanvas_Control>(
             GraphProperty, SelectedNodeProperty, ColorOverridesProperty,
-            SelectedLinkIndexProperty, PreviewAnchorNodeIndexProperty);
+            SelectedLinkIndexProperty, PreviewAnchorNodeIndexProperty,
+            PreviewLinkNodeAIndexProperty, PreviewLinkNodeBIndexProperty);
     }
 
     public SphereGridCanvas_Control()
@@ -101,6 +139,7 @@ public sealed class SphereGridCanvas_Control : Control
         PointerReleased += OnPointerReleased;
         PointerExited += (_, _) => ToolTip.SetTip(this, null);
         PointerWheelChanged += OnPointerWheelChanged;
+        SizeChanged += (_, _) => ResetTransformForViewportChange();
         ToolTip.SetShowDelay(this, 120);
     }
 
@@ -129,6 +168,7 @@ public sealed class SphereGridCanvas_Control : Control
         EnsureTransform();
         DrawClusters(context);
         DrawLinks(context);
+        DrawLinkCreationPreview(context);
         DrawNodes(context);
     }
 
@@ -147,8 +187,14 @@ public sealed class SphereGridCanvas_Control : Control
 
     public void Fit()
     {
+        ResetTransformForViewportChange();
+    }
+
+    private void ResetTransformForViewportChange()
+    {
         _transform = default;
         _transformSize = default;
+        _fitScale = 0;
         ZoomPercent = 100;
         InvalidateVisual();
     }
@@ -258,6 +304,8 @@ public sealed class SphereGridCanvas_Control : Control
             bool selectedEndpoint = selectedLink is not null &&
                 (node.Index == selectedLink.NodeAIndex ||
                  node.Index == selectedLink.NodeBIndex);
+            bool previewEndpoint = node.Index == PreviewLinkNodeAIndex ||
+                                   node.Index == PreviewLinkNodeBIndex;
             double zoomSize = Math.Clamp(
                 Math.Log2(Math.Max(0.01, ZoomPercent / 100.0)) / 3.0,
                 -1,
@@ -269,7 +317,9 @@ public sealed class SphereGridCanvas_Control : Control
             string routeColor = Graph.Routes.Palette[character].Color;
             context.DrawEllipse(
                 new SolidColorBrush(Color.Parse(routeColor)),
-                selected || selectedEndpoint
+                previewEndpoint
+                    ? new Pen(new SolidColorBrush(Color.Parse("#FFB35C")), 2.8)
+                    : selected || selectedEndpoint
                     ? new Pen(Brushes.White, selected ? 2 : 1.6)
                     : new Pen(Brushes.Black, 0.8),
                 center, radius, radius);
@@ -290,6 +340,23 @@ public sealed class SphereGridCanvas_Control : Control
         }
     }
 
+    private void DrawLinkCreationPreview(DrawingContext context)
+    {
+        if (Graph is null || PreviewLinkNodeAIndex < 0 || PreviewLinkNodeBIndex < 0 ||
+            PreviewLinkNodeAIndex >= Graph.File.Nodes.Count ||
+            PreviewLinkNodeBIndex >= Graph.File.Nodes.Count)
+            return;
+
+        var previewPen = new Pen(
+            new SolidColorBrush(Color.Parse("#FFB35C")),
+            3,
+            dashStyle: new DashStyle(new[] { 5d, 4d }, 0));
+        context.DrawLine(
+            previewPen,
+            ToScreen(Graph.File.Nodes[PreviewLinkNodeAIndex]),
+            ToScreen(Graph.File.Nodes[PreviewLinkNodeBIndex]));
+    }
+
     private Point ToScreen(SphereGridNode node) => _transform.ToScreen(node.X, node.Y);
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -303,9 +370,21 @@ public sealed class SphereGridCanvas_Control : Control
                 NodeSelectionRequested(this, node);
             else
                 SelectedNode = node;
+            if (IsLinkCreationMode)
+            {
+                ClearNodeDrag();
+                InvalidateVisual();
+                return;
+            }
+            _dragNodeIndex = node.Index;
+            _dragStartPoint = pointer;
+            _dragOffset = ToScreen(node) - pointer;
+            _nodeDragStarted = false;
+            e.Pointer.Capture(this);
             InvalidateVisual();
             return;
         }
+        ClearNodeDrag();
         int linkIndex = FindLink(pointer);
         if (linkIndex >= 0)
         {
@@ -322,6 +401,33 @@ public sealed class SphereGridCanvas_Control : Control
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
         Point pointer = e.GetPosition(this);
+        if (_dragNodeIndex >= 0 &&
+            e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            // Only move the node after the editor has accepted this selection.
+            if (SelectedNode?.Index != _dragNodeIndex)
+                return;
+            if (!_nodeDragStarted)
+            {
+                if (Distance(pointer, _dragStartPoint) < 4)
+                    return;
+                _nodeDragStarted = true;
+                NodeDragStarted?.Invoke(this, _dragNodeIndex);
+            }
+
+            Point target = pointer + _dragOffset;
+            (double worldX, double worldY) = _transform.ToWorld(target);
+            short x = (short)Math.Clamp(
+                (int)Math.Round(worldX), short.MinValue, short.MaxValue);
+            short y = (short)Math.Clamp(
+                (int)Math.Round(worldY), short.MinValue, short.MaxValue);
+            NodePositionPreviewRequested?.Invoke(
+                this, new NodePositionPreviewEventArgs(_dragNodeIndex, x, y));
+            ToolTip.SetTip(this, null);
+            InvalidateVisual();
+            return;
+        }
+
         if (_panning && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             Vector movement = pointer - _lastPanPoint;
@@ -344,7 +450,16 @@ public sealed class SphereGridCanvas_Control : Control
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         _panning = false;
+        if (_nodeDragStarted && _dragNodeIndex >= 0)
+            NodeDragCompleted?.Invoke(this, _dragNodeIndex);
+        ClearNodeDrag();
         e.Pointer.Capture(null);
+    }
+
+    private void ClearNodeDrag()
+    {
+        _dragNodeIndex = -1;
+        _nodeDragStarted = false;
     }
 
     private SphereGridNode? FindNode(Point pointer)
@@ -523,4 +638,12 @@ public sealed class SphereGridCanvas_Control : Control
             };
         }
     }
+}
+
+public sealed class NodePositionPreviewEventArgs(
+    int nodeIndex, short x, short y) : EventArgs
+{
+    public int NodeIndex { get; } = nodeIndex;
+    public short X { get; } = x;
+    public short Y { get; } = y;
 }

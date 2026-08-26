@@ -275,24 +275,24 @@
 						<Expander Header="Menu Abilities" IsExpanded="{Binding SelectorDM.MenuAbilitiesExpanded}" HorizontalAlignment="Stretch">
 							<StackPanel>
 
-								<local:GameIndex_Template Margin="5" GameIndex_Label="Forced Ability" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.ForcedAbility}"/>
+								<local:MenuAbility_Template Margin="5" AbilityLabel="Forced Ability" Ability="{Binding MonsterStatSheet.ForcedAbility}"/>
 								<WrapPanel>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 1" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability1}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 2" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability2}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 3" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability3}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 4" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability4}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 5" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability5}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 6" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability6}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 7" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability7}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 8" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability8}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 9" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability9}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 10" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability10}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 11" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability11}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 12" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability12}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 13" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability13}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 14" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability14}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 15" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability15}"/>
-									<local:GameIndex_Template Margin="5" GameIndex_Label="Ability 16" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterStatSheet.Ability16}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterStatSheet.Ability1}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterStatSheet.Ability2}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterStatSheet.Ability3}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterStatSheet.Ability4}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterStatSheet.Ability5}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterStatSheet.Ability6}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterStatSheet.Ability7}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterStatSheet.Ability8}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 9" Ability="{Binding MonsterStatSheet.Ability9}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 10" Ability="{Binding MonsterStatSheet.Ability10}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 11" Ability="{Binding MonsterStatSheet.Ability11}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 12" Ability="{Binding MonsterStatSheet.Ability12}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 13" Ability="{Binding MonsterStatSheet.Ability13}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 14" Ability="{Binding MonsterStatSheet.Ability14}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 15" Ability="{Binding MonsterStatSheet.Ability15}"/>
+									<local:MenuAbility_Template Margin="5" AbilityLabel="Ability 16" Ability="{Binding MonsterStatSheet.Ability16}"/>
 								</WrapPanel>
 
 							</StackPanel>
@@ -355,25 +355,25 @@
 								<Label FontSize="20" FontWeight="Bold">Drops</Label>
 								<Separator/>
 								<WrapPanel>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 1" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop1}" LootCount="{Binding MonsterLoot.Drop1Count}"/>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 1 Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop1Rare}" LootCount="{Binding MonsterLoot.Drop1RareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 1" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop1}" LootCount="{Binding MonsterLoot.Drop1Count}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 1 Rare" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop1Rare}" LootCount="{Binding MonsterLoot.Drop1RareCount}"/>
 								</WrapPanel>
 
 								<WrapPanel>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 2" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop2}" LootCount="{Binding MonsterLoot.Drop2Count}"/>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 2 Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop2Rare}" LootCount="{Binding MonsterLoot.Drop2RareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 2" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop2}" LootCount="{Binding MonsterLoot.Drop2Count}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop 2 Rare" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Drop2Rare}" LootCount="{Binding MonsterLoot.Drop2RareCount}"/>
 								</WrapPanel>
 
 								<Label FontSize="20" FontWeight="Bold">Drops Overkill</Label>
 								<Separator/>
 								<WrapPanel>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill1}" LootCount="{Binding MonsterLoot.DropOverkillCount}"/>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill1Rare}" LootCount="{Binding MonsterLoot.DropOverkillRareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill1}" LootCount="{Binding MonsterLoot.DropOverkillCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill Rare" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill1Rare}" LootCount="{Binding MonsterLoot.DropOverkillRareCount}"/>
 								</WrapPanel>
 
 								<WrapPanel>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill 2" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill2}" LootCount="{Binding MonsterLoot.DropOverkill2Count}"/>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill 2 Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill2Rare}" LootCount="{Binding MonsterLoot.DropOverkill2RareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill 2" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill2}" LootCount="{Binding MonsterLoot.DropOverkill2Count}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Drop Overkill 2 Rare" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.DropOverkill2Rare}" LootCount="{Binding MonsterLoot.DropOverkill2RareCount}"/>
 								</WrapPanel>
 							</StackPanel>
 						</Expander>
@@ -384,13 +384,13 @@
 								<Label FontSize="20" FontWeight="Bold">Steal</Label>
 								<Separator/>
 								<WrapPanel>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Steal" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Steal}" LootCount="{Binding MonsterLoot.StealCount}"/>
-									<local:MonsterLootItem_Template Margin="5" LootLabel="Steal Rare" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.StealRare}" LootCount="{Binding MonsterLoot.StealRareCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Steal" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Steal}" LootCount="{Binding MonsterLoot.StealCount}"/>
+									<local:MonsterLootItem_Template Margin="5" LootLabel="Steal Rare" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.StealRare}" LootCount="{Binding MonsterLoot.StealRareCount}"/>
 								</WrapPanel>
 
 								<Label FontSize="20" FontWeight="Bold">Bribe</Label>
 								<Separator/>
-								<local:MonsterLootItem_Template Margin="5" HorizontalAlignment="Left" LootLabel="Bribe" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Bribe}" LootCount="{Binding MonsterLoot.BribeCount}"/>
+								<local:MonsterLootItem_Template Margin="5" HorizontalAlignment="Left" LootLabel="Bribe" ItemDropdownWidth="300" ItemOptions="{Binding LootItemOptions}" LootObject="{Binding MonsterLoot.Bribe}" LootCount="{Binding MonsterLoot.BribeCount}"/>
 							</StackPanel>
 						</Expander>
 
@@ -417,26 +417,26 @@
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Weapon</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusWeapons[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.TidusWeapons[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.TidusWeapons[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.TidusWeapons[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.TidusWeapons[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.TidusWeapons[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.TidusWeapons[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.TidusWeapons[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.TidusWeapons[7]}"/>
 												</StackPanel>
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Armor</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.TidusArmors[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.TidusArmors[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.TidusArmors[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.TidusArmors[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.TidusArmors[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.TidusArmors[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.TidusArmors[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.TidusArmors[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.TidusArmors[7]}"/>
 												</StackPanel>
 											</WrapPanel>
 										</TabItem>
@@ -445,26 +445,26 @@
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Weapon</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaWeapons[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.YunaWeapons[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.YunaWeapons[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.YunaWeapons[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.YunaWeapons[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.YunaWeapons[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.YunaWeapons[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.YunaWeapons[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.YunaWeapons[7]}"/>
 												</StackPanel>
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Armor</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.YunaArmors[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.YunaArmors[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.YunaArmors[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.YunaArmors[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.YunaArmors[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.YunaArmors[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.YunaArmors[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.YunaArmors[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.YunaArmors[7]}"/>
 												</StackPanel>
 											</WrapPanel>
 										</TabItem>
@@ -473,26 +473,26 @@
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Weapon</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronWeapons[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.AuronWeapons[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.AuronWeapons[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.AuronWeapons[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.AuronWeapons[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.AuronWeapons[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.AuronWeapons[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.AuronWeapons[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.AuronWeapons[7]}"/>
 												</StackPanel>
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Armor</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.AuronArmors[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.AuronArmors[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.AuronArmors[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.AuronArmors[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.AuronArmors[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.AuronArmors[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.AuronArmors[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.AuronArmors[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.AuronArmors[7]}"/>
 												</StackPanel>
 											</WrapPanel>
 										</TabItem>
@@ -501,26 +501,26 @@
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Weapon</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriWeapons[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.KimahriWeapons[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.KimahriWeapons[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.KimahriWeapons[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.KimahriWeapons[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.KimahriWeapons[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.KimahriWeapons[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.KimahriWeapons[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.KimahriWeapons[7]}"/>
 												</StackPanel>
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Armor</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.KimahriArmors[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.KimahriArmors[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.KimahriArmors[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.KimahriArmors[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.KimahriArmors[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.KimahriArmors[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.KimahriArmors[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.KimahriArmors[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.KimahriArmors[7]}"/>
 												</StackPanel>
 											</WrapPanel>
 										</TabItem>
@@ -529,26 +529,26 @@
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Weapon</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaWeapons[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.WakkaWeapons[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.WakkaWeapons[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.WakkaWeapons[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.WakkaWeapons[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.WakkaWeapons[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.WakkaWeapons[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.WakkaWeapons[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.WakkaWeapons[7]}"/>
 												</StackPanel>
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Armor</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.WakkaArmors[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.WakkaArmors[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.WakkaArmors[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.WakkaArmors[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.WakkaArmors[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.WakkaArmors[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.WakkaArmors[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.WakkaArmors[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.WakkaArmors[7]}"/>
 												</StackPanel>
 											</WrapPanel>
 										</TabItem>
@@ -557,26 +557,26 @@
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Weapon</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluWeapons[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.LuluWeapons[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.LuluWeapons[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.LuluWeapons[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.LuluWeapons[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.LuluWeapons[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.LuluWeapons[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.LuluWeapons[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.LuluWeapons[7]}"/>
 												</StackPanel>
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Armor</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.LuluArmors[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.LuluArmors[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.LuluArmors[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.LuluArmors[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.LuluArmors[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.LuluArmors[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.LuluArmors[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.LuluArmors[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.LuluArmors[7]}"/>
 												</StackPanel>
 											</WrapPanel>
 										</TabItem>
@@ -585,26 +585,26 @@
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Weapon</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuWeapons[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.RikkuWeapons[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.RikkuWeapons[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.RikkuWeapons[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.RikkuWeapons[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.RikkuWeapons[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.RikkuWeapons[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.RikkuWeapons[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.RikkuWeapons[7]}"/>
 												</StackPanel>
 												<StackPanel>
 													<Label FontSize="20" FontWeight="Bold">Armor</Label>
 													<Separator/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[0]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[1]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[2]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[3]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[4]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[5]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[6]}"/>
-													<local:GameIndex_Template Margin="5" GameIndex_Label="" IsLabelVisible="False" BorderThickness="0" CategOptions="{Binding CategoryOptions}" GameIndex_Object="{Binding MonsterLoot.RikkuArmors[7]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 1" Ability="{Binding MonsterLoot.RikkuArmors[0]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 2" Ability="{Binding MonsterLoot.RikkuArmors[1]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 3" Ability="{Binding MonsterLoot.RikkuArmors[2]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 4" Ability="{Binding MonsterLoot.RikkuArmors[3]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 5" Ability="{Binding MonsterLoot.RikkuArmors[4]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 6" Ability="{Binding MonsterLoot.RikkuArmors[5]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 7" Ability="{Binding MonsterLoot.RikkuArmors[6]}"/>
+													<local:AutoAbilityDrop_Template Margin="5" AbilityLabel="Ability 8" Ability="{Binding MonsterLoot.RikkuArmors[7]}"/>
 												</StackPanel>
 											</WrapPanel>
 										</TabItem>																				
@@ -626,8 +626,6 @@
 						<TextBlock x:Name="AiSummaryText" Grid.Column="0" Text="{Binding AiSummary}" IsVisible="False"/>
 						<WrapPanel Grid.Column="1" Classes="compactLower" Orientation="Horizontal" HorizontalAlignment="Right">
 							<Button x:Name="AiRevertButton" Margin="0,2,6,2" Click="Button_RestoreOriginalAi" Background="#6B2525" ToolTip.Tip="Discard all Battle Script changes made since this monster was opened, then save the restored script.">Revert</Button>
-							<Button x:Name="AiUndoButton" Margin="0,2,6,2" Click="Button_UndoAi" ToolTip.Tip="Undo the most recent Battle Script editing action from this monster's current session">Undo</Button>
-							<Button x:Name="AiRedoButton" Margin="0,2,0,2" Click="Button_RedoAi" ToolTip.Tip="Redo the most recently undone Battle Script editing action from this monster's current session">Redo</Button>
 						</WrapPanel>
 					</Grid>
 					<Grid Grid.Row="1" ColumnDefinitions="480,*" MinHeight="0">
@@ -795,7 +793,7 @@
 								<WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
 									<Grid ColumnDefinitions="Auto,280,Auto" Margin="0,0,18,6">
 										<TextBlock Grid.Column="0" VerticalAlignment="Center">Find bytes:</TextBlock>
-										<TextBox x:Name="AiSearchText" Grid.Column="1" Margin="7,0" Text="{Binding AiSearchHex, Mode=TwoWay}" Watermark="AEF2FF AEECFF B51E70 D70000" FontFamily="Consolas"/>
+									<TextBox x:Name="AiSearchText" Grid.Column="1" Margin="7,0" Tag="EditorHistoryShortcuts" Text="{Binding AiSearchHex, Mode=TwoWay}" Watermark="AEF2FF AEECFF B51E70 D70000" FontFamily="Consolas"/>
 										<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
 											<Button Click="Button_FindAiPrevious" ToolTip.Tip="Find and highlight the previous matching byte sequence.">Find Previous &#x2191;</Button>
 											<Button Click="Button_FindAi" ToolTip.Tip="Find and highlight the next matching byte sequence.">Find Next &#x2193;</Button>
@@ -803,7 +801,7 @@
 									</Grid>
 									<Grid ColumnDefinitions="Auto,240,Auto" Margin="0,0,0,6">
 										<TextBlock Grid.Column="0" VerticalAlignment="Center">Replace with:</TextBlock>
-										<TextBox x:Name="AiReplacementText" Grid.Column="1" Margin="7,0" Text="{Binding AiReplacementHex, Mode=TwoWay}" Watermark="AE 00 40" FontFamily="Consolas"/>
+									<TextBox x:Name="AiReplacementText" Grid.Column="1" Margin="7,0" Tag="EditorHistoryShortcuts" Text="{Binding AiReplacementHex, Mode=TwoWay}" Watermark="AE 00 40" FontFamily="Consolas"/>
 										<Button Grid.Column="2" Click="Button_ReplaceAi">Replace All &amp; Validate</Button>
 									</Grid>
 								</WrapPanel>
@@ -835,7 +833,6 @@
 					</StackPanel>
 					<StackPanel x:Name="AiSelectionApplyActions" Classes="compactLower" Grid.Row="2" ZIndex="10"
 								Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="5" Margin="0,9,12,0">
-						<Button Click="Button_ApplyMeaning" IsVisible="{Binding IsVisible, ElementName=AiMeaningOptions}">Apply Dropdown Change</Button>
 						<Button Click="Button_ApplyManualOperand" IsVisible="{Binding IsVisible, ElementName=AiManualOperandEditor}">Apply Manual Changes</Button>
 						<Button Click="Button_ApplyFloatValue" IsVisible="{Binding IsVisible, ElementName=AiFloatEditor}">Apply Shared Float</Button>
 						<Button x:Name="AiGroupApplyButton" Click="Button_ApplyGroupChanges" IsVisible="False">Apply Group Changes</Button>

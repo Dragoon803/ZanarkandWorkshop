@@ -296,9 +296,16 @@ public partial class TreasureMapEditor_DataModel : ObservableObject
     [ObservableProperty] private NpcTreasureRow? selectedNpcReward;
     [ObservableProperty] private int selectedModelIndex;
     [ObservableProperty] private string status = "Scanning game files…";
+    [ObservableProperty] private string historyStatus = "";
     [ObservableProperty] private bool isDirty;
+    private readonly Stack<Dictionary<int, TreasureRecord>> _undoHistory = new();
+    private readonly Stack<Dictionary<int, TreasureRecord>> _redoHistory = new();
+    public bool CanUndo => _undoHistory.Count > 0;
+    public bool CanRedo => _redoHistory.Count > 0;
+    public bool CanUndoAll => IsDirty;
     [ObservableProperty] private string fieldFilterText = "";
     [ObservableProperty] private bool isFieldLoading;
+    public bool IsApplyingFieldFilter { get; private set; }
     [ObservableProperty] private string emptyStateText = "Select a field to load its map and chest data.";
 
     public GuideMapModel? CurrentModel => _currentGeometry is null || _currentGeometry.Models.Count == 0
@@ -374,14 +381,59 @@ public partial class TreasureMapEditor_DataModel : ObservableObject
     private void ApplyFieldFilter()
     {
         TreasureFieldItem? preserve = SelectedField;
-        Fields.Clear();
-        foreach (TreasureFieldItem field in _allFields.Where(field => string.IsNullOrWhiteSpace(FieldFilterText) ||
-            field.Display.Contains(FieldFilterText.Trim(), StringComparison.OrdinalIgnoreCase))) Fields.Add(field);
-        if (preserve is not null && Fields.Contains(preserve)) SelectedField = preserve;
-        else if (preserve is not null) SelectedField = null;
+        string filter = FieldFilterText.Trim();
+        List<TreasureFieldItem> desired = _allFields.Where(field =>
+            string.IsNullOrWhiteSpace(filter) ||
+            field.Display.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+            ReferenceEquals(field, preserve)).ToList();
+
+        IsApplyingFieldFilter = true;
+        try
+        {
+            // Reconcile the visible list without clearing it. Clearing briefly drops
+            // the ListBox selection and can unload a dirty field before its pending
+            // changes have been resolved.
+            for (int index = 0; index < desired.Count; index++)
+            {
+                TreasureFieldItem field = desired[index];
+                int existingIndex = Fields.IndexOf(field);
+                if (existingIndex < 0)
+                    Fields.Insert(index, field);
+                else if (existingIndex != index)
+                    Fields.Move(existingIndex, index);
+            }
+
+            for (int index = Fields.Count - 1; index >= desired.Count; index--)
+                Fields.RemoveAt(index);
+
+            if (preserve is not null && Fields.Contains(preserve))
+                SelectedField = preserve;
+            else if (preserve is not null)
+                SelectedField = null;
+        }
+        finally
+        {
+            IsApplyingFieldFilter = false;
+        }
     }
 
-    partial void OnSelectedFieldChanged(TreasureFieldItem? value) => BeginLoadField(value);
+    partial void OnSelectedFieldChanged(TreasureFieldItem? value)
+    {
+        // History describes the currently loaded map. A clean map can still have
+        // future Redo entries after Undo; do not carry that invisible timeline
+        // into a different field.
+        if (!IsDirty)
+            ClearHistoryForFieldChange();
+        BeginLoadField(value);
+    }
+
+    private void ClearHistoryForFieldChange()
+    {
+        _undoHistory.Clear();
+        _redoHistory.Clear();
+        HistoryStatus = "";
+        NotifyHistoryState();
+    }
     partial void OnSelectedModelIndexChanged(int value)
     {
         LoadChests();
@@ -602,6 +654,11 @@ public partial class TreasureMapEditor_DataModel : ObservableObject
     private void NpcRewardEdited(object? sender, EventArgs e)
     {
         if (_loading || sender is not NpcTreasureRow row) return;
+        TreasureRecord current = _edits.TryGetValue(row.TreasureId, out TreasureRecord? edited)
+            ? edited
+            : _index.Catalog.Records[row.TreasureId];
+        if (RewardValuesMatch(current, row)) return;
+        RecordHistory();
         TreasureRecord source = _index.Catalog.Records[row.TreasureId];
         _edits[row.TreasureId] = source with
         {
@@ -610,12 +667,18 @@ public partial class TreasureMapEditor_DataModel : ObservableObject
             Type = row.Type
         };
         IsDirty = true;
+        NotifyHistoryState();
     }
 
     private void RowEdited(object? sender, EventArgs e)
     {
         if (_loading || sender is not TreasureChestRow row || row.TreasureId < 0) return;
         if (row.ActiveReward is not NpcTreasureRow reward) return;
+        TreasureRecord current = _edits.TryGetValue(reward.TreasureId, out TreasureRecord? edited)
+            ? edited
+            : _index.Catalog.Records[reward.TreasureId];
+        if (RewardValuesMatch(current, reward)) return;
+        RecordHistory();
         TreasureRecord source = _index.Catalog.Records[reward.TreasureId];
         _edits[reward.TreasureId] = source with
         {
@@ -624,6 +687,7 @@ public partial class TreasureMapEditor_DataModel : ObservableObject
             Type = reward.Type
         };
         IsDirty = true;
+        NotifyHistoryState();
     }
     public void NextModel(int delta)
     {
@@ -651,8 +715,22 @@ public partial class TreasureMapEditor_DataModel : ObservableObject
         TreasureCatalog saved = TreasureCatalogSaveTransaction.Save(_index.Catalog, output);
         _index = _index with { Catalog = saved };
         _edits.Clear();
+        _undoHistory.Clear();
+        _redoHistory.Clear();
         IsDirty = false;
+        HistoryStatus = "";
+        NotifyHistoryState();
         Status = EditorSaveStatus.Success("Treasure catalog");
+    }
+
+    public void SaveToMaster(string masterPath)
+    {
+        var edits = _index.Catalog.Records.ToDictionary(record => record.Id);
+        foreach ((int id, TreasureRecord record) in _edits) edits[id] = record;
+        byte[] output = TreasureCatalogWriter.Write(_index.Catalog, edits.Values);
+        string relative = System.IO.Path.GetRelativePath(Project_Service.Instance.ProjectPath!, _index.Catalog.Path);
+        TreasureCatalog target = TreasureCatalog.Read(System.IO.Path.Combine(masterPath, relative));
+        _ = TreasureCatalogSaveTransaction.Save(target, output);
     }
 
     public string GetOriginalCatalogPath() =>
@@ -661,24 +739,119 @@ public partial class TreasureMapEditor_DataModel : ObservableObject
             "The configured Original Game Files do not contain a matching takara.bin. " +
             "Use Recovery > Select Original Game Files to configure a clean master folder.");
 
-    public void RestoreOriginalReward(NpcTreasureRow reward)
+    public void RestoreOriginalRewardAndSave(NpcTreasureRow reward, string originalCatalogPath)
     {
         ArgumentNullException.ThrowIfNull(reward);
-        TreasureCatalog original = TreasureCatalog.Read(GetOriginalCatalogPath());
+        TreasureCatalog original = TreasureCatalog.Read(originalCatalogPath);
         if (reward.TreasureId < 0 || reward.TreasureId >= original.Records.Count)
             throw new InvalidOperationException($"Treasure #{reward.TreasureId} does not exist in the original catalog.");
         TreasureRecord restored = original.Records[reward.TreasureId];
+        RecordHistory();
         _edits[reward.TreasureId] = restored;
         reward.ApplyRecord(restored);
         IsDirty = true;
-        Status = $"Treasure #{reward.TreasureId} restored in memory. Press Save to write it.";
+        NotifyHistoryState();
+        int treasureId = reward.TreasureId;
+        Save();
+        Status = $"Restored and saved original Treasure #{treasureId}.";
     }
 
     public void DiscardUnsavedChanges()
     {
         _edits.Clear();
+        _undoHistory.Clear();
+        _redoHistory.Clear();
         IsDirty = false;
+        HistoryStatus = "";
+        RefreshEditedRows();
+        NotifyHistoryState();
         Status = "Unsaved treasure changes discarded.";
+    }
+
+    public void Undo()
+    {
+        if (_undoHistory.Count == 0) return;
+        Dictionary<int, TreasureRecord> current = CloneEdits();
+        Dictionary<int, TreasureRecord> target = _undoHistory.Pop();
+        _redoHistory.Push(current);
+        string detail = DescribeEditDifference(target, current);
+        RestoreEdits(target);
+        HistoryStatus = $"Undid: {detail}.";
+    }
+
+    public void Redo()
+    {
+        if (_redoHistory.Count == 0) return;
+        Dictionary<int, TreasureRecord> current = CloneEdits();
+        Dictionary<int, TreasureRecord> target = _redoHistory.Pop();
+        _undoHistory.Push(current);
+        string detail = DescribeEditDifference(current, target);
+        RestoreEdits(target);
+        HistoryStatus = $"Redid: {detail}.";
+    }
+
+    public void UndoAll()
+    {
+        if (!IsDirty) return;
+        int count = _undoHistory.Count;
+        while (_undoHistory.Count > 0)
+            Undo();
+        NotifyHistoryState();
+        HistoryStatus = $"Undid all: {count} Treasure Map change{(count == 1 ? "" : "s")} since the last save.";
+    }
+
+    private static string DescribeEditDifference(
+        IReadOnlyDictionary<int, TreasureRecord> before,
+        IReadOnlyDictionary<int, TreasureRecord> after)
+    {
+        int[] ids = before.Keys.Union(after.Keys)
+            .Where(id => !before.TryGetValue(id, out TreasureRecord? a) ||
+                         !after.TryGetValue(id, out TreasureRecord? b) || a != b)
+            .OrderBy(id => id).ToArray();
+        return ids.Length switch
+        {
+            0 => "Treasure Map state",
+            1 => $"Treasure #{ids[0]}",
+            _ => $"{ids.Length} treasures (#{ids[0]}–#{ids[^1]})"
+        };
+    }
+
+    private void RecordHistory()
+    {
+        _undoHistory.Push(CloneEdits());
+        _redoHistory.Clear();
+    }
+
+    private Dictionary<int, TreasureRecord> CloneEdits() =>
+        _edits.ToDictionary(pair => pair.Key, pair => pair.Value);
+
+    private void RestoreEdits(Dictionary<int, TreasureRecord> snapshot)
+    {
+        _edits.Clear();
+        foreach ((int id, TreasureRecord record) in snapshot)
+            _edits[id] = record;
+        IsDirty = _edits.Count > 0;
+        RefreshEditedRows();
+        NotifyHistoryState();
+    }
+
+    private static bool RewardValuesMatch(TreasureRecord record, NpcTreasureRow reward) =>
+        record.RawKind == reward.RawKind &&
+        record.Quantity == reward.Quantity &&
+        record.Type == reward.Type;
+
+    private void RefreshEditedRows()
+    {
+        if (_currentFieldIndex is null) return;
+        LoadNpcRewards();
+        LoadChests();
+    }
+
+    private void NotifyHistoryState()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        OnPropertyChanged(nameof(CanUndoAll));
     }
 
     private sealed record FieldLoadResult(

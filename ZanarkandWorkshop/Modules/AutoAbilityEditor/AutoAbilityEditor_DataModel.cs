@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using FFXProjectEditor.FfxLib.Common;
 using FFXProjectEditor.FfxLib.Dictionaries;
+using FFXProjectEditor.FfxLib.IO;
 using FFXProjectEditor.Services;
 using FFXProjectEditor.Utils.Encoding;
 using System;
@@ -19,6 +20,13 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
     private int _abilityCount;
     private byte[] _baselineAbility = Array.Empty<byte>();
     private byte[] _baselineRecipe = Array.Empty<byte>();
+    private byte[] _historyAbility = Array.Empty<byte>();
+    private byte[] _historyRecipe = Array.Empty<byte>();
+    private readonly Stack<HistorySnapshot> _undoHistory = new();
+    private readonly Stack<HistorySnapshot> _redoHistory = new();
+    private bool _restoringHistory;
+
+    private sealed record HistorySnapshot(byte[] Ability, byte[] Recipe, ushort? SelectedId);
 
     public List<AutoAbilityEntry> AllAbilities { get; } = new();
     public ObservableCollection<AutoAbilityEntry> DisplayedAbilities { get; } = new();
@@ -30,9 +38,13 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
     [ObservableProperty] private AutoAbilityEntry? selectedAbility;
     public bool HasSelectedAbility => SelectedAbility is not null;
     [ObservableProperty] private string status = "";
+    [ObservableProperty] private string historyStatus = "";
     [ObservableProperty] private bool hasAbilityFile;
     [ObservableProperty] private bool hasRecipeFile;
     [ObservableProperty] private bool isDirty;
+    public bool CanUndo => _undoHistory.Count > 0;
+    public bool CanRedo => _redoHistory.Count > 0;
+    public bool CanUndoAll => IsDirty;
     public string PropertiesTabHeader => HasAbilityFile
         ? "Properties & Effects"
         : "Properties & Effects (a_ability.bin missing)";
@@ -61,10 +73,18 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
         if (!HasAbilityFile && !HasRecipeFile)
             throw new FileNotFoundException("Neither a_ability.bin nor kaizou.bin is available.");
 
+        byte[] abilityBytes = HasAbilityFile ? File.ReadAllBytes(abilityPath) : Array.Empty<byte>();
+        byte[] recipeBytes = HasRecipeFile ? File.ReadAllBytes(recipePath) : Array.Empty<byte>();
+        LoadFromBytes(abilityBytes, recipeBytes, true, null);
+    }
+
+    private void LoadFromBytes(byte[] abilityBytes, byte[] recipeBytes, bool resetBaseline,
+        ushort? selectedAbilityId)
+    {
         var recipes = new Dictionary<ushort, RecipeRecord>();
         if (HasRecipeFile)
         {
-            _recipeFile = File.ReadAllBytes(recipePath);
+            _recipeFile = recipeBytes.ToArray();
             if (_recipeFile.Length < 0x14 + 125 * 8)
                 throw new InvalidDataException("kaizou.bin does not contain 125 complete recipe records.");
             for (int i = 0; i < 125; i++)
@@ -82,7 +102,7 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
         int matchedRecipeCount = 0;
         if (HasAbilityFile)
         {
-            _abilityFile = File.ReadAllBytes(abilityPath);
+            _abilityFile = abilityBytes.ToArray();
             if (_abilityFile.Length < 0x14) throw new InvalidDataException("a_ability.bin is too short.");
             ushort minimumId = BitConverter.ToUInt16(_abilityFile, 0x08);
             ushort maximumId = BitConverter.ToUInt16(_abilityFile, 0x0A);
@@ -130,14 +150,27 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
             throw new InvalidDataException(
                 "No kaizou.bin recipes matched the auto-ability IDs in a_ability.bin.");
         ApplyFilter();
+        if (selectedAbilityId.HasValue)
+            SelectedAbility = DisplayedAbilities.FirstOrDefault(entry => entry.Id == selectedAbilityId.Value);
         Status = HasAbilityFile && HasRecipeFile
             ? $"Loaded {AllAbilities.Count} auto abilities; matched {matchedRecipeCount} customization recipes."
             : HasAbilityFile
                 ? $"Loaded {AllAbilities.Count} auto abilities. Recipe editing is unavailable because kaizou.bin is missing."
                 : $"Loaded {AllAbilities.Count} customization recipes. Property editing is unavailable because a_ability.bin is missing.";
-        _baselineAbility = HasAbilityFile ? BuildAbilityFile() : Array.Empty<byte>();
-        _baselineRecipe = _recipeFile.ToArray();
-        IsDirty = false;
+        byte[] currentAbility = HasAbilityFile ? BuildAbilityFile() : Array.Empty<byte>();
+        if (resetBaseline)
+        {
+            _baselineAbility = currentAbility.ToArray();
+            _baselineRecipe = _recipeFile.ToArray();
+            _undoHistory.Clear();
+            _redoHistory.Clear();
+            HistoryStatus = "";
+        }
+        _historyAbility = currentAbility.ToArray();
+        _historyRecipe = _recipeFile.ToArray();
+        IsDirty = !currentAbility.SequenceEqual(_baselineAbility) ||
+                  !_recipeFile.SequenceEqual(_baselineRecipe);
+        NotifyHistoryState();
     }
 
     public void ApplyFilter()
@@ -157,18 +190,18 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
     {
         ushort? selectedAbilityId = SelectedAbility?.Id;
         Validate();
+        var replacements = new List<FileReplacement>();
         if (HasAbilityFile)
         {
             byte[] rebuiltAbilityFile = BuildAbilityFile();
             VerifyRebuiltAbilityFile(rebuiltAbilityFile);
-            File.WriteAllBytes(Project_Service.Instance.Path_KernelAutoAbilityUs, rebuiltAbilityFile);
+            replacements.Add(new FileReplacement(
+                Project_Service.Instance.Path_KernelAutoAbilityUs, rebuiltAbilityFile));
         }
         if (HasRecipeFile)
-        {
-            File.WriteAllBytes(Project_Service.Instance.Path_KernelCustomization, _recipeFile);
-        }
-        bool savedAbilityFile = HasAbilityFile;
-        bool savedRecipeFile = HasRecipeFile;
+            replacements.Add(new FileReplacement(
+                Project_Service.Instance.Path_KernelCustomization, _recipeFile));
+        MultiFileSaveTransaction.Save(replacements);
         Load();
         if (selectedAbilityId.HasValue)
         {
@@ -179,11 +212,115 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
         Status = EditorSaveStatus.Success("Auto Ability");
     }
 
+    public void SaveToMaster(string masterPath)
+    {
+        Validate();
+        if (HasAbilityFile)
+        {
+            byte[] rebuilt = BuildAbilityFile();
+            VerifyRebuiltAbilityFile(rebuilt);
+            File.WriteAllBytes(Path.Combine(masterPath, "new_uspc", "battle", "kernel", "a_ability.bin"), rebuilt);
+        }
+        if (HasRecipeFile)
+            File.WriteAllBytes(Path.Combine(masterPath, "jppc", "battle", "kernel", "kaizou.bin"), _recipeFile);
+    }
+
     public void RefreshDirtyState()
     {
         byte[] ability = HasAbilityFile ? BuildAbilityFile() : Array.Empty<byte>();
+        if (!_restoringHistory &&
+            (!ability.SequenceEqual(_historyAbility) || !_recipeFile.SequenceEqual(_historyRecipe)))
+        {
+            _undoHistory.Push(new HistorySnapshot(
+                _historyAbility.ToArray(), _historyRecipe.ToArray(), SelectedAbility?.Id));
+            _redoHistory.Clear();
+            _historyAbility = ability.ToArray();
+            _historyRecipe = _recipeFile.ToArray();
+        }
         IsDirty = !ability.SequenceEqual(_baselineAbility) ||
                   !_recipeFile.SequenceEqual(_baselineRecipe);
+        NotifyHistoryState();
+    }
+
+    public void Undo()
+    {
+        if (!CanUndo) return;
+        HistorySnapshot current = CurrentSnapshot();
+        HistorySnapshot target = _undoHistory.Pop();
+        _redoHistory.Push(current);
+        string detail = DescribeHistoryChange(target, current);
+        RestoreHistory(target);
+        HistoryStatus = $"Undid: {detail}.";
+    }
+
+    public void Redo()
+    {
+        if (!CanRedo) return;
+        HistorySnapshot current = CurrentSnapshot();
+        HistorySnapshot target = _redoHistory.Pop();
+        _undoHistory.Push(current);
+        string detail = DescribeHistoryChange(current, target);
+        RestoreHistory(target);
+        HistoryStatus = $"Redid: {detail}.";
+    }
+
+    public void UndoAll()
+    {
+        if (!IsDirty) return;
+        int appliedCount = _undoHistory.Count;
+
+        // Preserve the individual edit timeline. The old implementation put
+        // only the complete current snapshot in Redo, which made the first
+        // Redo after Undo All restore every change at once.
+        List<HistorySnapshot> timeline = _undoHistory.Reverse().ToList();
+        timeline.Add(CurrentSnapshot());
+        timeline.AddRange(_redoHistory.ToArray());
+
+        // The first timeline entry is the saved baseline. Stack the remaining
+        // snapshots in reverse so the earliest individual change is the next
+        // Redo target.
+        _undoHistory.Clear();
+        _redoHistory.Clear();
+        for (int i = timeline.Count - 1; i >= 1; i--)
+            _redoHistory.Push(timeline[i]);
+
+        RestoreHistory(new HistorySnapshot(
+            _baselineAbility.ToArray(), _baselineRecipe.ToArray(), SelectedAbility?.Id));
+        HistoryStatus = $"Undid all: {appliedCount} Auto Ability change{(appliedCount == 1 ? "" : "s")} since the last save.";
+    }
+
+    private static string DescribeHistoryChange(HistorySnapshot before, HistorySnapshot after)
+    {
+        int ability = CountChangedBytes(before.Ability, after.Ability);
+        int recipe = CountChangedBytes(before.Recipe, after.Recipe);
+        string item = after.SelectedId is ushort id ? $"ability #{id}" : "Auto Ability data";
+        return $"{item} ({ability} ability byte{(ability == 1 ? "" : "s")}, {recipe} recipe byte{(recipe == 1 ? "" : "s")} changed)";
+    }
+
+    private static int CountChangedBytes(byte[] left, byte[] right)
+    {
+        int count = Math.Abs(left.Length - right.Length);
+        for (int i = 0; i < Math.Min(left.Length, right.Length); i++) if (left[i] != right[i]) count++;
+        return count;
+    }
+
+    private HistorySnapshot CurrentSnapshot() => new(
+        (HasAbilityFile ? BuildAbilityFile() : Array.Empty<byte>()).ToArray(),
+        _recipeFile.ToArray(), SelectedAbility?.Id);
+
+    private void RestoreHistory(HistorySnapshot snapshot)
+    {
+        _restoringHistory = true;
+        try { LoadFromBytes(snapshot.Ability, snapshot.Recipe, false, snapshot.SelectedId); }
+        finally { _restoringHistory = false; }
+        NotifyHistoryState();
+    }
+
+    private void NotifyHistoryState()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        OnPropertyChanged(nameof(CanUndoAll));
     }
 
     public void RestoreOriginalAndSave(string originalPath, bool restoreAbilityFile)
@@ -207,7 +344,7 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
         Status = $"Restored and reloaded the original {expectedName}.";
     }
 
-    public void RestoreSelectedOriginalAbility(string originalAbilityPath, string? originalRecipePath)
+    public void RestoreSelectedOriginalAbilityAndSave(string originalAbilityPath, string? originalRecipePath)
     {
         AutoAbilityEntry selected = SelectedAbility ??
             throw new InvalidOperationException("Select an Auto Ability to restore.");
@@ -251,9 +388,11 @@ internal partial class AutoAbilityEditor_DataModel : ObservableObject
         ApplyFilter();
         SelectedAbility = selected;
         RefreshDirtyState();
+        string restoredName = selected.Name;
+        Save();
         Status = restoredRecipe
-            ? $"Restored {selected.Name} properties, text, and recipe in memory. Press Save to write the changes."
-            : $"Restored {selected.Name} properties and text in memory. Press Save to write the changes.";
+            ? $"Restored and saved {restoredName} properties, text, and recipe."
+            : $"Restored and saved {restoredName} properties and text.";
     }
 
     private static (int Start, int Count, ushort MinimumId) ReadAbilityTable(byte[] file, string label)

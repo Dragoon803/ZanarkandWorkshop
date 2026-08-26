@@ -25,27 +25,28 @@ namespace FFXProjectEditor;
 
 public partial class Main_Window : Window
 {
-    private const int MaxRecentProjects = 5;
-    private readonly string _recentProjectsPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "FFXProjectEditor", "recent-projects.txt");
-    private readonly string _windowSizePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "FFXProjectEditor", "window-size.txt");
-    private readonly List<string> _recentProjects = new();
     private bool _applyingWindowSizePreset;
     private bool _windowHasOpened;
+    private Func<Task<Control>>? _activeProjectEditorFactory;
+    private string? _activeProjectEditorName;
+    private bool _projectTransitionInProgress;
+    private bool _closeApproved;
+    private bool _closePromptInProgress;
+    private readonly Dictionary<IProjectEditorSave, Guid?> _editorProjectBindings = new();
+    private readonly object? _welcomeContent;
     Main_DataModel DataModel;
     public Main_Window()
     {
         DataModel = new Main_DataModel();
         this.DataContext = DataModel;
         InitializeComponent();
+        _welcomeContent = ContentFrame.Content;
         (double startupWidth, double startupHeight) = LoadSavedWindowSize();
         Width = startupWidth;
         Height = startupHeight;
         SizeChanged += MainWindow_SizeChanged;
-        Closing += (_, _) => SaveWindowSize();
+        Closing += MainWindow_Closing;
+        AddHandler(KeyDownEvent, MainWindow_KeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         Opened += (_, _) => Dispatcher.UIThread.Post(() =>
         {
             SetWindowSizePresetCheck(startupWidth, startupHeight);
@@ -64,8 +65,9 @@ public partial class Main_Window : Window
 
 		try
 		{
-			VanillaReference_Service.ValidationResult validation = VanillaReference_Service.Validate(results[0]);
-			if (!validation.IsValid) throw new InvalidOperationException(validation.Summary);
+			VanillaReference_Service.ValidationResult validation =
+				VanillaReference_Service.Validate(results[0], true);
+			if (!validation.CanConfigure) throw new InvalidOperationException(validation.Summary);
 			VanillaReference_Service.Configure(results[0]);
 			RefreshVanillaMasterStatus();
 			await RecoveryNotice_Window.Show(this,
@@ -79,21 +81,168 @@ public partial class Main_Window : Window
 			RefreshVanillaMasterStatus();
 			await RecoveryNotice_Window.Show(this,
 				"Invalid Original Game Files",
-				ex.Message + "\n\nSelect a clean folder named master that contains both jppc\\battle\\mon and new_uspc\\battle\\kernel.",
+				ex.Message + "\n\nSelect a clean folder named master that contains the jppc and new_uspc base folders.",
 				results[0],
 				false);
 		}
 	}
 
+    private void MenuItem_FileOpened(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        RefreshSaveCommandState();
+    }
+
+    private async void MenuItem_SaveProject(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        await SaveActiveEditorAsync();
+    }
+
+    private async void MainWindow_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
+        if ((e.Key == Key.Z || e.Key == Key.Y) && ShouldPreserveNativeTextHistory())
+            return;
+        if (e.Key == Key.Z && ContentFrame.Content is IProjectEditorHistory { CanUndo: true } undoEditor)
+        {
+            e.Handled = true;
+            undoEditor.Undo();
+            return;
+        }
+        if (e.Key == Key.Y && ContentFrame.Content is IProjectEditorHistory { CanRedo: true } redoEditor)
+        {
+            e.Handled = true;
+            redoEditor.Redo();
+            return;
+        }
+        if (e.Key != Key.S) return;
+        e.Handled = true;
+        if (_projectTransitionInProgress)
+        {
+            ShowProjectLoadStatus("Save As is still completing. Saving is temporarily unavailable.", false);
+            return;
+        }
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            MenuItem_SaveProjectAs(null, new Avalonia.Interactivity.RoutedEventArgs());
+            return;
+        }
+        await SaveActiveEditorAsync();
+    }
+
+    private bool ShouldPreserveNativeTextHistory() =>
+        TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox textBox &&
+        !string.Equals(textBox.Tag?.ToString(), "EditorHistoryShortcuts",
+            StringComparison.Ordinal);
+
+    private async void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
+    {
+        if (_closeApproved)
+        {
+            SaveWindowSize();
+            return;
+        }
+        if (_projectTransitionInProgress)
+        {
+            e.Cancel = true;
+            if (_closePromptInProgress) return;
+            _closePromptInProgress = true;
+            try
+            {
+                await RecoveryNotice_Window.Show(this, "Save As is still completing",
+                    "Zanarkand Workshop must remain open until the new project is completely saved or safely rolled back. Please wait for Save As to finish.",
+                    Project_Service.Instance.ProjectPath ?? "", false);
+            }
+            finally { _closePromptInProgress = false; }
+            return;
+        }
+        if (ContentFrame.Content is not IProjectEditorSave { HasPendingChanges: true })
+        {
+            SaveWindowSize();
+            return;
+        }
+
+        e.Cancel = true;
+        if (_closePromptInProgress) return;
+        _closePromptInProgress = true;
+        try
+        {
+            if (!await ResolvePendingChangesAsync("Closing Zanarkand Workshop will discard them.")) return;
+            _closeApproved = true;
+            Close();
+        }
+        finally { _closePromptInProgress = false; }
+    }
+
+    internal async Task<bool> SaveActiveEditorAsync()
+    {
+        if (_projectTransitionInProgress)
+        {
+            ShowProjectLoadStatus("Save As is still completing. Saving is temporarily unavailable.", false);
+            return false;
+        }
+        if (ContentFrame.Content is not IProjectEditorSave editor || !editor.HasPendingChanges)
+            return false;
+        if (!await EnsureActiveProjectRegisteredAsync()) return false;
+        try
+        {
+            editor.Save();
+            ShowProjectLoadStatus($"Saved {Project_Service.Instance.ActiveProject?.Name ?? "project"}.", true);
+            RefreshSaveCommandState();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await RecoveryNotice_Window.Show(this, "Project could not be saved", ex.Message,
+                Project_Service.Instance.ProjectPath, false);
+            RefreshSaveCommandState();
+            return false;
+        }
+    }
+
+    internal async Task<bool> ResolvePendingChangesAsync(string context)
+    {
+        if (ContentFrame.Content is not IProjectEditorSave { HasPendingChanges: true }) return true;
+        PendingChangesDecision decision = await PendingChanges_Window.Show(this, context);
+        return decision switch
+        {
+            PendingChangesDecision.Discard => true,
+            PendingChangesDecision.Save => await SaveActiveEditorAsync(),
+            _ => false
+        };
+    }
+
+    internal void RefreshSaveCommandState()
+    {
+        bool loaded = Project_Service.Instance.IsProjectLoaded;
+        SaveProjectMenuItem.IsEnabled = !_projectTransitionInProgress && loaded &&
+            ContentFrame.Content is IProjectEditorSave { HasPendingChanges: true };
+        SaveAsProjectMenuItem.IsEnabled = !_projectTransitionInProgress && loaded;
+    }
+
+    private async void MenuItem_SaveProjectAs(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (!Project_Service.Instance.IsProjectLoaded) return;
+        IProjectEditorSave? editor = ContentFrame.Content as IProjectEditorSave;
+        await SaveAsActiveProjectAsync((masterPath, metadataPath) =>
+        {
+            if (editor?.HasPendingChanges == true)
+                editor.SaveToMaster(masterPath, metadataPath);
+            return Task.CompletedTask;
+        });
+    }
+
 	private async void MenuItem_ValidateVanillaMaster(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
 	{
-		VanillaReference_Service.ValidationResult validation =
-			VanillaReference_Service.Validate(VanillaReference_Service.MasterPath);
-		await RecoveryNotice_Window.Show(this,
-			validation.Classification,
-			validation.Summary,
-			VanillaReference_Service.MasterPath,
-			validation.IsValid);
+		ShowLoading("Verifying Recovery Files", "Hashing only the files currently used by Recovery…");
+		VanillaReference_Service.ValidationResult validation;
+		try
+		{
+			validation = await Task.Run(() =>
+				VanillaReference_Service.VerifyRecoveryFiles());
+		}
+		finally { HideLoading(); }
+		await RecoveryVerification_Window.ShowResults(this, validation,
+			VanillaReference_Service.MasterPath ?? "Not configured");
 		RefreshVanillaMasterStatus();
 	}
 
@@ -128,6 +277,12 @@ public partial class Main_Window : Window
 		}
 	}
 
+	private async void MenuItem_RestoreEntireMonster(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+	{
+		if (ContentFrame.Content is MonEditorSelector_Control { ActiveMonsterEditor: { } monsterEditor })
+			await monsterEditor.RestoreEntireOriginalAsync(this);
+	}
+
 	private async void MenuItem_RestoreFolder(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
 	{
 		if (!Project_Service.Instance.IsProjectLoaded)
@@ -149,18 +304,27 @@ public partial class Main_Window : Window
 
 		try
 		{
-			(string source, string relative, int fileCount) =
+			VanillaReference_Service.FolderRestorePreview preview =
 				VanillaReference_Service.PreviewFolderRestore(projectFolder);
 			string explanation =
-				$"Restore {fileCount:N0} original file(s) in project folder “{relative}”. " +
-				"Files that exist only in the editing project will not be removed.";
+				$"Restore {preview.FileCount:N0} source file(s) in project folder “{preview.RelativeFolder}”. " +
+				$"Verified: {preview.VerifiedCount:N0}; unrecognized: {preview.UnrecognizedCount:N0}; " +
+				$"not in manifest: {preview.NotInManifestCount:N0}. " +
+				"Files that exist only in the editing project will not be removed." +
+				VanillaReference_Service.BuildRestoreTrustNotice(preview.Files);
+			bool hasWarning = preview.Files.Any(file => file.RequiresWarning);
 			bool confirmed = await AiRevertConfirmationWindow.Show(
-				this, "Restore Original Folder", explanation, source, "Restore Folder",
+				this, "Restore Original Folder", explanation, preview.SourceFolder,
+				hasWarning ? "Restore Unverified Folder" : "Restore Folder",
 				"This immediately writes files to the active editing project.");
 			if (!confirmed) return;
 
+			string[] approvedUnverifiedPaths = preview.Files
+				.Where(file => file.RequiresWarning)
+				.Select(file => file.RelativePath)
+				.ToArray();
 			VanillaReference_Service.FolderRestoreResult result =
-				VanillaReference_Service.RestoreFolder(projectFolder);
+				VanillaReference_Service.RestoreFolder(projectFolder, approvedUnverifiedPaths);
 			battleEditor.ReloadAfterFolderRecovery();
 			await RecoveryNotice_Window.Show(this, "Folder Restored",
 				$"Restored {result.FilesRestored:N0} original file(s) in {result.RelativeFolder}." +
@@ -176,6 +340,12 @@ public partial class Main_Window : Window
 
 	private void MenuItem_RecoveryOpened(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
 	{
+		string? monsterSection = (ContentFrame.Content as MonEditorSelector_Control)?
+			.ActiveMonsterEditor?.ActiveRecoverySectionName;
+		RestoreCurrentEditorMenuItem.Header = monsterSection is null
+			? "Restore Original in Current Editor"
+			: $"Restore Original {monsterSection}";
+		RestoreEntireMonsterMenuItem.IsVisible = monsterSection is not null;
 		RestoreCurrentEditorMenuItem.IsEnabled =
 			ContentFrame.Content is AutoAbilityEditor_Control ||
 			ContentFrame.Content is MixEditor_Control ||
@@ -192,8 +362,16 @@ public partial class Main_Window : Window
 
 	private void RefreshVanillaMasterStatus()
 	{
-		VanillaReference_Service.ValidationResult validation =
-			VanillaReference_Service.Validate(VanillaReference_Service.MasterPath);
+		VanillaReference_Service.ValidationResult? validation =
+			VanillaReference_Service.GetCachedValidation();
+		if (validation is null)
+		{
+			VanillaMasterStatusMenuItem.Header = string.IsNullOrWhiteSpace(VanillaReference_Service.MasterPath)
+				? "Original Game Files: Not configured"
+				: "Original Game Files: Configured — files verified as needed";
+			ToolTip.SetTip(VanillaMasterStatusMenuItem, VanillaReference_Service.MasterPath);
+			return;
+		}
 		if (validation.IsValid)
 		{
 			VanillaMasterStatusMenuItem.Header = "Original Game Files: " + validation.Classification;
@@ -237,63 +415,70 @@ public partial class Main_Window : Window
 
     private async void Button_ProjectPath(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        await PromptForProjectFolderAsync();
+    }
+
+    private async void Button_WelcomeProject(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        List<ProjectManifest> knownProjects = ProjectRegistry_Service.GetProjects()
+            .ToList();
+        if (knownProjects.Count == 0)
+        {
+            await PromptForProjectFolderAsync();
+            return;
+        }
+
+        KnownProjectChoice? choice = await KnownProjects_Window.Show(this, knownProjects);
+        if (choice is null) return;
+        if (choice.Browse)
+        {
+            await PromptForProjectFolderAsync();
+            return;
+        }
+        if (!string.IsNullOrWhiteSpace(choice.MasterPath))
+            await OpenSelectedProjectAsync(choice.MasterPath);
+    }
+
+    private async Task PromptForProjectFolderAsync()
+    {
         List<string> openDialogResults = await AvaloniaDialog_Util.OpenFolderDialog(this, "Select the project folder");
         if (openDialogResults.Count == 0 || !Directory.Exists(openDialogResults[0]))
         {
             return;
         }
 
-        if (!Project_Service.IsPathValid(openDialogResults[0]))
+        await OpenSelectedProjectAsync(openDialogResults[0]);
+    }
+
+    private async Task OpenSelectedProjectAsync(string path)
+    {
+
+        if (!Project_Service.IsPathValid(path))
         {
             Debug.WriteLine("Selected directory is not a valid master project folder");
             ShowProjectLoadStatus("INVALID: Select the FFX project master folder.", false);
             return;
         }
 
-        if (VanillaReference_Service.IsProtectedVanillaPath(openDialogResults[0]))
+        if (VanillaReference_Service.IsProtectedVanillaPath(path))
         {
-            await ShowProtectedVanillaProjectWarning(openDialogResults[0]);
+            await ShowProtectedVanillaProjectWarning(path);
             return;
         }
 
-        await LoadProjectWithOverlay(openDialogResults[0]);
+        await LoadProjectWithOverlay(path);
     }
 
     private void LoadRecentProjects()
     {
-        try
-        {
-            if (File.Exists(_recentProjectsPath))
-            {
-                _recentProjects.AddRange(File.ReadAllLines(_recentProjectsPath)
-                    .Where(path => !string.IsNullOrWhiteSpace(path))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .Take(MaxRecentProjects));
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Could not read recent projects: {ex.Message}");
-        }
-
         RefreshRecentProjectsMenu();
     }
 
     private void RememberRecentProject(string path)
     {
-        string normalizedPath = Path.GetFullPath(path)
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        _recentProjects.RemoveAll(existing =>
-            string.Equals(existing, normalizedPath, StringComparison.OrdinalIgnoreCase));
-        _recentProjects.Insert(0, normalizedPath);
-        if (_recentProjects.Count > MaxRecentProjects)
-            _recentProjects.RemoveRange(MaxRecentProjects, _recentProjects.Count - MaxRecentProjects);
-
         try
         {
-            string? directory = Path.GetDirectoryName(_recentProjectsPath);
-            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-            File.WriteAllLines(_recentProjectsPath, _recentProjects);
+            ProjectRegistry_Service.RememberUnregisteredPath(path);
         }
         catch (Exception ex)
         {
@@ -305,14 +490,26 @@ public partial class Main_Window : Window
 
     private void RefreshRecentProjectsMenu()
     {
-        RecentProjectsMenu.IsEnabled = _recentProjects.Count > 0;
-        RecentProjectsMenu.ItemsSource = _recentProjects.Select(path =>
+        List<ProjectManifest> registered = ProjectRegistry_Service.GetProjects().ToList();
+        var items = new List<MenuItem>();
+        items.AddRange(registered.Select(project =>
+        {
+            var item = new MenuItem { Header = project.Name };
+            ToolTip.SetTip(item, project.MasterPath);
+            item.Click += (_, _) => OpenRecentProject(project.MasterPath);
+            return item;
+        }));
+        IEnumerable<string> unregisteredPaths = ProjectRegistry_Service.Registry.RecentUnregisteredMasterPaths.Where(path =>
+            registered.All(project => !string.Equals(project.MasterPath, path, StringComparison.OrdinalIgnoreCase)));
+        items.AddRange(unregisteredPaths.Select(path =>
         {
             var item = new MenuItem { Header = path };
             ToolTip.SetTip(item, path);
             item.Click += (_, _) => OpenRecentProject(path);
             return item;
-        }).ToList();
+        }));
+        RecentProjectsMenu.IsEnabled = items.Count > 0;
+        RecentProjectsMenu.ItemsSource = items;
     }
 
     private async void OpenRecentProject(string path)
@@ -334,14 +531,22 @@ public partial class Main_Window : Window
 
     private async Task LoadProjectWithOverlay(string path)
     {
-        if (!await ConfirmLeaveDirtyTreasureEditor()) return;
+        if (!await ResolvePendingChangesAsync("Opening another project will replace the current editor.")) return;
         ShowLoading("Loading project", "Preparing the selected FFX master folder…");
         try
         {
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
             DataModel.LoadProjectFolder(path);
+            UnbindCurrentEditor();
+            ContentFrame.Content = _welcomeContent;
+            _activeProjectEditorFactory = null;
+            _activeProjectEditorName = null;
+            RefreshSaveCommandState();
             RememberRecentProject(path);
-            ShowProjectLoadStatus("SUCCESS: Master folder loaded successfully.", true);
+            UpdateActiveProjectDisplay();
+            string projectName = Project_Service.Instance.ActiveProject?.Name ??
+                Path.GetFileName(Directory.GetParent(path)?.FullName ?? path);
+            ShowProjectLoadStatus($"Successfully loaded {projectName}", true);
         }
         catch (Exception ex)
         {
@@ -349,6 +554,266 @@ public partial class Main_Window : Window
             await RecoveryNotice_Window.Show(this, "Project could not be loaded", ex.Message, path, false);
         }
         finally { HideLoading(); }
+    }
+
+    public async Task<bool> EnsureActiveProjectRegisteredAsync()
+    {
+        if (!Project_Service.Instance.IsProjectLoaded)
+            return false;
+        if (Project_Service.Instance.IsProjectRegistered)
+            return ValidateCurrentEditorBinding();
+
+        string masterPath = Project_Service.Instance.ProjectPath!;
+        string suggestedName = Path.GetFileName(Directory.GetParent(masterPath)?.FullName ?? masterPath);
+        string? name = await ProjectName_Window.Show(this, suggestedName);
+        if (name is null) return false;
+        try
+        {
+            ProjectManifest manifest = Project_Service.Instance.RegisterActiveProject(name);
+            SphereGridColorMetadata.MigrateLegacyLocation(
+                Project_Service.Instance.Path_ZanarkandWorkshopMetadata,
+                Project_Service.Instance.Path_PathHashedProjectMetadata);
+            BindCurrentEditor(manifest.ProjectId);
+            RefreshRecentProjectsMenu();
+            UpdateActiveProjectDisplay();
+            ShowProjectLoadStatus($"Project '{manifest.Name}' created.", true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await RecoveryNotice_Window.Show(this, "Project could not be created", ex.Message, masterPath, false);
+            return false;
+        }
+    }
+
+    private bool ValidateCurrentEditorBinding()
+    {
+        if (ContentFrame.Content is not IProjectEditorSave editor) return true;
+        Guid activeId = Project_Service.Instance.ActiveProject!.ProjectId;
+        if (!_editorProjectBindings.TryGetValue(editor, out Guid? boundId) || boundId is null)
+        {
+            BindCurrentEditor(activeId);
+            return true;
+        }
+        if (boundId == activeId) return true;
+        ShowProjectLoadStatus("BLOCKED: This editor belongs to a different project. Reopen it from the Editors menu.", false);
+        return false;
+    }
+
+    private void BindCurrentEditor(Guid? projectId = null)
+    {
+        if (ContentFrame.Content is IProjectEditorSave editor)
+            _editorProjectBindings[editor] = projectId ?? Project_Service.Instance.ActiveProject?.ProjectId;
+    }
+
+    private void UnbindCurrentEditor()
+    {
+        if (ContentFrame.Content is IProjectEditorSave editor)
+            _editorProjectBindings.Remove(editor);
+    }
+
+    public async Task<bool> SaveAsActiveProjectAsync(Func<string, string, Task> writePendingChanges)
+    {
+        if (_projectTransitionInProgress || !Project_Service.Instance.IsProjectLoaded)
+            return false;
+        string sourceMaster = Project_Service.Instance.ProjectPath!;
+        ProjectManifest? sourceProject = Project_Service.Instance.ActiveProject;
+        if (sourceProject is not null && !ValidateCurrentEditorBinding()) return false;
+        string suggestedName = sourceProject is null
+            ? Path.GetFileName(Directory.GetParent(sourceMaster)?.FullName ?? sourceMaster) + " Copy"
+            : sourceProject.Name + " Copy";
+        string selectedProjectPath = await AvaloniaDialog_Util.SaveFileDialog(
+            this,
+            "Choose a Name and Location for the New Project Folder",
+            suggestedName,
+            fileTypeChoices:
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType(
+                    "Project folder (complete Master copy)")
+                {
+                    Patterns = ["*"]
+                }
+            ]);
+        if (string.IsNullOrWhiteSpace(selectedProjectPath)) return false;
+
+        string finalProjectDirectory = Path.GetFullPath(selectedProjectPath);
+        string? parent = Path.GetDirectoryName(finalProjectDirectory);
+        if (string.IsNullOrWhiteSpace(parent))
+        {
+            await RecoveryNotice_Window.Show(this, "Save As could not start",
+                "Select a project name and location.", finalProjectDirectory, false);
+            return false;
+        }
+        string name;
+        try { name = ProjectRegistry_Service.ValidateNewName(Path.GetFileName(finalProjectDirectory)); }
+        catch (Exception ex)
+        {
+            await RecoveryNotice_Window.Show(this, "Save As could not start",
+                ex.Message, finalProjectDirectory, false);
+            return false;
+        }
+        string finalMaster = Path.Combine(finalProjectDirectory, "master");
+        if (IsPathInside(finalProjectDirectory, sourceMaster))
+        {
+            await RecoveryNotice_Window.Show(this, "Save As could not start",
+                "The new project cannot be created inside the Master folder being copied.",
+                finalProjectDirectory, false);
+            return false;
+        }
+        if (Directory.Exists(finalProjectDirectory) || File.Exists(finalProjectDirectory))
+        {
+            await RecoveryNotice_Window.Show(this, "Save As could not start",
+                $"A file or folder named '{name}' already exists at the selected destination.",
+                finalProjectDirectory, false);
+            return false;
+        }
+
+        string temporaryProjectDirectory = Path.Combine(parent, $".{name}.zwcopying-{Guid.NewGuid():N}");
+        string temporaryMaster = Path.Combine(temporaryProjectDirectory, "master");
+        string temporaryMetadata = Path.Combine(ProgramMetadata_Service.RootPath, $".saveas-{Guid.NewGuid():N}");
+        _projectTransitionInProgress = true;
+        RefreshSaveCommandState();
+        bool projectActivated = false;
+        bool finalDirectoryCreated = false;
+        ProjectManifest? createdProject = null;
+        ShowLoading("Saving project as " + name, "Copying the complete Master folder…");
+        try
+        {
+            await Task.Run(() => CopyDirectory(sourceMaster, temporaryMaster));
+            if (Directory.Exists(Project_Service.Instance.Path_ZanarkandWorkshopMetadata))
+                CopyDirectory(Project_Service.Instance.Path_ZanarkandWorkshopMetadata, temporaryMetadata);
+            else
+                Directory.CreateDirectory(temporaryMetadata);
+            await writePendingChanges(temporaryMaster, temporaryMetadata);
+            Directory.Move(temporaryProjectDirectory, finalProjectDirectory);
+            finalDirectoryCreated = true;
+            ProjectManifest created = ProjectRegistry_Service.Register(
+                name, finalMaster, sourceProject?.ProjectId);
+            createdProject = created;
+            string createdMetadata = Path.Combine(ProjectRegistry_Service.ProjectsRoot, created.Name);
+            foreach (string file in Directory.EnumerateFiles(temporaryMetadata, "*", SearchOption.AllDirectories))
+            {
+                if (string.Equals(Path.GetFileName(file), "manifest.json", StringComparison.OrdinalIgnoreCase)) continue;
+                string target = Path.Combine(createdMetadata, Path.GetRelativePath(temporaryMetadata, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.Copy(file, target, true);
+            }
+            DataModel.LoadProjectFolder(created.MasterPath);
+            projectActivated = true;
+            RememberRecentProject(created.MasterPath);
+            UpdateActiveProjectDisplay();
+            RefreshRecentProjectsMenu();
+
+            if (_activeProjectEditorFactory is not null)
+            {
+                LoadingDetailText.Text = "Reloading " + (_activeProjectEditorName ?? "editor") + " from the new project…";
+                try
+                {
+                    UnbindCurrentEditor();
+                    ContentFrame.Content = await _activeProjectEditorFactory();
+                    BindCurrentEditor(created.ProjectId);
+                }
+                catch (Exception reloadError)
+                {
+                    UnbindCurrentEditor();
+                    ContentFrame.Content = _welcomeContent;
+                    await RecoveryNotice_Window.Show(this, "Project saved; editor could not be reopened",
+                        "The new project is active and its changes were saved. Open the editor again from the Editors menu.\n\n" +
+                        reloadError.Message, created.MasterPath, false);
+                }
+            }
+            ShowProjectLoadStatus($"Saved as '{created.Name}'. This is now the active project.", true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            TryDeleteCreatedDirectory(temporaryProjectDirectory);
+            var rollbackProblems = new List<string>();
+            bool registryRolledBack = createdProject is null;
+            if (!projectActivated && createdProject is not null)
+            {
+                try
+                {
+                    ProjectRegistry_Service.RollbackNewProject(
+                        createdProject.ProjectId, sourceProject?.ProjectId);
+                    registryRolledBack = true;
+                }
+                catch (Exception rollbackError)
+                {
+                    rollbackProblems.Add("Workshop registration could not be rolled back: " + rollbackError.Message);
+                }
+            }
+            if (!projectActivated && finalDirectoryCreated && registryRolledBack)
+            {
+                try { Directory.Delete(finalProjectDirectory, true); }
+                catch (Exception rollbackError)
+                {
+                    rollbackProblems.Add("The new project folder could not be removed: " + rollbackError.Message);
+                }
+            }
+            if (!projectActivated && !string.Equals(Project_Service.Instance.ProjectPath, sourceMaster,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                try { DataModel.LoadProjectFolder(sourceMaster); }
+                catch (Exception rollbackError)
+                {
+                    rollbackProblems.Add("The original project could not be restored in the active session: " + rollbackError.Message);
+                }
+            }
+            string recoveryDetails = rollbackProblems.Count == 0
+                ? ""
+                : "\n\nRecovery attention is required:\n" + string.Join("\n", rollbackProblems) +
+                  $"\nThe new copy has been preserved at:\n{finalProjectDirectory}";
+            await RecoveryNotice_Window.Show(this, "Save As failed",
+                ex.Message + (projectActivated
+                    ? "\n\nThe new project was created and remains active."
+                    : "\n\nThe original project remains active and unchanged.") + recoveryDetails,
+                finalProjectDirectory, false);
+            return false;
+        }
+        finally
+        {
+            _projectTransitionInProgress = false;
+            RefreshSaveCommandState();
+            TryDeleteCreatedDirectory(temporaryMetadata);
+            HideLoading();
+        }
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (string directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
+            Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
+        foreach (string file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            string target = Path.Combine(destination, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, false);
+        }
+    }
+
+    private static bool IsPathInside(string candidate, string parent)
+    {
+        string relative = Path.GetRelativePath(
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(parent)),
+            Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidate)));
+        return relative == "." ||
+            (!Path.IsPathRooted(relative) && relative != ".." &&
+             !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal));
+    }
+
+    private static void TryDeleteCreatedDirectory(string path)
+    {
+        try { if (Directory.Exists(path)) Directory.Delete(path, true); }
+        catch { }
+    }
+
+    private void UpdateActiveProjectDisplay()
+    {
+        ProjectManifest? project = Project_Service.Instance.ActiveProject;
+        Title = project is null ? "Unregistered Project — Zanarkand Workshop" :
+            $"{project.Name} — Zanarkand Workshop";
     }
 
     private async System.Threading.Tasks.Task ShowProtectedVanillaProjectWarning(string path)
@@ -420,13 +885,9 @@ public partial class Main_Window : Window
     {
         try
         {
-            if (!File.Exists(_windowSizePath)) return (1280, 720);
-            string[] values = File.ReadAllText(_windowSizePath).Split('x', StringSplitOptions.TrimEntries);
-            if (values.Length == 2 &&
-                double.TryParse(values[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double width) &&
-                double.TryParse(values[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double height) &&
-                width >= MinWidth && height >= MinHeight)
-                return (width, height);
+            WindowSettings settings = AppSettings_Service.Current.Window;
+            if (settings.Width >= MinWidth && settings.Height >= MinHeight)
+                return (settings.Width, settings.Height);
         }
         catch (Exception ex)
         {
@@ -439,12 +900,11 @@ public partial class Main_Window : Window
     {
         try
         {
-            string? directory = Path.GetDirectoryName(_windowSizePath);
-            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
             double width = Math.Max(MinWidth, Bounds.Width);
             double height = Math.Max(MinHeight, Bounds.Height);
-            File.WriteAllText(_windowSizePath,
-                $"{width.ToString(CultureInfo.InvariantCulture)}x{height.ToString(CultureInfo.InvariantCulture)}");
+            AppSettings_Service.Current.Window.Width = width;
+            AppSettings_Service.Current.Window.Height = height;
+            AppSettings_Service.Save();
         }
         catch (Exception ex)
         {
@@ -524,16 +984,9 @@ public partial class Main_Window : Window
                 Project_Service.Instance.ProjectPath, false);
             return;
         }
-        try
-        {
-            ContentFrame.Content = new AutoAbilityEditor_Control();
-        }
-        catch (Exception ex)
-        {
-            await RecoveryNotice_Window.Show(this, "Auto Abilities could not be opened",
-                "The available Auto Ability data could not be read.\n\n" + ex.Message,
-                File.Exists(abilityPath) ? abilityPath : recipePath, false);
-        }
+        await OpenProjectEditor("Auto Ability Editor",
+            File.Exists(abilityPath) ? abilityPath : recipePath, false,
+            () => new AutoAbilityEditor_Control());
     }
     private async void MenuItem_Items(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -560,16 +1013,8 @@ public partial class Main_Window : Window
             return;
         }
 
-        try
-        {
-            ContentFrame.Content = new MixEditor_Control();
-        }
-        catch (Exception ex)
-        {
-            await RecoveryNotice_Window.Show(this, "Rikku Mix Recipes could not be opened",
-                "The Mix recipe data could not be read.\n\n" + ex.Message,
-                recipePath, false);
-        }
+        await OpenProjectEditor("Rikku Mix Recipes", recipePath, false,
+            () => new MixEditor_Control());
     }
     private async void MenuItem_MonsterMagic1(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -593,8 +1038,17 @@ public partial class Main_Window : Window
         if (!Project_Service.Instance.IsProjectLoaded)
             return;
 
-        await OpenProjectEditor("Battle Formation Editor", Project_Service.Instance.Path_Btl, true,
-            () => new BattleFormationEditor_Control());
+        await OpenProjectEditorAsync(
+            "Battle Formation Editor",
+            Project_Service.Instance.Path_Btl,
+            true,
+            async () =>
+            {
+                BattleFormationEditor_DataModel model = await Task.Run(
+                    () => new BattleFormationEditor_DataModel());
+                return new BattleFormationEditor_Control(model);
+            },
+            "Scanning and validating battle formations…");
     }
 
     private async void MenuItem_SphereGridEditor(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -685,7 +1139,7 @@ public partial class Main_Window : Window
 		string editorName, string requiredPath, bool requiredIsDirectory,
 		Func<Task<Control>> createEditor, string detail)
 	{
-		if (!await ConfirmLeaveDirtyTreasureEditor()) return;
+		if (!await ResolvePendingChangesAsync("Opening another editor will replace the current editor.")) return;
 		bool exists = requiredIsDirectory ? Directory.Exists(requiredPath) : File.Exists(requiredPath);
 		if (!exists)
 		{
@@ -698,7 +1152,12 @@ public partial class Main_Window : Window
 		try
 		{
 			await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+			UnbindCurrentEditor();
 			ContentFrame.Content = await createEditor();
+			BindCurrentEditor();
+			_activeProjectEditorFactory = createEditor;
+			_activeProjectEditorName = editorName;
+			RefreshSaveCommandState();
 		}
 		catch (Exception ex)
 		{
@@ -720,7 +1179,7 @@ public partial class Main_Window : Window
 	private async System.Threading.Tasks.Task OpenProjectEditor(
 		string editorName, string requiredPath, bool requiredIsDirectory, Func<Control> createEditor)
 	{
-		if (!await ConfirmLeaveDirtyTreasureEditor()) return;
+		if (!await ResolvePendingChangesAsync("Opening another editor will replace the current editor.")) return;
 		bool exists = requiredIsDirectory ? Directory.Exists(requiredPath) : File.Exists(requiredPath);
 		if (!exists)
 		{
@@ -736,7 +1195,12 @@ public partial class Main_Window : Window
 		{
 			ShowLoading("Opening " + editorName, "Reading and validating project data…");
 			await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+			UnbindCurrentEditor();
 			ContentFrame.Content = createEditor();
+			BindCurrentEditor();
+			_activeProjectEditorFactory = () => Task.FromResult(createEditor());
+			_activeProjectEditorName = editorName;
+			RefreshSaveCommandState();
 		}
 		catch (Exception ex)
 		{
@@ -747,35 +1211,23 @@ public partial class Main_Window : Window
 		finally { HideLoading(); }
 	}
 
-	private async Task<bool> ConfirmLeaveDirtyTreasureEditor()
-	{
-		if (ContentFrame.Content is not TreasureMapEditor_Control { HasUnsavedChanges: true }) return true;
-		return await AiRevertConfirmationWindow.Show(
-			this,
-			"Discard Unsaved Treasure Changes?",
-			"The Treasure Map Editor contains changes that have not been saved. Leaving it now will discard those edits.",
-			Project_Service.Instance.ProjectPath ?? "",
-			"Discard Changes",
-			"Choose Cancel to return to the editor and save first.");
-	}
-    private void MenuItem_DebugMenu(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async Task OpenUtilityAsync(Func<Control> createUtility)
     {
-        ContentFrame.Content = new DebugMenu_Control();
+        if (!await ResolvePendingChangesAsync("Opening a utility will replace the current editor.")) return;
+        UnbindCurrentEditor();
+        ContentFrame.Content = createUtility();
+        _activeProjectEditorFactory = null;
+        _activeProjectEditorName = null;
+        RefreshSaveCommandState();
     }
-    private void MenuItem_BattleTracker(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        ContentFrame.Content = new BattleTracker_Control();
-    }
-    private void MenuItem_InventoryTracker(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        ContentFrame.Content = new InventoryTracker_Control();
-    }
-    private void MenuItem_ArenaTracker(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        ContentFrame.Content = new ArenaTracker_Control();
-    }
-    private void MenuItem_Test(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        ContentFrame.Content = new Test_Control();
-    }
+    private async void MenuItem_DebugMenu(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await OpenUtilityAsync(() => new DebugMenu_Control());
+    private async void MenuItem_BattleTracker(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await OpenUtilityAsync(() => new BattleTracker_Control());
+    private async void MenuItem_InventoryTracker(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await OpenUtilityAsync(() => new InventoryTracker_Control());
+    private async void MenuItem_ArenaTracker(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await OpenUtilityAsync(() => new ArenaTracker_Control());
+    private async void MenuItem_Test(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        await OpenUtilityAsync(() => new Test_Control());
 }

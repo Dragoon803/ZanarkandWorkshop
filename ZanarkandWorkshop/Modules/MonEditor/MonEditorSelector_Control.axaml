@@ -33,13 +33,24 @@
 
 		<ContentControl Grid.Row="1" MinHeight="50">
 			<Grid ColumnDefinitions="Auto,*,Auto" Margin="20,4">
-				<TextBox Grid.Column="0" Width="200" VerticalAlignment="Center"
-						 Watermark="Search..." Text="{Binding FilterText}" TextChanged="Filter_Changed"/>
+				<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+					<TextBox Width="200" VerticalAlignment="Center" Tag="EditorHistoryShortcuts"
+							 Watermark="Search..." Text="{Binding FilterText}" TextChanged="Filter_Changed"/>
+					<TextBlock x:Name="HistoryStatusText" VerticalAlignment="Center"
+							   Foreground="#DDDDDD" TextTrimming="CharacterEllipsis"/>
+				</StackPanel>
 				<TextBlock x:Name="SaveStatusText" Grid.Column="1" Margin="12,0"
 						   VerticalAlignment="Center" HorizontalAlignment="Right"
 						   Foreground="#DDDDDD"/>
-				<Button x:Name="SaveButton" Grid.Column="2" Content="Save"
-						 VerticalAlignment="Center" IsEnabled="False" Click="Save_Click"/>
+				<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+					<Button x:Name="UndoButton" Content="Undo" VerticalAlignment="Center" IsEnabled="False" Click="Undo_Click"
+							ToolTip.Tip="Undo the most recent Battle Script editing action"/>
+					<Button x:Name="RedoButton" Content="Redo" VerticalAlignment="Center" IsEnabled="False" Click="Redo_Click"
+							ToolTip.Tip="Redo the most recently undone editing action"/>
+					<Button x:Name="UndoAllButton" Content="Undo All" VerticalAlignment="Center" IsEnabled="False" Click="UndoAll_Click"
+							ToolTip.Tip="Undo every change made to the selected monster since the last save"/>
+					<Button x:Name="SaveButton" Content="Save" VerticalAlignment="Center" IsEnabled="False" Click="Save_Click"/>
+				</StackPanel>
 			</Grid>
 		</ContentControl>
 	</Grid>

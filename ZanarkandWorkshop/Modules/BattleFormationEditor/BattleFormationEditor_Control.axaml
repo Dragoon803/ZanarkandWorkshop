@@ -135,21 +135,21 @@
                                 <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,8,0"
                                            VerticalAlignment="Center" Text="X"/>
                                 <NumericUpDown Grid.Row="1" Grid.Column="1"
-                                               Value="{Binding SelectedPosition.X, Mode=TwoWay}"
+                                               Value="{Binding EditorX, Mode=TwoWay}"
                                                IsEnabled="{Binding HasSelectedPosition}"
                                                Increment="5" Minimum="-2147483647" Maximum="2147483647"
                                                FormatString="0.###"/>
                                 <TextBlock Grid.Row="1" Grid.Column="2" Margin="18,0,8,0"
                                            VerticalAlignment="Center" Text="Y"/>
                                 <NumericUpDown Grid.Row="1" Grid.Column="3"
-                                               Value="{Binding SelectedPosition.Y, Mode=TwoWay}"
+                                               Value="{Binding EditorY, Mode=TwoWay}"
                                                IsEnabled="{Binding HasSelectedPosition}"
                                                Increment="5" Minimum="-2147483647" Maximum="2147483647"
                                                FormatString="0.###"/>
                                 <TextBlock Grid.Row="1" Grid.Column="4" Margin="18,0,8,0"
                                            VerticalAlignment="Center" Text="Z"/>
                                 <NumericUpDown Grid.Row="1" Grid.Column="5"
-                                               Value="{Binding SelectedPosition.Z, Mode=TwoWay}"
+                                               Value="{Binding EditorZ, Mode=TwoWay}"
                                                IsEnabled="{Binding HasSelectedPosition}"
                                                Increment="5" Minimum="-2147483647" Maximum="2147483647"
                                                FormatString="0.###"/>
@@ -167,12 +167,19 @@
 
         <ContentControl Grid.Row="1" MinHeight="50">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,4">
-                <TextBox Grid.Column="0" Width="230" VerticalAlignment="Center"
+                <TextBox Grid.Column="0" Width="230" VerticalAlignment="Center" Tag="EditorHistoryShortcuts"
                          Watermark="Search..."
                          Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"/>
-                <Button Grid.Column="2" Content="Save" VerticalAlignment="Center"
-                        IsEnabled="{Binding IsDirty}" Click="Save_Click"
-                        ToolTip.Tip="Validates and replaces the project file"/>
+                <TextBlock Grid.Column="1" Margin="12,0"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           Text="{Binding Status}" Foreground="#DDDDDD"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                    <Button Content="Undo" IsEnabled="{Binding CanUndo}" Click="Undo_Click"/>
+                    <Button Content="Redo" IsEnabled="{Binding CanRedo}" Click="Redo_Click"/>
+                    <Button Content="Undo All" IsEnabled="{Binding CanUndoAll}" Click="UndoAll_Click"/>
+                    <Button Content="Save" IsEnabled="{Binding IsDirty}" Click="Save_Click"
+                            ToolTip.Tip="Validates and replaces the project file"/>
+                </StackPanel>
             </Grid>
         </ContentControl>
     </Grid>

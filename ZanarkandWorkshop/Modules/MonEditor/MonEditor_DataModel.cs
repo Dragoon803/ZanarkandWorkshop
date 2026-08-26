@@ -2,6 +2,7 @@ using FFXProjectEditor.Converters;
 using FFXProjectEditor.FfxLib.Atel;
 using FFXProjectEditor.FfxLib.Ability;
 using FFXProjectEditor.FfxLib.Dictionaries;
+using FFXProjectEditor.FfxLib.IO;
 using FFXProjectEditor.Services;
 using FFXProjectEditor.Utils.Encoding;
 using FFXProjectEditor.FfxLib.Monster;
@@ -12,6 +13,8 @@ using System.Linq;
 
 namespace FFXProjectEditor.Modules.MonEditor
 {
+    internal enum MonsterRecoverySection { Status, Loot, BattleScript, EntireMonster }
+
     internal class MonEditor_DataModel
     {
         public MonEditorSelector_DataModel SelectorDM { get; set; }
@@ -22,6 +25,8 @@ namespace FFXProjectEditor.Modules.MonEditor
         public AtelScriptDocument? AiDocument { get; private set; }
         private readonly byte[] _originalAiBytes;
         private readonly byte[] _originalWorkerBytes;
+        private byte[] _lastSavedAiBytes;
+        private byte[] _lastSavedWorkerBytes;
         private readonly int _monsterId;
         private bool _usesLocalizedMonsterText;
         private readonly Stack<AiUndoSnapshot> _aiUndoHistory = new();
@@ -46,6 +51,7 @@ namespace FFXProjectEditor.Modules.MonEditor
 
         public List<string> CategoryOptions => new GameCategory_Converter().Options.Values.ToList();
         public IReadOnlyList<MonsterLootItemOption> LootItemOptions { get; private set; } = [];
+        public sealed record ContentSnapshot(byte[] StatusBytes, byte[] LootBytes);
 
         public MonEditor_DataModel(Monster_File monsterFile, string monsterPath, MonEditorSelector_DataModel selectorDM)
         {
@@ -56,14 +62,22 @@ namespace FFXProjectEditor.Modules.MonEditor
             MonsterStatSheet = MonsterStatSheet_Wrapper.Wrap(MonsterFile.StatSheetFile);
             _usesLocalizedMonsterText = LoadLocalizedTextIntoWrapper();
             AiCommandNames = LoadCommandNames();
+            ConfigureMenuAbilitySelectors();
             MonsterLoot = MonsterLoot_Wrapper.Wrap(MonsterFile.LootFile, AiCommandNames);
+            ConfigureGearAutoAbilitySelectors();
             LootItemOptions = BuildLootItemOptions();
             _originalAiBytes = MonsterFile.AiFile == null ? [] : (byte[])MonsterFile.AiFile.Clone();
             _originalWorkerBytes = MonsterFile.WorkerFile == null ? [] : (byte[])MonsterFile.WorkerFile.Clone();
+            _lastSavedAiBytes = (byte[])_originalAiBytes.Clone();
+            _lastSavedWorkerBytes = (byte[])_originalWorkerBytes.Clone();
 
             try
             {
-                AiDocument = AtelScriptDocument.Read(MonsterFile.AiFile, MonsterFile.WorkerFile);
+                // ATEL parsing can recover header fields in its input buffer. Parse
+                // clones so opening the editor cannot dirty the package being edited.
+                AiDocument = AtelScriptDocument.Read(
+                    (byte[])MonsterFile.AiFile.Clone(),
+                    MonsterFile.WorkerFile == null ? [] : (byte[])MonsterFile.WorkerFile.Clone());
                 AiDocument.SetCommandNameResolver(gameIndex => AiCommandNames.TryGetValue(gameIndex, out string? name) ? name : null);
                 AiHex = AiDocument.ToHexEditorText();
                 AiStatus = AiDocument.RecoveredMissingCodeLength
@@ -80,7 +94,8 @@ namespace FFXProjectEditor.Modules.MonEditor
         {
             if (_originalAiBytes.Length == 0)
                 throw new InvalidOperationException("This monster had no Battle Script when it was opened.");
-            AtelScriptDocument restored = AtelScriptDocument.Read(_originalAiBytes, _originalWorkerBytes);
+            AtelScriptDocument restored = AtelScriptDocument.Read(
+                (byte[])_originalAiBytes.Clone(), (byte[])_originalWorkerBytes.Clone());
             restored.SetCommandNameResolver(gameIndex => AiCommandNames.TryGetValue(gameIndex, out string? name) ? name : null);
             AiDocument = restored;
             MonsterFile.AiFile = (byte[])_originalAiBytes.Clone();
@@ -103,7 +118,9 @@ namespace FFXProjectEditor.Modules.MonEditor
 
             byte[] rebuilt = diskMonster.Write();
             Monster_File roundTrip = Monster_File.Read(rebuilt);
-            AtelScriptDocument.Read(roundTrip.AiFile, roundTrip.WorkerFile);
+            AtelScriptDocument.Read(
+                (byte[])roundTrip.AiFile.Clone(),
+                roundTrip.WorkerFile == null ? [] : (byte[])roundTrip.WorkerFile.Clone());
 
             File.WriteAllBytes(MonsterPath, rebuilt);
 
@@ -112,6 +129,9 @@ namespace FFXProjectEditor.Modules.MonEditor
 
         public int AiUndoCount => _aiUndoHistory.Count;
         public int AiRedoCount => _aiRedoHistory.Count;
+        public bool HasUnsavedAiChanges =>
+            !SameBytes(AiDocument?.Bytes, _lastSavedAiBytes) ||
+            !SameBytes(MonsterFile.WorkerFile, _lastSavedWorkerBytes);
 
         public void RecordAiUndoCheckpoint(string description, string? selectionKind = null, int? scriptOffset = null)
         {
@@ -151,7 +171,8 @@ namespace FFXProjectEditor.Modules.MonEditor
 
         private void RestoreAiSnapshot(AiUndoSnapshot snapshot)
         {
-            AtelScriptDocument restored = AtelScriptDocument.Read(snapshot.AiBytes, snapshot.WorkerBytes);
+            AtelScriptDocument restored = AtelScriptDocument.Read(
+                (byte[])snapshot.AiBytes.Clone(), (byte[])snapshot.WorkerBytes.Clone());
             restored.SetCommandNameResolver(gameIndex => AiCommandNames.TryGetValue(gameIndex, out string? name) ? name : null);
             AiDocument = restored;
             MonsterFile.AiFile = (byte[])snapshot.AiBytes.Clone();
@@ -238,8 +259,10 @@ namespace FFXProjectEditor.Modules.MonEditor
 
             MonsterFile = vanilla;
             MonsterStatSheet = MonsterStatSheet_Wrapper.Wrap(vanilla.StatSheetFile);
+            ConfigureMenuAbilitySelectors();
             _usesLocalizedMonsterText = LoadLocalizedTextIntoWrapper();
             MonsterLoot = MonsterLoot_Wrapper.Wrap(vanilla.LootFile, AiCommandNames);
+            ConfigureGearAutoAbilitySelectors();
             LootItemOptions = BuildLootItemOptions();
             AiDocument = vanillaAi;
             AiHex = vanillaAi.ToHexEditorText();
@@ -263,6 +286,85 @@ namespace FFXProjectEditor.Modules.MonEditor
             LoadCommandNames(names, Project_Service.Instance.Path_KernelMonMagic1Us, 0x4, false);
             LoadCommandNames(names, Project_Service.Instance.Path_KernelMonMagic2Us, 0x6, false);
             return names;
+        }
+
+        public ContentSnapshot CaptureContentSnapshot() => new(
+            MonsterStatSheet.Unwrap().WriteSingle(), MonsterLoot.Unwrap().WriteSingle());
+
+        public void RestoreContentSnapshot(ContentSnapshot snapshot)
+        {
+            MonsterFile.StatSheetFile = Monster_StatSheet.ReadSingle(snapshot.StatusBytes);
+            MonsterFile.LootFile = Monster_Loot.ReadSingle(snapshot.LootBytes);
+            MonsterStatSheet = MonsterStatSheet_Wrapper.Wrap(MonsterFile.StatSheetFile);
+            _usesLocalizedMonsterText = LoadLocalizedTextIntoWrapper();
+            ConfigureMenuAbilitySelectors();
+            MonsterLoot = MonsterLoot_Wrapper.Wrap(MonsterFile.LootFile, AiCommandNames);
+            ConfigureGearAutoAbilitySelectors();
+            LootItemOptions = BuildLootItemOptions();
+        }
+
+        public void ClearAiHistory()
+        {
+            _aiUndoHistory.Clear();
+            _aiRedoHistory.Clear();
+        }
+
+        private void ConfigureMenuAbilitySelectors()
+        {
+            var rawOptions = AiCommandNames
+                .Where(entry => MenuAbilityCategoryOption.All.Any(category => category.Category == (entry.Key >> 12)))
+                .OrderBy(entry => entry.Key)
+                .Select(entry => new MenuAbilityOption((byte)(entry.Key >> 12),
+                    (ushort)(entry.Key & 0x0FFF), entry.Value))
+                .ToList();
+            HashSet<(byte Category, string Name)> duplicateNames = rawOptions
+                .GroupBy(option => (option.Category, option.Name), new MenuAbilityNameComparer())
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToHashSet(new MenuAbilityNameComparer());
+
+            List<MenuAbilityOption> available =
+            [
+                new(0x0, 0x0000, "NONE"),
+                .. rawOptions.Select(option => duplicateNames.Contains((option.Category, option.Name))
+                    ? option with { Name = $"{option.Name} (ID {option.Index})" }
+                    : option)
+            ];
+
+            GameIndex_Wrapper[] abilities =
+            [
+                MonsterStatSheet.ForcedAbility,
+                MonsterStatSheet.Ability1, MonsterStatSheet.Ability2,
+                MonsterStatSheet.Ability3, MonsterStatSheet.Ability4,
+                MonsterStatSheet.Ability5, MonsterStatSheet.Ability6,
+                MonsterStatSheet.Ability7, MonsterStatSheet.Ability8,
+                MonsterStatSheet.Ability9, MonsterStatSheet.Ability10,
+                MonsterStatSheet.Ability11, MonsterStatSheet.Ability12,
+                MonsterStatSheet.Ability13, MonsterStatSheet.Ability14,
+                MonsterStatSheet.Ability15, MonsterStatSheet.Ability16
+            ];
+
+            foreach (GameIndex_Wrapper ability in abilities)
+            {
+                List<MenuAbilityOption> options = available;
+                if (MenuAbilityCategoryOption.All.Any(category => category.Category == ability.Category) &&
+                    !available.Any(option => option.Category == ability.Category && option.Index == ability.Index))
+                {
+                    options = [.. available,
+                        new MenuAbilityOption(ability.Category, ability.Index,
+                            $"Unknown {(ability.Category == 0x2 ? "Item" : "Command")} (ID {ability.Index})", false)];
+                }
+                ability.ConfigureMenuAbilities(options);
+            }
+        }
+
+        private sealed class MenuAbilityNameComparer : IEqualityComparer<(byte Category, string Name)>
+        {
+            public bool Equals((byte Category, string Name) x, (byte Category, string Name) y) =>
+                x.Category == y.Category && string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
+
+            public int GetHashCode((byte Category, string Name) value) =>
+                HashCode.Combine(value.Category, StringComparer.OrdinalIgnoreCase.GetHashCode(value.Name));
         }
 
         private IReadOnlyList<MonsterLootItemOption> BuildLootItemOptions()
@@ -316,7 +418,9 @@ namespace FFXProjectEditor.Modules.MonEditor
             for (int index = 0; index < commands.Count && index <= 0xFFF; index++)
             {
                 string name = FfxEncoding.DecodeScript(commands[index].NameScriptBytes).GetString(FfxEncoding.UsDecoder);
-                if (!string.IsNullOrWhiteSpace(name)) names[(ushort)((category << 12) | index)] = name;
+                if (string.IsNullOrWhiteSpace(name))
+                    name = $"Unnamed {(category == 0x2 ? "Item" : "Command")} {index}";
+                names[(ushort)((category << 12) | index)] = name;
             }
         }
 
@@ -775,12 +879,172 @@ namespace FFXProjectEditor.Modules.MonEditor
             return temporary.ToHexEditorText();
         }
 
-        public void Save()
+        public void Save() => SaveToPaths(MonsterPath,
+            Project_Service.Instance.GetPathKernelMonsterUs(_monsterId));
+
+        public void SaveToMaster(string masterPath)
+        {
+            string relativeMonster = Path.GetRelativePath(Project_Service.Instance.ProjectPath!, MonsterPath);
+            string monsterPath = Path.Combine(masterPath, relativeMonster);
+            int split = _monsterId <= 100 ? 1 : _monsterId <= 180 ? 2 : 3;
+            string kernelPath = Path.Combine(masterPath, "new_uspc", "battle", "kernel", $"monster{split}.bin");
+            SaveToPaths(monsterPath, kernelPath);
+        }
+
+        private void ConfigureGearAutoAbilitySelectors()
+        {
+            List<AutoAbilityDropOption> available = LoadAutoAbilityDropOptions();
+            IEnumerable<GameIndex_Wrapper> selectors =
+                MonsterLoot.TidusWeapons.Concat(MonsterLoot.TidusArmors)
+                .Concat(MonsterLoot.YunaWeapons).Concat(MonsterLoot.YunaArmors)
+                .Concat(MonsterLoot.AuronWeapons).Concat(MonsterLoot.AuronArmors)
+                .Concat(MonsterLoot.KimahriWeapons).Concat(MonsterLoot.KimahriArmors)
+                .Concat(MonsterLoot.WakkaWeapons).Concat(MonsterLoot.WakkaArmors)
+                .Concat(MonsterLoot.LuluWeapons).Concat(MonsterLoot.LuluArmors)
+                .Concat(MonsterLoot.RikkuWeapons).Concat(MonsterLoot.RikkuArmors);
+
+            foreach (GameIndex_Wrapper selector in selectors)
+            {
+                List<AutoAbilityDropOption> options = available;
+                if (!available.Any(option => option.Value == selector.Value))
+                    options = [.. available, new(selector.Value,
+                        $"Unknown Auto Ability (ID {selector.Index})", false)];
+                selector.ConfigureAutoAbilityDrops(options);
+            }
+        }
+
+        private static List<AutoAbilityDropOption> LoadAutoAbilityDropOptions()
+        {
+            List<AutoAbilityDropOption> options = [new(0x0000, "NONE")];
+            string path = Project_Service.Instance.Path_KernelAutoAbilityUs;
+            if (!File.Exists(path)) return options;
+
+            byte[] file = File.ReadAllBytes(path);
+            if (file.Length < 0x14) return options;
+            ushort minimumId = BitConverter.ToUInt16(file, 0x08);
+            ushort maximumId = BitConverter.ToUInt16(file, 0x0A);
+            ushort recordSize = BitConverter.ToUInt16(file, 0x0C);
+            int abilityStart = BitConverter.ToInt32(file, 0x10);
+            int count = maximumId - minimumId + 1;
+            if (recordSize != 0x6C || abilityStart < 0x14 || abilityStart + count * recordSize > file.Length)
+                return options;
+
+            int textStart = abilityStart + count * recordSize;
+            byte[] textPool = file[textStart..];
+            var loaded = new List<AutoAbilityDropOption>();
+            for (int i = 0; i < count; i++)
+            {
+                ushort index = (ushort)(minimumId + i);
+                string fallback = AutoAbility_Dictionary.Instance.TryGetValue(index, out string? known)
+                    ? known : $"Unnamed Auto Ability {index}";
+                string name = fallback;
+                try
+                {
+                    ushort textOffset = BitConverter.ToUInt16(file, abilityStart + i * recordSize);
+                    byte[] script = FfxEncoding.GetScriptBytesFromTextFile(textPool, textOffset);
+                    string decoded = FfxEncoding.DecodeEditableTextScript(script, FfxEncoding.UsDecoder);
+                    if (!string.IsNullOrWhiteSpace(decoded)) name = decoded;
+                }
+                catch { }
+                loaded.Add(new((ushort)(0x8000 | index), name));
+            }
+
+            HashSet<string> duplicates = loaded.GroupBy(option => option.Name, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1).Select(group => group.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            options.AddRange(loaded.Select(option => duplicates.Contains(option.Name)
+                ? option with { Name = $"{option.Name} (ID {option.Value & 0x0FFF})" }
+                : option));
+            return options;
+        }
+
+        public void RestoreOriginalSectionAndSave(string originalPath, MonsterRecoverySection section,
+            string? originalKernelPath = null)
+        {
+            if (!File.Exists(originalPath))
+                throw new InvalidOperationException($"Original monster file was not found: {originalPath}");
+            byte[] diskBytes = File.ReadAllBytes(MonsterPath);
+            Monster_File diskBefore = Monster_File.Read(diskBytes);
+            Monster_File current = Monster_File.Read(diskBytes);
+            Monster_File original = Monster_File.Read(File.ReadAllBytes(originalPath));
+            switch (section)
+            {
+                case MonsterRecoverySection.Status:
+                    current.StatSheetFile = original.StatSheetFile;
+                    break;
+                case MonsterRecoverySection.Loot:
+                    current.LootFile = original.LootFile;
+                    break;
+                case MonsterRecoverySection.BattleScript:
+                    current.AiFile = (byte[])original.AiFile.Clone();
+                    current.WorkerFile = (byte[])original.WorkerFile.Clone();
+                    break;
+                case MonsterRecoverySection.EntireMonster:
+                    current = original;
+                    break;
+            }
+
+            byte[] rebuilt = current.Write();
+            Monster_File roundTrip = Monster_File.Read(rebuilt);
+            AtelScriptDocument.Read(
+                (byte[])roundTrip.AiFile.Clone(),
+                roundTrip.WorkerFile == null ? [] : (byte[])roundTrip.WorkerFile.Clone());
+            static bool Same(byte[]? left, byte[]? right) => (left ?? []).SequenceEqual(right ?? []);
+            if (section is not MonsterRecoverySection.Status and not MonsterRecoverySection.EntireMonster &&
+                !roundTrip.StatSheetFile.WriteSingle().SequenceEqual(diskBefore.StatSheetFile.WriteSingle()))
+                throw new InvalidDataException("Targeted Recovery changed the protected Status section.");
+            if (section is not MonsterRecoverySection.Loot and not MonsterRecoverySection.EntireMonster &&
+                !roundTrip.LootFile.WriteSingle().SequenceEqual(diskBefore.LootFile.WriteSingle()))
+                throw new InvalidDataException("Targeted Recovery changed the protected Loot section.");
+            if (section is not MonsterRecoverySection.BattleScript and not MonsterRecoverySection.EntireMonster &&
+                (!Same(roundTrip.AiFile, diskBefore.AiFile) || !Same(roundTrip.WorkerFile, diskBefore.WorkerFile)))
+                throw new InvalidDataException("Targeted Recovery changed the protected Battle Script section.");
+            if (section != MonsterRecoverySection.EntireMonster &&
+                (!Same(roundTrip.UnkFile, diskBefore.UnkFile) || !Same(roundTrip.AudioFile, diskBefore.AudioFile) ||
+                !Same(roundTrip.TextFile, diskBefore.TextFile)))
+                throw new InvalidDataException("Targeted Recovery changed another protected monster section.");
+
+            byte[]? rebuiltKernel = null;
+            string projectKernelPath = Project_Service.Instance.GetPathKernelMonsterUs(_monsterId);
+            if (section == MonsterRecoverySection.Status && !string.IsNullOrWhiteSpace(originalKernelPath) &&
+                File.Exists(originalKernelPath) && File.Exists(projectKernelPath))
+            {
+                Monster_KernelFile projectKernel = Monster_KernelFile.Read(File.ReadAllBytes(projectKernelPath));
+                Monster_KernelFile originalKernel = Monster_KernelFile.Read(File.ReadAllBytes(originalKernelPath));
+                int localIndex = _monsterId - projectKernel.Header.PreviousFileCount;
+                projectKernel.Entries[localIndex] = originalKernel.GetGlobalEntry(_monsterId);
+                rebuiltKernel = projectKernel.Write();
+                _ = Monster_KernelFile.Read(rebuiltKernel).GetGlobalEntry(_monsterId);
+            }
+
+            if (rebuiltKernel is not null)
+                CoupledFileSaveTransaction.Save(MonsterPath, rebuilt, projectKernelPath, rebuiltKernel);
+            else
+                File.WriteAllBytes(MonsterPath, rebuilt);
+            AiStatus = section switch
+            {
+                MonsterRecoverySection.Status => "Restored original Status; Loot and Battle Script were preserved.",
+                MonsterRecoverySection.Loot => "Restored original Loot; Status and Battle Script were preserved.",
+                MonsterRecoverySection.BattleScript => "Restored original Battle Script; Status and Loot were preserved.",
+                _ => "Restored the entire original monster."
+            };
+        }
+
+        private void SaveToPaths(string monsterPath, string kernelPath)
         {
             ValidateEditorValues();
-            ApplyAiHex();
+            bool manualAiEditPending = false;
+            if (AiDocument != null)
+            {
+                byte[] editorAiBytes = AtelScriptDocument.ParseHexEditorText(AiHex);
+                manualAiEditPending = !editorAiBytes.AsSpan().SequenceEqual(AiDocument.Bytes);
+                if (manualAiEditPending)
+                    ApplyAiHex();
+            }
+            bool battleScriptEditPending = manualAiEditPending ||
+                !SameBytes(MonsterFile.AiFile, _lastSavedAiBytes) ||
+                !SameBytes(MonsterFile.WorkerFile, _lastSavedWorkerBytes);
             Monster_StatSheet editedSheet = MonsterStatSheet.Unwrap();
-            string kernelPath = Project_Service.Instance.GetPathKernelMonsterUs(_monsterId);
             byte[]? rebuiltKernel = null;
             Monster_StatSheet? kernelSheet = null;
             if (_usesLocalizedMonsterText && File.Exists(kernelPath))
@@ -807,7 +1071,17 @@ namespace FFXProjectEditor.Modules.MonEditor
 
             byte[] rebuilt = MonsterFile.Write();
             Monster_File roundTrip = Monster_File.Read(rebuilt);
-            AtelScriptDocument.Read(roundTrip.AiFile, roundTrip.WorkerFile);
+            bool aiPreserved = SameBytes(roundTrip.AiFile, _lastSavedAiBytes);
+            bool workerPreserved = SameBytes(roundTrip.WorkerFile, _lastSavedWorkerBytes);
+            if (!battleScriptEditPending && (!aiPreserved || !workerPreserved))
+                throw new InvalidDataException(
+                    "Save was blocked because an unrelated edit changed the protected Battle Script " +
+                    $"(AI preserved: {aiPreserved}, lengths {_lastSavedAiBytes.Length}/{roundTrip.AiFile.Length}, " +
+                    $"first difference {FirstDifference(_lastSavedAiBytes, roundTrip.AiFile)}; " +
+                    $"Worker preserved: {workerPreserved}).");
+            AtelScriptDocument.Read(
+                (byte[])roundTrip.AiFile.Clone(),
+                roundTrip.WorkerFile == null ? [] : (byte[])roundTrip.WorkerFile.Clone());
             if (rebuiltKernel != null && kernelSheet != null)
             {
                 Monster_KernelFile kernelRoundTrip = Monster_KernelFile.Read(rebuiltKernel);
@@ -818,16 +1092,31 @@ namespace FFXProjectEditor.Modules.MonEditor
                     throw new InvalidDataException("Localized monster text failed round-trip verification.");
             }
 
-            File.WriteAllBytes(MonsterPath, rebuilt);
             if (rebuiltKernel != null)
             {
-                File.WriteAllBytes(kernelPath, rebuiltKernel);
+                CoupledFileSaveTransaction.Save(monsterPath, rebuilt, kernelPath, rebuiltKernel);
                 AiStatus = EditorSaveStatus.Success("Monster");
             }
             else
             {
+                File.WriteAllBytes(monsterPath, rebuilt);
                 AiStatus = EditorSaveStatus.Success("Monster");
             }
+            _lastSavedAiBytes = (byte[])roundTrip.AiFile.Clone();
+            _lastSavedWorkerBytes = (byte[])roundTrip.WorkerFile.Clone();
+        }
+
+        private static bool SameBytes(byte[]? left, byte[]? right) =>
+            (left ?? []).AsSpan().SequenceEqual(right ?? []);
+
+        private static int FirstDifference(byte[]? left, byte[]? right)
+        {
+            byte[] leftBytes = left ?? [];
+            byte[] rightBytes = right ?? [];
+            int sharedLength = Math.Min(leftBytes.Length, rightBytes.Length);
+            for (int index = 0; index < sharedLength; index++)
+                if (leftBytes[index] != rightBytes[index]) return index;
+            return leftBytes.Length == rightBytes.Length ? -1 : sharedLength;
         }
 
         private void ValidateEditorValues()

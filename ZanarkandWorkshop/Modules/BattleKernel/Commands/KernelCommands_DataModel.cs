@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace FFXProjectEditor.Modules.BattleKernel.Commands
 {
@@ -20,7 +21,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         CommandFile_enum CommandFileType { get; set; }
         List<Ability_Command> CommandsList { get; set; }
         List<KernelCommands_Wrapper> LoadedCommands { get; set; }
-        ObservableCollection<KernelCommands_Wrapper> DisplayedCommands { get; set; }
+        internal ObservableCollection<KernelCommands_Wrapper> DisplayedCommands { get; set; }
 
         /******************************************
          * View settings
@@ -45,6 +46,20 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         [ObservableProperty] public KernelCommands_Wrapper? selectedCommand;
         [ObservableProperty] public bool isDirty;
         private byte[] _baselineFile = Array.Empty<byte>();
+        private byte[] _historyState = Array.Empty<byte>();
+        private sealed record CommandHistoryEntry(
+            byte[] Before,
+            byte[] After,
+            int? CommandIndex,
+            string Description);
+
+        private readonly Stack<CommandHistoryEntry> _undoHistory = new();
+        private readonly Stack<CommandHistoryEntry> _redoHistory = new();
+        private bool _restoringHistory;
+
+        public bool CanUndo => _undoHistory.Count > 0;
+        public bool CanRedo => _redoHistory.Count > 0;
+        public bool CanUndoAll => IsDirty;
 
         public List<string> CharacterOptions => new Character_Converter().Options.Values.ToList();
         public List<string> HitCalcTypeOptions => new HitCalcType_Converter().Options.Values.ToList();
@@ -91,7 +106,12 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
         public void LoadCommands()
         {
             byte[] byteFile = File.ReadAllBytes(GetFilePath());
-            _baselineFile = byteFile.ToArray();
+            LoadCommandsFromBytes(byteFile, true);
+        }
+
+        private void LoadCommandsFromBytes(byte[] byteFile, bool resetBaseline)
+        {
+            int? selectedIndex = SelectedCommand?.Index;
             CommandsList = Ability_Command.ReadList(byteFile, HasExtraInfo());
 
             LoadedCommands.Clear();
@@ -102,22 +122,45 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
                 wrapper.PropertyChanged += CommandChanged;
                 LoadedCommands.Add(wrapper);
             }
-            IsDirty = false;
+            ApplyFilter();
+            SelectedCommand = selectedIndex is int index && index >= 0 && index < LoadedCommands.Count
+                ? LoadedCommands[index]
+                : null;
+            _historyState = BuildFile();
+            if (resetBaseline)
+                _baselineFile = _historyState.ToArray();
+            IsDirty = !_historyState.SequenceEqual(_baselineFile);
+            if (resetBaseline)
+            {
+                _undoHistory.Clear();
+                _redoHistory.Clear();
+            }
+            NotifyHistoryState();
         }
 
         public void ApplyFilter()
         {
-            DisplayedCommands.Clear();
-            foreach (KernelCommands_Wrapper command in LoadedCommands)
-            {
-                if (FilterText == "" ||
+            List<KernelCommands_Wrapper> desired = LoadedCommands.Where(command =>
+                FilterText == "" ||
                     command.Index.ToString().Contains(FilterText.ToLower()) ||
                     command.Name.ToLower().Contains(FilterText.ToLower()) ||
                     command.Description.ToLower().Contains(FilterText.ToLower()))
-                {
-                    DisplayedCommands.Add(command);
-                }
+                .ToList();
+
+            // Avoid CollectionChanged.Reset. Avalonia's DataGrid can retain
+            // recycled cell presenters from hidden column groups after a full
+            // Clear/rebuild, which was the source of the stretched-row Undo
+            // glitch. Replace rows in place and only add/remove the tail.
+            int sharedCount = Math.Min(DisplayedCommands.Count, desired.Count);
+            for (int i = 0; i < sharedCount; i++)
+            {
+                if (!ReferenceEquals(DisplayedCommands[i], desired[i]))
+                    DisplayedCommands[i] = desired[i];
             }
+            while (DisplayedCommands.Count > desired.Count)
+                DisplayedCommands.RemoveAt(DisplayedCommands.Count - 1);
+            for (int i = DisplayedCommands.Count; i < desired.Count; i++)
+                DisplayedCommands.Add(desired[i]);
         }
 
         public KernelCommands_Wrapper CloneAsNewCommand(KernelCommands_Wrapper source)
@@ -150,7 +193,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             RecoveryStatus =
                 $"Cloned command {sourceIndex} into new slot {wrapper.Index} " +
                 $"(reference 0x{commandReference:X4}). Save to write it to disk.";
-            RefreshDirtyState();
+            RefreshDirtyState($"created command #{wrapper.Index}", wrapper.Index);
             return wrapper;
         }
 
@@ -177,7 +220,7 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             ApplyFilter();
             RecoveryStatus =
                 $"Deleted cloned command {actualIndex}. Save to write the removal to disk.";
-            RefreshDirtyState();
+            RefreshDirtyState($"deleted command #{actualIndex}", actualIndex);
             return LoadedCommands.Count > 0 ? LoadedCommands[^1] : null;
         }
 
@@ -188,8 +231,27 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             _ = Ability_Command.ReadList(rebuilt, HasExtraInfo());
             File.WriteAllBytes(path, rebuilt);
             _baselineFile = rebuilt.ToArray();
+            _historyState = rebuilt.ToArray();
+            _undoHistory.Clear();
+            _redoHistory.Clear();
             IsDirty = false;
-            RecoveryStatus = EditorSaveStatus.Success("Player & Aeon Commands");
+            NotifyHistoryState();
+            RecoveryStatus = EditorSaveStatus.Success(GetEditorName());
+        }
+
+        public void SaveToMaster(string masterPath)
+        {
+            byte[] rebuilt = BuildFile();
+            _ = Ability_Command.ReadList(rebuilt, HasExtraInfo());
+            string fileName = CommandFileType switch
+            {
+                CommandFile_enum.Command => "command.bin",
+                CommandFile_enum.Item => "item.bin",
+                CommandFile_enum.MonMagic1 => "monmagic1.bin",
+                CommandFile_enum.MonMagic2 => "monmagic2.bin",
+                _ => throw new InvalidOperationException("Command file type is not selected.")
+            };
+            File.WriteAllBytes(Path.Combine(masterPath, "new_uspc", "battle", "kernel", fileName), rebuilt);
         }
 
         public void RestoreOriginalAndSave(string originalPath)
@@ -247,11 +309,150 @@ namespace FFXProjectEditor.Modules.BattleKernel.Commands
             return Ability_Command.WriteList(commandList, hasExtraInfo);
         }
 
-        private void CommandChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
-            RefreshDirtyState();
+        private void CommandChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (sender is not KernelCommands_Wrapper command || e.PropertyName == nameof(KernelCommands_Wrapper.Index))
+                return;
 
-        private void RefreshDirtyState() =>
-            IsDirty = !BuildFile().SequenceEqual(_baselineFile);
+            int index = LoadedCommands.IndexOf(command);
+            string field = FriendlyFieldName(e.PropertyName);
+            RefreshDirtyState($"changed command #{index} {field}", index);
+        }
+
+        public void MarkActiveCellDirty() => IsDirty = true;
+
+        public void RefreshDirtyState(string? description = null, int? commandIndex = null)
+        {
+            byte[] current = BuildFile();
+            if (!_restoringHistory && !_historyState.SequenceEqual(current))
+            {
+                _undoHistory.Push(new CommandHistoryEntry(
+                    _historyState.ToArray(),
+                    current.ToArray(),
+                    commandIndex,
+                    description ?? "changed command data"));
+                _redoHistory.Clear();
+                _historyState = current.ToArray();
+            }
+            IsDirty = !current.SequenceEqual(_baselineFile);
+            NotifyHistoryState();
+        }
+
+        public void Undo()
+        {
+            if (_undoHistory.Count == 0) return;
+            CommandHistoryEntry entry = _undoHistory.Pop();
+            _redoHistory.Push(entry);
+            RestoreHistory(entry.Before, entry.CommandIndex);
+            RecoveryStatus = $"Undid: {entry.Description}.";
+        }
+
+        public void Redo()
+        {
+            if (_redoHistory.Count == 0) return;
+            CommandHistoryEntry entry = _redoHistory.Pop();
+            _undoHistory.Push(entry);
+            RestoreHistory(entry.After, entry.CommandIndex);
+            RecoveryStatus = $"Redid: {entry.Description}.";
+        }
+
+        public void UndoAll()
+        {
+            if (!IsDirty) return;
+            int count = _undoHistory.Count;
+
+            // Rewind the session without collapsing its entries. Moving the
+            // newest applied entry first leaves the oldest entry on top of the
+            // Redo stack, so Redo can replay every original edit one at a time.
+            // Any entries already in Redo remain after those applied entries,
+            // preserving the complete chronological sequence.
+            while (_undoHistory.Count > 0)
+                _redoHistory.Push(_undoHistory.Pop());
+
+            RestoreHistory(_baselineFile, null);
+            NotifyHistoryState();
+            RecoveryStatus = $"Undid all: {count} command change{(count == 1 ? "" : "s")} since the last save.";
+        }
+
+        private void RestoreHistory(byte[] snapshot, int? commandIndex)
+        {
+            _restoringHistory = true;
+            try { RestoreCommandsInPlace(snapshot, commandIndex); }
+            finally { _restoringHistory = false; }
+            _historyState = BuildFile();
+            NotifyHistoryState();
+        }
+
+        private void RestoreCommandsInPlace(byte[] snapshot, int? commandIndex)
+        {
+            int? selectedIndex = SelectedCommand?.Index;
+            List<Ability_Command> restored = Ability_Command.ReadList(snapshot, HasExtraInfo());
+
+            if (commandIndex is int index &&
+                restored.Count == LoadedCommands.Count &&
+                index >= 0 && index < restored.Count)
+            {
+                ReplaceCommandWrapper(index, restored[index]);
+            }
+            else
+            {
+                int sharedCount = Math.Min(LoadedCommands.Count, restored.Count);
+                for (int i = 0; i < sharedCount; i++)
+                    ReplaceCommandWrapper(i, restored[i]);
+
+                while (LoadedCommands.Count > restored.Count)
+                    LoadedCommands.RemoveAt(LoadedCommands.Count - 1);
+                for (int i = LoadedCommands.Count; i < restored.Count; i++)
+                    LoadedCommands.Add(CreateWrapper(restored[i], i));
+            }
+
+            CommandsList = restored;
+            ApplyFilter();
+            SelectedCommand = selectedIndex is int selected && selected >= 0 && selected < LoadedCommands.Count
+                ? LoadedCommands[selected]
+                : null;
+            IsDirty = !snapshot.SequenceEqual(_baselineFile);
+        }
+
+        private void ReplaceCommandWrapper(int index, Ability_Command command)
+        {
+            LoadedCommands[index].PropertyChanged -= CommandChanged;
+            LoadedCommands[index] = CreateWrapper(command, index);
+        }
+
+        private KernelCommands_Wrapper CreateWrapper(Ability_Command command, int index)
+        {
+            KernelCommands_Wrapper wrapper = KernelCommands_Wrapper.Wrap(command);
+            wrapper.Index = index;
+            wrapper.PropertyChanged += CommandChanged;
+            return wrapper;
+        }
+
+        private static string FriendlyFieldName(string? propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+                return "data";
+
+            string name = propertyName;
+            foreach (string prefix in new[] { "FlagMenu", "FlagTarget", "FlagUsage", "FlagMisc1", "FlagMisc2", "FlagMisc3", "FlagMisc4", "FlagDamage", "FlagElement", "FlagStatus", "FlagPreview", "Flag" })
+            {
+                if (name.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    name = name[prefix.Length..];
+                    break;
+                }
+            }
+
+            name = Regex.Replace(name, "([a-z0-9])([A-Z])", "$1 $2");
+            return name.ToLowerInvariant();
+        }
+
+        private void NotifyHistoryState()
+        {
+            OnPropertyChanged(nameof(CanUndo));
+            OnPropertyChanged(nameof(CanRedo));
+            OnPropertyChanged(nameof(CanUndoAll));
+        }
 
         public string GetFilePath()
         {

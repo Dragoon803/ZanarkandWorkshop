@@ -13,8 +13,8 @@ namespace FFXProjectEditor.Modules.Main
 
         public void LoadProjectFolder(string selectedFolder)
         {
-            ProjectPath = selectedFolder;
             Project_Service.Instance.LoadProject(selectedFolder);
+            ProjectPath = Project_Service.Instance.ProjectPath!;
         }
     }
 }

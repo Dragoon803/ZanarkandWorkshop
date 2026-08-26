@@ -22,6 +22,35 @@ namespace FFXProjectEditor;
 
 public partial class MonEditor_Control : UserControl
 {
+    public event EventHandler? FooterStateChanged;
+    public event EventHandler? SectionRecoveryCompleted;
+    public bool IsBattleScriptTabActive => MonsterEditorTabs?.SelectedItem is TabItem tab &&
+        string.Equals(tab.Header?.ToString(), "Battle Script", StringComparison.Ordinal);
+    public bool CanUndoBattleScript => IsBattleScriptTabActive && DataModel.AiUndoCount > 0;
+    public bool CanRedoBattleScript => IsBattleScriptTabActive && DataModel.AiRedoCount > 0;
+    private readonly Stack<MonEditor_DataModel.ContentSnapshot> _contentUndoHistory = new();
+    private readonly Stack<MonEditor_DataModel.ContentSnapshot> _contentRedoHistory = new();
+    private MonEditor_DataModel.ContentSnapshot? _contentBaseline;
+    private MonEditor_DataModel.ContentSnapshot? _contentHistoryState;
+    private bool _restoringContentHistory;
+    private string _contentHistoryStatus = "";
+    private string _battleScriptHistoryStatus = "";
+    public bool CanUndo => IsBattleScriptTabActive ? DataModel.AiUndoCount > 0 : _contentUndoHistory.Count > 0;
+    public bool CanRedo => IsBattleScriptTabActive ? DataModel.AiRedoCount > 0 : _contentRedoHistory.Count > 0;
+    public bool CanUndoAll => IsBattleScriptTabActive ? DataModel.AiUndoCount > 0 :
+        _contentBaseline is not null && !SameContent(_contentBaseline, DataModel.CaptureContentSnapshot());
+    public string LastRecoveryMessage => AiStatusText?.Text ?? DataModel.AiStatus;
+    public string HistoryStatus => IsBattleScriptTabActive
+        ? _battleScriptHistoryStatus
+        : _contentHistoryStatus;
+    public string? ActiveRecoverySectionName
+    {
+        get
+        {
+            string? section = (MonsterEditorTabs?.SelectedItem as TabItem)?.Header?.ToString();
+            return section is "Status" or "Loot" or "Battle Script" ? section : null;
+        }
+    }
     public event EventHandler? DirtyStateChanged;
     public bool IsDirty { get; private set; }
     private readonly MonEditor_DataModel DataModel;
@@ -31,6 +60,9 @@ public partial class MonEditor_Control : UserControl
     private bool _synchronizingInstructionSelection;
     private bool _synchronizingStatementSelection;
     private bool _updatingMeaningOptions;
+    private bool _buildingGroupEditors;
+    private bool _autoApplyingStructuredEdit;
+    private bool _suppressHexFocus;
     private bool _aiHexIsDirty;
     private bool _restoringAiHistory;
     private bool _restoringRejectedAiHex;
@@ -64,9 +96,6 @@ public partial class MonEditor_Control : UserControl
 	private static bool _suppressDeleteStatementWarning;
 	private static bool _suppressUnsafePasteWarning;
 	private static bool _logicPreferencesLoaded;
-	private static readonly string LogicPreferencesPath = Path.Combine(
-		Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-		"FFXProjectEditor", "ai-editor-preferences.json");
 
 	private enum AiLogicSelectionOwner
 	{
@@ -190,6 +219,8 @@ public partial class MonEditor_Control : UserControl
         InitializeComponent();
         TrackEditableObjectGraph(DataModel.MonsterStatSheet);
         TrackEditableObjectGraph(DataModel.MonsterLoot);
+        _contentBaseline = DataModel.CaptureContentSnapshot();
+        _contentHistoryState = _contentBaseline;
 		AiHideStatements.IsChecked = _hideStatementsPreference;
 		AiHideInstructions.IsChecked = _hideInstructionsPreference;
 		ApplyStoredLogicVisibility();
@@ -216,18 +247,128 @@ public partial class MonEditor_Control : UserControl
 		}
     }
 
-	private void MonsterEditorTabs_SelectionChanged(object? sender, SelectionChangedEventArgs e) =>
+	private void MonsterEditorTabs_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+	{
 		UpdateBattleScriptCommandVisibility();
+		FooterStateChanged?.Invoke(this, EventArgs.Empty);
+	}
+
+    public void Undo()
+    {
+        if (IsBattleScriptTabActive) { UndoBattleScript(); return; }
+        if (_contentUndoHistory.Count == 0) return;
+        MonEditor_DataModel.ContentSnapshot current = DataModel.CaptureContentSnapshot();
+        MonEditor_DataModel.ContentSnapshot target = _contentUndoHistory.Pop();
+        _contentRedoHistory.Push(current);
+        string detail = DescribeContentChange(target, current);
+        RestoreContentHistory(target);
+        PublishHistoryStatus($"Undid: {detail}.");
+    }
+
+    public void Redo()
+    {
+        if (IsBattleScriptTabActive) { RedoBattleScript(); return; }
+        if (_contentRedoHistory.Count == 0) return;
+        MonEditor_DataModel.ContentSnapshot current = DataModel.CaptureContentSnapshot();
+        MonEditor_DataModel.ContentSnapshot target = _contentRedoHistory.Pop();
+        _contentUndoHistory.Push(current);
+        string detail = DescribeContentChange(current, target);
+        RestoreContentHistory(target);
+        PublishHistoryStatus($"Redid: {detail}.");
+    }
+
+    public void UndoAll()
+    {
+        if (IsBattleScriptTabActive)
+        {
+            int count = DataModel.AiUndoCount;
+            while (DataModel.AiUndoCount > 0) UndoBattleScript();
+            PublishHistoryStatus($"Undid all: {count} Battle Script change{(count == 1 ? "" : "s")} since the last save.");
+            return;
+        }
+        if (_contentBaseline is null || !CanUndoAll) return;
+        int contentCount = _contentUndoHistory.Count;
+        while (_contentUndoHistory.Count > 0)
+            Undo();
+        PublishHistoryStatus($"Undid all: {contentCount} Monster data change{(contentCount == 1 ? "" : "s")} since the last save.");
+    }
+
+    private static string DescribeContentChange(
+        MonEditor_DataModel.ContentSnapshot before,
+        MonEditor_DataModel.ContentSnapshot after)
+    {
+        int status = CountChangedBytes(before.StatusBytes, after.StatusBytes);
+        int loot = CountChangedBytes(before.LootBytes, after.LootBytes);
+        string section = status > 0 && loot > 0 ? "Monster Status and Loot" :
+            status > 0 ? "Monster Status" : "Monster Loot";
+        return $"{section} ({status} status byte{(status == 1 ? "" : "s")}, {loot} loot byte{(loot == 1 ? "" : "s")} changed)";
+    }
+
+    private static int CountChangedBytes(byte[] left, byte[] right)
+    {
+        int count = Math.Abs(left.Length - right.Length);
+        for (int i = 0; i < Math.Min(left.Length, right.Length); i++) if (left[i] != right[i]) count++;
+        return count;
+    }
+
+    private void PublishHistoryStatus(string message)
+    {
+        if (IsBattleScriptTabActive)
+            _battleScriptHistoryStatus = message;
+        else
+            _contentHistoryStatus = message;
+        AiStatusText.Text = message;
+        FooterStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ClearHistoryStatus()
+    {
+        _contentHistoryStatus = "";
+        _battleScriptHistoryStatus = "";
+    }
+
+    private void RestoreContentHistory(MonEditor_DataModel.ContentSnapshot snapshot)
+    {
+        _restoringContentHistory = true;
+        try
+        {
+            DataModel.RestoreContentSnapshot(snapshot);
+            DataContext = null;
+            DataContext = DataModel;
+            TrackEditableObjectGraph(DataModel.MonsterStatSheet);
+            TrackEditableObjectGraph(DataModel.MonsterLoot);
+            _contentHistoryState = DataModel.CaptureContentSnapshot();
+            SetDirty(DataModel.HasUnsavedAiChanges ||
+                (_contentBaseline is not null && !SameContent(_contentBaseline, _contentHistoryState)));
+        }
+        finally { _restoringContentHistory = false; }
+        FooterStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void RecordContentChange()
+    {
+        if (_restoringContentHistory) return;
+        MonEditor_DataModel.ContentSnapshot current = DataModel.CaptureContentSnapshot();
+        if (_contentHistoryState is not null && !SameContent(_contentHistoryState, current))
+        {
+            _contentUndoHistory.Push(_contentHistoryState);
+            _contentRedoHistory.Clear();
+            _contentHistoryState = current;
+        }
+        SetDirty(true);
+        FooterStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static bool SameContent(MonEditor_DataModel.ContentSnapshot left,
+        MonEditor_DataModel.ContentSnapshot right) =>
+        left.StatusBytes.SequenceEqual(right.StatusBytes) && left.LootBytes.SequenceEqual(right.LootBytes);
 
 	private void UpdateBattleScriptCommandVisibility()
 	{
-		if (AiRevertButton == null || AiUndoButton == null || AiRedoButton == null ||
-			MonsterEditorTabs == null) return;
+		if (AiRevertButton == null || MonsterEditorTabs == null) return;
 		bool battleScriptSelected = MonsterEditorTabs.SelectedItem is TabItem tab &&
 			string.Equals(tab.Header?.ToString(), "Battle Script", StringComparison.Ordinal);
 		AiRevertButton.IsVisible = battleScriptSelected;
-		AiUndoButton.IsVisible = battleScriptSelected;
-		AiRedoButton.IsVisible = battleScriptSelected;
 	}
 
 	private void InitializeWorkerScopes(int preferredWorkerIndex = -1)
@@ -637,6 +778,9 @@ public partial class MonEditor_Control : UserControl
 		if (_updatingInlineMessage || e.Property != TextBlock.TextProperty) return;
 		string message = AiStatusText.Text ?? "";
 		if (string.IsNullOrWhiteSpace(message)) return;
+		bool isHistoryMessage =
+			message.StartsWith("Undid", StringComparison.OrdinalIgnoreCase) ||
+			message.StartsWith("Redid", StringComparison.OrdinalIgnoreCase);
 		if (message.StartsWith("ERROR", StringComparison.OrdinalIgnoreCase))
 			ShowMessageError(message["ERROR".Length..].TrimStart(':', ' '));
 		else if (message.Contains("warning", StringComparison.OrdinalIgnoreCase) ||
@@ -652,6 +796,9 @@ public partial class MonEditor_Control : UserControl
 			ShowInlineMessage("SUCCESS", "✓", message, Brushes.LimeGreen, "#15351F");
 		else
 			ShowInlineMessage("INFO", "●", message, Brush.Parse("#70B7FF"), "#142A3A");
+
+		if (isHistoryMessage)
+			FooterStateChanged?.Invoke(this, EventArgs.Empty);
 	}
 
 	private async void Button_ShowMessageDetails(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -773,12 +920,9 @@ public partial class MonEditor_Control : UserControl
 		_logicPreferencesLoaded = true;
 		try
 		{
-			if (!File.Exists(LogicPreferencesPath)) return;
-			AiEditorPreferences? preferences = JsonSerializer.Deserialize<AiEditorPreferences>(
-				File.ReadAllText(LogicPreferencesPath));
-			if (preferences == null) return;
-			_hideStatementsPreference = preferences.HideGroupedLogic;
-			_hideInstructionsPreference = preferences.HideDecodedInstructions;
+			MonsterAiSettings preferences = AppSettings_Service.Current.Editors.MonsterAi;
+			_hideStatementsPreference = preferences.HideStatements;
+			_hideInstructionsPreference = preferences.HideInstructions;
 			_suppressDeleteStatementWarning = preferences.SuppressDeleteStatementWarning;
 			_suppressUnsafePasteWarning = preferences.SuppressUnsafePasteWarning;
 		}
@@ -792,11 +936,12 @@ public partial class MonEditor_Control : UserControl
 	{
 		try
 		{
-			string? directory = Path.GetDirectoryName(LogicPreferencesPath);
-			if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-			var preferences = new AiEditorPreferences(_hideStatementsPreference, _hideInstructionsPreference,
-				_suppressDeleteStatementWarning, _suppressUnsafePasteWarning);
-			File.WriteAllText(LogicPreferencesPath, JsonSerializer.Serialize(preferences));
+			MonsterAiSettings preferences = AppSettings_Service.Current.Editors.MonsterAi;
+			preferences.HideStatements = _hideStatementsPreference;
+			preferences.HideInstructions = _hideInstructionsPreference;
+			preferences.SuppressDeleteStatementWarning = _suppressDeleteStatementWarning;
+			preferences.SuppressUnsafePasteWarning = _suppressUnsafePasteWarning;
+			AppSettings_Service.Save();
 		}
 		catch
 		{
@@ -917,7 +1062,14 @@ public partial class MonEditor_Control : UserControl
     {
         if (RunAiAction(DataModel.Save))
         {
+            _contentBaseline = DataModel.CaptureContentSnapshot();
+            _contentHistoryState = _contentBaseline;
+            _contentUndoHistory.Clear();
+            _contentRedoHistory.Clear();
+            DataModel.ClearAiHistory();
+            ClearHistoryStatus();
             SetDirty(false);
+            FooterStateChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
         return false;
@@ -939,7 +1091,7 @@ public partial class MonEditor_Control : UserControl
         {
             if (value is null || value is string || !visited.Add(value)) return;
             if (value is INotifyPropertyChanged observable)
-                observable.PropertyChanged += (_, _) => SetDirty(true);
+                observable.PropertyChanged += (_, _) => RecordContentChange();
             if (value is IEnumerable items)
             {
                 foreach (object? item in items) Track(item);
@@ -958,7 +1110,18 @@ public partial class MonEditor_Control : UserControl
         }
     }
 
-    private void Button_Save(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => SaveChanges();
+    private async void Button_Save(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is Main_Window owner &&
+            !await owner.EnsureActiveProjectRegisteredAsync()) return;
+        SaveChanges();
+    }
+
+    public void SaveToMaster(string masterPath)
+    {
+        if (!RunAiAction(() => DataModel.SaveToMaster(masterPath)))
+            throw new InvalidOperationException("Monster changes could not be prepared for Save As.");
+    }
 
     private void Button_ValidateAi(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -1257,6 +1420,9 @@ public partial class MonEditor_Control : UserControl
         }
     }
 
+    public void UndoBattleScript() => Button_UndoAi(null, new Avalonia.Interactivity.RoutedEventArgs());
+    public void RedoBattleScript() => Button_RedoAi(null, new Avalonia.Interactivity.RoutedEventArgs());
+
     private void Button_UndoAi(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         ClearValidationResult();
@@ -1272,10 +1438,10 @@ public partial class MonEditor_Control : UserControl
             RefreshNavigationAfterDocumentChange(preferredWorkerIndex: workerIndex,
                 preferredFunctionIndex: functionIndex);
             HighlightRestoredAiChange(beforeBytes, beforeCode);
-            AiStatusText.Text = DataModel.AiStatus;
+            PublishHistoryStatus(DataModel.AiStatus);
         }
         catch (Exception ex) { AiStatusText.Text = "ERROR: " + ex.Message; }
-        finally { _restoringAiHistory = false; }
+        finally { _restoringAiHistory = false; FooterStateChanged?.Invoke(this, EventArgs.Empty); }
     }
 
     private void Button_RedoAi(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -1293,11 +1459,10 @@ public partial class MonEditor_Control : UserControl
             RefreshNavigationAfterDocumentChange(preferredWorkerIndex: workerIndex,
                 preferredFunctionIndex: functionIndex);
             HighlightRestoredAiChange(beforeBytes, beforeCode);
+            PublishHistoryStatus(DataModel.AiStatus);
         }
         catch (Exception ex) { AiStatusText.Text = "ERROR: " + ex.Message; return; }
-        finally { _restoringAiHistory = false; }
-
-        AiStatusText.Text = DataModel.AiStatus;
+        finally { _restoringAiHistory = false; FooterStateChanged?.Invoke(this, EventArgs.Empty); }
     }
 
     private byte[] GetCurrentScriptCodeBytes()
@@ -1314,7 +1479,8 @@ public partial class MonEditor_Control : UserControl
             _selectedWorkerIndex, _selectedFunctionIndex);
 
     private void CompleteAiEdit(AiEditSnapshot before, int? preferredJumpIndex = null,
-        bool neonMintRawChange = false)
+        bool neonMintRawChange = false, bool preserveStructuredSelection = false,
+        int? structuredOffset = null, bool statementSelection = false)
     {
         if (DataModel.AiDocument != null &&
             !before.Bytes.SequenceEqual(DataModel.AiDocument.Bytes))
@@ -1324,12 +1490,60 @@ public partial class MonEditor_Control : UserControl
         _aiHexIsDirty = false;
         AiApplyHexButton.IsEnabled = false;
         AiInstructionList.IsEnabled = true;
+        FooterStateChanged?.Invoke(this, EventArgs.Empty);
         AiStatementList.IsEnabled = true;
         AiInstructionList.ItemsSource = DataModel.AiInstructions;
         AiStatementList.ItemsSource = DataModel.AiStatements;
         RefreshNavigationAfterDocumentChange(preferredJumpIndex,
             before.WorkerIndex, before.FunctionIndex);
-        HighlightRestoredAiChange(before.Bytes, before.ScriptCode, neonMintRawChange);
+        if (preserveStructuredSelection && structuredOffset.HasValue)
+            RestoreStructuredEditor(structuredOffset.Value, statementSelection);
+        else
+            HighlightRestoredAiChange(before.Bytes, before.ScriptCode, neonMintRawChange);
+    }
+
+    private void RestoreStructuredEditor(int offset, bool statementSelection)
+    {
+        if (DataModel.AiDocument == null)
+            return;
+
+        _suppressHexFocus = true;
+        try
+        {
+            if (statementSelection)
+            {
+                AtelStatement? statement = DataModel.AiDocument.Statements
+                    .FirstOrDefault(item => item.Offset == offset);
+                if (statement is null) return;
+                AiStatementList.SelectedItem = statement;
+                AiStatementList.ScrollIntoView(statement);
+                ActivateStatementEditor(statement);
+                Control? activeEditor = _groupOperandEditors
+                    .Select(editor => (Control?)editor.Options)
+                    .FirstOrDefault(options => options is not null) ??
+                    _groupOperandEditors.Select(editor => (Control?)editor.ValueText)
+                        .FirstOrDefault(text => text is not null);
+                if (activeEditor is not null)
+                    Dispatcher.UIThread.Post(() => activeEditor.Focus());
+            }
+            else
+            {
+                AtelInstruction? instruction = DataModel.AiDocument.Instructions
+                    .FirstOrDefault(item => item.Offset == offset);
+                if (instruction is null) return;
+                AiInstructionList.SelectedItem = instruction;
+                AiInstructionList.ScrollIntoView(instruction);
+                SelectStatementForInstruction(instruction);
+                ActivateInstructionEditor(instruction);
+                Control activeEditor = AiMeaningOptions.IsVisible
+                    ? AiMeaningOptions
+                    : AiFloatEditor.IsVisible
+                        ? AiFloatValueText
+                        : AiOperandText;
+                Dispatcher.UIThread.Post(() => activeEditor.Focus());
+            }
+        }
+        finally { _suppressHexFocus = false; }
     }
 
     private void HighlightRestoredAiChange(byte[] beforeBytes, byte[] beforeCode,
@@ -1363,10 +1577,27 @@ public partial class MonEditor_Control : UserControl
                 HighlightFloatReferences(changedFloatIndices, preferredOffset);
             }
         }
-        else
+        RestoreRecordedHistorySelection();
+    }
+
+    private void RestoreRecordedHistorySelection()
+    {
+        if (!DataModel.LastUndoneScriptOffset.HasValue)
+            return;
+        int offset = DataModel.LastUndoneScriptOffset.Value;
+        if (string.Equals(DataModel.LastUndoneSelectionKind, "Group",
+                StringComparison.OrdinalIgnoreCase))
         {
-            RestoreUndoSelection();
+            RestoreStructuredEditor(offset, true);
+            return;
         }
+        if (string.Equals(DataModel.LastUndoneSelectionKind, "Instruction",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            RestoreStructuredEditor(offset, false);
+            return;
+        }
+        RestoreUndoSelection();
     }
 
     private static (int Offset, int Length)? GetChangedByteRange(byte[] before, byte[] after)
@@ -1418,25 +1649,12 @@ public partial class MonEditor_Control : UserControl
     public async System.Threading.Tasks.Task RestoreOriginalAsync(Window owner)
     {
         ClearValidationResult();
-        if (!VanillaReference_Service.TryValidate(VanillaReference_Service.MasterPath, out _))
+        try
         {
-            IReadOnlyList<IStorageFolder> folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-            {
-                Title = "Select your clean, unedited FFX Original Game Files folder", AllowMultiple = false
-            });
-            if (folders.Count == 0) { AiStatusText.Text = "Restore Original was cancelled."; return; }
-            string? selectedPath = folders[0].TryGetLocalPath();
-            try
-            {
-                if (string.IsNullOrWhiteSpace(selectedPath)) throw new InvalidOperationException("No local folder was selected.");
-                VanillaReference_Service.Configure(selectedPath);
-            }
-            catch (Exception ex)
-            {
-                AiStatusText.Text = "ERROR: " + ex.Message;
-                return;
-            }
+            if (!await RecoverySource_Util.EnsureConfiguredAsync(owner))
+            { AiStatusText.Text = "Restore Original was cancelled."; return; }
         }
+        catch (Exception ex) { AiStatusText.Text = "ERROR: " + ex.Message; return; }
 
         string? vanillaPath = VanillaReference_Service.ResolveProjectFile(DataModel.MonsterPath);
         if (vanillaPath == null)
@@ -1446,20 +1664,89 @@ public partial class MonEditor_Control : UserControl
             return;
         }
 
-        const string explanation = "This will immediately replace the current monster file with its original, unedited game file.\n\n" +
-            "This includes the Battle Script and combat behavior, stats and attributes, elemental weaknesses/resistances/immunities/absorption, status resistances, AP and rewards, item drops and steals, commands and abilities, text, audio, and every other monster section.\n\n" +
-            "All current modifications to this monster will be discarded and the restored monster will be written to disk.";
-        bool confirmed = await AiRevertConfirmationWindow.Show(owner, "Restore Original Monster",
-            explanation, vanillaPath, "Restore and Save",
-            "Confirming will immediately write the original monster to the current project file.");
+        string activeTab = (MonsterEditorTabs.SelectedItem as TabItem)?.Header?.ToString() ?? "";
+        MonsterRecoverySection section = activeTab switch
+        {
+            "Status" => MonsterRecoverySection.Status,
+            "Loot" => MonsterRecoverySection.Loot,
+            "Battle Script" => MonsterRecoverySection.BattleScript,
+            _ => throw new InvalidOperationException("Select Status, Loot, or Battle Script before restoring.")
+        };
+        string sectionName = section == MonsterRecoverySection.BattleScript ? "Battle Script" : section.ToString();
+        var verifications = new List<RecoveryFileVerification>
+        {
+            VanillaReference_Service.VerifyProjectFile(DataModel.MonsterPath)
+        };
+        string? originalKernelPath = null;
+        string? projectKernelPath = null;
+        if (section == MonsterRecoverySection.Status)
+        {
+            projectKernelPath = Project_Service.Instance.GetPathKernelMonsterUs(
+                int.Parse(Path.GetFileNameWithoutExtension(DataModel.MonsterPath).AsSpan(1)));
+            RecoveryFileVerification kernelVerification = VanillaReference_Service.VerifyProjectFile(projectKernelPath);
+            if (kernelVerification.CanRestore)
+            {
+                verifications.Add(kernelVerification);
+                originalKernelPath = kernelVerification.SourcePath;
+            }
+        }
+        string preserved = section switch
+        {
+            MonsterRecoverySection.Status => "Loot and Battle Script",
+            MonsterRecoverySection.Loot => "Status and Battle Script",
+            _ => "Status and Loot"
+        };
+        string explanation = $"This will restore only the original {sectionName} section and immediately save it. " +
+            $"Saved {preserved} data will remain unchanged. Unsaved edits elsewhere in this monster are not part " +
+            $"of the saved file and will be discarded when the editor reloads. Unsaved changes in {sectionName} will be discarded." +
+            VanillaReference_Service.BuildRestoreTrustNotice(verifications);
+        bool hasWarning = verifications.Any(item => item.RequiresWarning);
+        bool confirmed = await AiRevertConfirmationWindow.Show(owner, $"Restore Original {sectionName}",
+            explanation, vanillaPath, hasWarning ? $"Restore Unverified {sectionName}" : $"Restore {sectionName}",
+            $"Confirming will write only original {sectionName} data to the current project monster.");
         if (!confirmed) { AiStatusText.Text = "Restore Original was cancelled."; return; }
         try
         {
-            DataModel.RestoreOriginalMonsterAndSave(vanillaPath);
-            RefreshAfterRevert(true);
-            AiStatusText.Text = DataModel.AiStatus;
+            var approvedUnverifiedPaths = verifications
+                .Where(item => item.RequiresWarning)
+                .Select(item => item.RelativePath)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            RecoveryFileVerification currentMonster =
+                VanillaReference_Service.VerifyProjectFile(DataModel.MonsterPath);
+            vanillaPath = VanillaReference_Service.ResolveAuthorizedProjectFile(
+                DataModel.MonsterPath,
+                approvedUnverifiedPaths.Contains(currentMonster.RelativePath));
+            if (projectKernelPath is not null && originalKernelPath is not null)
+            {
+                RecoveryFileVerification currentKernel =
+                    VanillaReference_Service.VerifyProjectFile(projectKernelPath);
+                originalKernelPath = VanillaReference_Service.ResolveAuthorizedProjectFile(
+                    projectKernelPath,
+                    approvedUnverifiedPaths.Contains(currentKernel.RelativePath));
+            }
+            DataModel.RestoreOriginalSectionAndSave(vanillaPath, section, originalKernelPath);
+            SectionRecoveryCompleted?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex) { AiStatusText.Text = "ERROR: " + ex.Message; }
+    }
+
+    public async System.Threading.Tasks.Task RestoreEntireOriginalAsync(Window owner)
+    {
+        if (!await RecoverySource_Util.EnsureConfiguredAsync(owner)) return;
+        string? vanillaPath = VanillaReference_Service.ResolveProjectFile(DataModel.MonsterPath);
+        if (vanillaPath is null) throw new InvalidOperationException("The matching original monster file is unavailable.");
+        RecoveryFileVerification verification = VanillaReference_Service.VerifyProjectFile(DataModel.MonsterPath);
+        string explanation = "This will replace every section of the selected monster, including Status, Loot, " +
+            "Battle Script, text, audio, and all other data. All modifications to this monster will be discarded." +
+            VanillaReference_Service.BuildRestoreTrustNotice([verification]);
+        bool confirmed = await AiRevertConfirmationWindow.Show(owner, "Restore Entire Original Monster",
+            explanation, vanillaPath, verification.RequiresWarning ? "Restore Entire Unverified File" : "Restore Entire Monster",
+            "Confirming will immediately replace the complete project monster file.");
+        if (!confirmed) return;
+        vanillaPath = VanillaReference_Service.ResolveAuthorizedProjectFile(
+            DataModel.MonsterPath, verification.RequiresWarning);
+        DataModel.RestoreOriginalSectionAndSave(vanillaPath, MonsterRecoverySection.EntireMonster);
+        SectionRecoveryCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     private void RefreshAfterRevert(bool refreshWholeMonster, bool preserveClipboard = false)
@@ -2240,7 +2527,9 @@ public partial class MonEditor_Control : UserControl
             AiMeaningOptions.IsVisible = false;
             AiReferenceTypeEditor.IsVisible = false;
             AiFloatEditor.IsVisible = false;
-            BuildGroupEditors(statement);
+            _buildingGroupEditors = true;
+            try { BuildGroupEditors(statement); }
+            finally { _buildingGroupEditors = false; }
         }
         finally
         {
@@ -2314,6 +2603,7 @@ public partial class MonEditor_Control : UserControl
                 {
                     if (referenceKind.SelectedItem is ActorReferenceKindChoice kind)
                         PopulateActorReferenceOptions(options, kind, instruction, selectFirst: true);
+                    QueueGroupDropdownApply();
                 };
             }
             else if (IsCommandRole(role))
@@ -2337,6 +2627,7 @@ public partial class MonEditor_Control : UserControl
                 {
                     if (referenceKind.SelectedItem is CommandEditorKindChoice kind)
                         PopulateCommandOptions(options, kind, instruction, selectFirst: true);
+                    QueueGroupDropdownApply();
                 };
             }
             else if (IsStatPropertyRole(role))
@@ -2360,6 +2651,7 @@ public partial class MonEditor_Control : UserControl
                 {
                     if (referenceKind.SelectedItem is StatPropertyGroupChoice group)
                         PopulateStatPropertyOptions(options, group, instruction, selectFirst: true);
+                    QueueGroupDropdownApply();
                 };
             }
             else if (choices.Length > 0)
@@ -2387,6 +2679,8 @@ public partial class MonEditor_Control : UserControl
 			if (referenceKind != null) field.Children.Add(referenceKind);
 			if (options != null) field.Children.Add(options);
 			if (valueText != null) field.Children.Add(valueText);
+			if (options != null)
+				options.SelectionChanged += (_, _) => QueueGroupDropdownApply();
 			fieldRow.Children.Add(field);
 			if (isJumpField)
 			{
@@ -2410,7 +2704,24 @@ public partial class MonEditor_Control : UserControl
         }
 		AiGroupEditorPanel.Children.Add(fieldRow);
         AiGroupEditorPanel.IsVisible = true;
-        AiGroupApplyButton.IsVisible = true;
+        AiGroupApplyButton.IsVisible = _groupOperandEditors.Any(editor => editor.ValueText != null);
+    }
+
+    private void QueueGroupDropdownApply()
+    {
+        if (_buildingGroupEditors || _autoApplyingStructuredEdit)
+            return;
+        _autoApplyingStructuredEdit = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                if (!_buildingGroupEditors &&
+                    AiStatementList.SelectedItem is AtelStatement)
+                    Button_ApplyGroupChanges(null, new Avalonia.Interactivity.RoutedEventArgs());
+            }
+            finally { _autoApplyingStructuredEdit = false; }
+        });
     }
 
     private bool TryBuildScaleGroupEditor(AtelStatement statement)
@@ -2485,6 +2796,8 @@ public partial class MonEditor_Control : UserControl
                 AtelInstruction current = DataModel.AiDocument.Instructions.First(instruction => instruction.Offset == editor.InstructionOffset);
                 if (editor.FloatIndex.HasValue && editor.ValueText != null)
                 {
+                    if (_autoApplyingStructuredEdit)
+                        continue;
                     DataModel.ApplyFloatConstant(editor.InstructionOffset, editor.FloatIndex.Value, editor.ValueText.Text ?? "");
                     changedFloatIndices.Add(editor.FloatIndex.Value);
                     continue;
@@ -2496,7 +2809,7 @@ public partial class MonEditor_Control : UserControl
                     else
                         replacements.Add(new AtelInstructionReplacement(editor.InstructionOffset, choice.Opcode, choice.Value));
                 }
-                else if (editor.ValueText != null)
+                else if (editor.ValueText != null && !_autoApplyingStructuredEdit)
                     replacements.Add(new AtelInstructionReplacement(editor.InstructionOffset, current.Opcode,
                         MonEditor_DataModel.ParseOperandText(editor.ValueText.Text ?? "")));
                 else
@@ -2504,7 +2817,9 @@ public partial class MonEditor_Control : UserControl
             }
             if (replacements.Count > 0)
                 DataModel.ApplyGroupedInstructions(replacements, statementOffset);
-            CompleteAiEdit(before, neonMintRawChange: changedFloatIndices.Count > 0);
+            CompleteAiEdit(before, neonMintRawChange: changedFloatIndices.Count > 0,
+                preserveStructuredSelection: _autoApplyingStructuredEdit,
+                structuredOffset: statementOffset, statementSelection: true);
             if (changedFloatIndices.Count > 0)
                 HighlightFloatReferences(changedFloatIndices, statementOffset);
             AiStatusText.Text = DataModel.AiStatus;
@@ -2849,6 +3164,7 @@ public partial class MonEditor_Control : UserControl
     {
         if (_updatingMeaningOptions || AiMeaningOptions.SelectedItem is not OperandChoice choice) return;
         AiOperandText.Text = $"0x{choice.Value:X4}";
+        QueueSingleStructuredApply();
     }
 
     private void AiMeaning_DropDownOpened(object? sender, EventArgs e)
@@ -2870,9 +3186,27 @@ public partial class MonEditor_Control : UserControl
         if (AiMeaningOptions.SelectedItem is OperandChoice choice)
             AiOperandText.Text = $"0x{choice.Value:X4}";
         _updatingMeaningOptions = false;
+        QueueSingleStructuredApply();
     }
 
 	private void Button_ApplyMeaning(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => ApplySingleInstructionEdit(false);
+
+    private void QueueSingleStructuredApply()
+    {
+        if (_autoApplyingStructuredEdit || _updatingMeaningOptions || _selectedInstruction is null)
+            return;
+        _autoApplyingStructuredEdit = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                if (_selectedInstruction is not null &&
+                    AiMeaningOptions.SelectedItem is OperandChoice)
+                    ApplySingleInstructionEdit(false);
+            }
+            finally { _autoApplyingStructuredEdit = false; }
+        });
+    }
 
 	private void Button_ApplyManualOperand(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => ApplySingleInstructionEdit(true);
 
@@ -2901,7 +3235,9 @@ public partial class MonEditor_Control : UserControl
                     selectedChoice.Opcode == 0x9F ? "variable target" : "literal target");
             else
                 edited = DataModel.ApplyInstructionOperand(_selectedInstruction.Offset, $"0x{selectedChoice.Value:X4}");
-            CompleteAiEdit(before);
+            CompleteAiEdit(before,
+                preserveStructuredSelection: _autoApplyingStructuredEdit,
+                structuredOffset: edited.Offset);
             AiStatusText.Text = DataModel.AiStatus;
         }
         catch (Exception ex)
@@ -3613,7 +3949,8 @@ public partial class MonEditor_Control : UserControl
 		int selectionVersion = ++_aiHexSelectionVersion;
         int selectionStart = HexCharacterIndex(byteOffset);
         int selectionEnd = HexCharacterIndex(byteOffset + byteLength - 1) + 2;
-        AiHexText.Focus();
+        if (!_suppressHexFocus)
+            AiHexText.Focus();
         // Apply after the button click/focus transition completes; otherwise Avalonia can clear the first selection.
         Dispatcher.UIThread.Post(() => Dispatcher.UIThread.Post(() =>
         {

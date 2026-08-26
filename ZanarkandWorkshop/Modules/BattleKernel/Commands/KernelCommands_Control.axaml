@@ -15,7 +15,7 @@
 	</UserControl.Resources>
 
 	<Grid RowDefinitions="Auto,*,Auto">
-		<WrapPanel Grid.Row="0" Margin="20,4,10,4">
+		<WrapPanel Grid.Row="0" Margin="20,4,10,4" Name="ViewOptionsPanel">
 			<CheckBox Margin="10,0,0,0" IsChecked="{Binding ShowDescription}">Name &amp; Description Editor</CheckBox>
 			<CheckBox Margin="10,0,0,0" IsChecked="{Binding ShowAnimations}">Animations</CheckBox>
 			<CheckBox Margin="10,0,0,0" IsChecked="{Binding ShowMenu}">Menu</CheckBox>
@@ -244,6 +244,16 @@
 				<DataGridCheckBoxColumn IsVisible="{Binding ShowMixBuffs}" Header="Always Critical" Binding="{Binding FlagSpecialBuffAlwaysCrit}"/>
 				<DataGridCheckBoxColumn IsVisible="{Binding ShowMixBuffs}" Header="Overdrive 150%" Binding="{Binding FlagSpecialBuffOverdrive150}"/>
 				<DataGridCheckBoxColumn IsVisible="{Binding ShowMixBuffs}" Header="Overdrive 200%" Binding="{Binding FlagSpecialBuffOverdrive200}"/>
+
+				<!-- Intentional overscroll space. This keeps the final visible data
+				     column away from the hard right edge when DataGrid makes it current. -->
+				<DataGridTemplateColumn Header="" Width="300" IsReadOnly="True" CanUserSort="False">
+					<DataGridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<Border Width="300" IsHitTestVisible="False"/>
+						</DataTemplate>
+					</DataGridTemplateColumn.CellTemplate>
+				</DataGridTemplateColumn>
 								
 			</DataGrid.Columns>
 
@@ -251,7 +261,7 @@
 		<ContentControl Grid.Row="2" MinHeight="50">
 		<Grid ColumnDefinitions="Auto,*,Auto" Margin="20,4">
 			<StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-				<TextBox VerticalAlignment="Center" Width="200"
+				<TextBox VerticalAlignment="Center" Width="200" Tag="EditorHistoryShortcuts"
 						 Watermark="Search..." Text="{Binding FilterText}" TextChanged="Filter_Changed"/>
 				<Button Click="Button_CloneAsNewCommand"
 						VerticalAlignment="Center"
@@ -269,6 +279,9 @@
 			<StackPanel Grid.Column="2" Orientation="Horizontal"
 						HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="8">
 				<Button Click="Button_LoadIngame" IsEnabled="{Binding ProcService.IsAlive}">Load Ingame</Button>
+				<Button Content="Undo" Click="Button_Undo" IsEnabled="{Binding CanUndo}"/>
+				<Button Content="Redo" Click="Button_Redo" IsEnabled="{Binding CanRedo}"/>
+				<Button Content="Undo All" Click="Button_UndoAll" IsEnabled="{Binding CanUndoAll}"/>
 				<Button Click="Button_Save" IsEnabled="{Binding IsDirty}">Save</Button>
 			</StackPanel>
 		</Grid>

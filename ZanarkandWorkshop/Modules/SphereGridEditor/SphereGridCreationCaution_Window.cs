@@ -3,19 +3,14 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using FFXProjectEditor.Services;
 using System;
-using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace FFXProjectEditor.Modules.SphereGridEditor;
 
 internal sealed class SphereGridCreationCaution_Window : Window
 {
-    private static readonly string PreferencesPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "FFXProjectEditor", "sphere-grid-editor-preferences.json");
-
     private readonly CheckBox _dontShowAgain = new()
     {
         Content = "Don't show this warning again"
@@ -23,6 +18,7 @@ internal sealed class SphereGridCreationCaution_Window : Window
 
     private SphereGridCreationCaution_Window(string structureName)
     {
+        string structureNameLower = structureName.ToLowerInvariant();
         Title = $"Create Sphere Grid {structureName}?";
         Width = 610;
         SizeToContent = SizeToContent.Height;
@@ -63,10 +59,9 @@ internal sealed class SphereGridCreationCaution_Window : Window
                         CornerRadius = new CornerRadius(3),
                         Child = new TextBlock
                         {
-                            Text = "CAUTION - Zanarkand Workshop cannot delete nodes or links. " +
-                                   "Undo can still remove created nodes and link before saving. " +
-                                   "After saving they will be a permanent part of your sphere grid. " +
-                                   "Use with caution.",
+                            Text = $"CAUTION - You can remove this newly created {structureNameLower} " +
+                                   "with Undo or Undo All, as long as you have not saved the grid. " +
+                                   $"Once the grid is saved, Zanarkand Workshop cannot delete the {structureNameLower}.",
                             Foreground = new SolidColorBrush(Color.Parse("#FFBE55")),
                             FontWeight = FontWeight.Bold,
                             TextWrapping = TextWrapping.Wrap
@@ -103,36 +98,19 @@ internal sealed class SphereGridCreationCaution_Window : Window
 
     private static bool IsSuppressed()
     {
-        try
-        {
-            if (!File.Exists(PreferencesPath))
-                return false;
-            SphereGridPreferences? preferences = JsonSerializer.Deserialize<SphereGridPreferences>(
-                File.ReadAllText(PreferencesPath));
-            return preferences?.SuppressCreationCaution == true;
-        }
-        catch
-        {
-            return false;
-        }
+        return AppSettings_Service.Current.Editors.SphereGrid.CreationCautionDismissed;
     }
 
     private static void SaveSuppressedPreference()
     {
         try
         {
-            string? directory = Path.GetDirectoryName(PreferencesPath);
-            if (!string.IsNullOrEmpty(directory))
-                Directory.CreateDirectory(directory);
-            File.WriteAllText(
-                PreferencesPath,
-                JsonSerializer.Serialize(new SphereGridPreferences(true)));
+            AppSettings_Service.Current.Editors.SphereGrid.CreationCautionDismissed = true;
+            AppSettings_Service.Save();
         }
         catch
         {
             // Preference persistence is optional and must never interrupt editing.
         }
     }
-
-    private sealed record SphereGridPreferences(bool SuppressCreationCaution);
 }

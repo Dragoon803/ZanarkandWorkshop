@@ -146,6 +146,12 @@ public partial class FormationPositionRow : ObservableObject
 
 public partial class BattleFormationEditor_DataModel : ObservableObject
 {
+    private sealed record HistorySnapshot(
+        byte[] Bytes,
+        FormationPositionKind? SelectedKind,
+        int SelectedIndex,
+        string Description = "Battle Formation change");
+
     private static readonly IReadOnlyDictionary<string, string> RegionByBattlePrefix =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -169,6 +175,15 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
     private readonly List<BattleFormationFileItem> _allFiles = new();
     private IReadOnlyList<BattlefieldAsset> _battlefieldAssets = [];
     private BattlefieldFormationIndex? _battlefieldIndex;
+    private byte[] _historyState = Array.Empty<byte>();
+    private readonly Stack<HistorySnapshot> _undoHistory = new();
+    private HistorySnapshot? _positionDragStartState;
+    private readonly Stack<HistorySnapshot> _redoHistory = new();
+    private bool _restoringHistory;
+    private bool _syncingCoordinateEditors;
+    private decimal? _editorX;
+    private decimal? _editorY;
+    private decimal? _editorZ;
 
     public ObservableCollection<BattleFormationFileItem> Files { get; } = new();
     public ObservableCollection<EnemySlotRow> EnemySlots { get; } = new();
@@ -195,6 +210,36 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
         slot.SelectedEnemy is { Id: not ushort.MaxValue });
     public bool HasSelectedPosition => SelectedPosition is not null;
     public bool CanResetSelectedPosition => SelectedPosition?.CanReset == true;
+    public bool CanUndo => _undoHistory.Count > 0;
+    public bool CanRedo => _redoHistory.Count > 0;
+    public bool CanUndoAll => IsDirty;
+    public decimal? EditorX
+    {
+        get => _editorX;
+        set
+        {
+            if (SetProperty(ref _editorX, value))
+                ApplyManualCoordinate('X', value);
+        }
+    }
+    public decimal? EditorY
+    {
+        get => _editorY;
+        set
+        {
+            if (SetProperty(ref _editorY, value))
+                ApplyManualCoordinate('Y', value);
+        }
+    }
+    public decimal? EditorZ
+    {
+        get => _editorZ;
+        set
+        {
+            if (SetProperty(ref _editorZ, value))
+                ApplyManualCoordinate('Z', value);
+        }
+    }
 
     public BattleFormationEditor_DataModel()
     {
@@ -285,7 +330,23 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
         foreach (FormationPositionRow position in Positions)
             position.AcceptCurrentPosition();
         IsDirty = false;
+        _historyState = output.ToArray();
+        _undoHistory.Clear();
+        _redoHistory.Clear();
+        NotifyHistoryState();
         OnPropertyChanged(nameof(CanResetSelectedPosition));
+    }
+
+    public void SaveToMaster(string masterPath)
+    {
+        if (_loaded is null || SelectedFile is null)
+            throw new InvalidOperationException("No battle formation is loaded.");
+        byte[] output = BuildOutput();
+        string target = Path.Combine(masterPath, "jppc", "battle", "btl", SelectedFile.RelativePath);
+        _ = BattleFormationParser.Read(output, target);
+        string temporary = target + ".zwtmp";
+        File.WriteAllBytes(temporary, output);
+        File.Move(temporary, target, true);
     }
 
     partial void OnFilterTextChanged(string value) => ApplyFilter();
@@ -296,14 +357,20 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
             Load(value);
     }
 
-    partial void OnSelectedPositionChanged(FormationPositionRow? value) =>
+    partial void OnSelectedPositionChanged(FormationPositionRow? value)
+    {
         OnPropertyChanged(nameof(CanResetSelectedPosition));
+        SyncCoordinateEditors();
+    }
 
     public void ResetSelectedPosition()
     {
         if (SelectedPosition?.CanReset != true)
             return;
+        HistorySnapshot before = CaptureSnapshot();
         SelectedPosition.ResetPosition();
+        SyncCoordinateEditors();
+        CommitAction(before, $"Reset {SelectedPosition.DisplayName}'s position.");
         OnPropertyChanged(nameof(CanResetSelectedPosition));
     }
 
@@ -362,6 +429,10 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
                 $"Header: 0x{parsed.PositionHeaderOffset:X}";
             HasLoadedFile = true;
             IsDirty = false;
+            _historyState = parsed.OriginalBytes.ToArray();
+            _undoHistory.Clear();
+            _redoHistory.Clear();
+            NotifyHistoryState();
             Status = $"Loaded {file.RelativePath} ({parsed.OriginalBytes.Length:N0} bytes).";
             OnPropertyChanged(nameof(ActiveEnemyCount));
         }
@@ -469,6 +540,7 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
     private void EnemySlotChanged(object? sender, EventArgs e)
     {
         if (_isLoading) return;
+        HistorySnapshot before = CaptureSnapshot(_historyState);
         int activeCount = EnemySlots.Count(slot =>
             slot.SelectedEnemy is { Id: not ushort.MaxValue });
         if (activeCount != _lastActiveEnemyCount && _loaded is { CanResizeMonsterTables: false })
@@ -501,13 +573,19 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
         _lastEnemyIds = EnemySlots.Select(slot =>
             slot.SelectedEnemy?.Id ?? ushort.MaxValue).ToArray();
         OnPropertyChanged(nameof(ActiveEnemyCount));
-        RefreshDirtyState();
+        CommitAction(before, "Changed the enemy party.");
     }
 
     private void PositionChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (ReferenceEquals(sender, SelectedPosition))
             OnPropertyChanged(nameof(CanResetSelectedPosition));
+        if (ReferenceEquals(sender, SelectedPosition) &&
+            e.PropertyName is nameof(FormationPositionRow.X) or
+                nameof(FormationPositionRow.Y) or nameof(FormationPositionRow.Z))
+            SyncCoordinateEditors();
+        if (_positionDragStartState is not null)
+            return;
         RefreshDirtyState();
     }
 
@@ -519,7 +597,191 @@ public partial class BattleFormationEditor_DataModel : ObservableObject
             IsDirty = true;
             return;
         }
-        IsDirty = !BuildOutput().SequenceEqual(_loaded.OriginalBytes);
+        byte[] current = BuildOutput();
+        IsDirty = !current.SequenceEqual(_loaded.OriginalBytes);
+        NotifyHistoryState();
+    }
+
+    public void BeginPositionDrag(FormationPositionRow position)
+    {
+        if (_isLoading || _restoringHistory || _loaded is null ||
+            !Positions.Contains(position) || _positionDragStartState is not null)
+            return;
+        SelectedPosition = position;
+        _positionDragStartState = CaptureSnapshot();
+    }
+
+    public void PreviewPositionDrag(FormationPositionRow position, float x, float z)
+    {
+        if (_positionDragStartState is null || _isLoading || _restoringHistory ||
+            !Positions.Contains(position))
+            return;
+        position.X = NormalizeCoordinate(x);
+        position.Z = NormalizeCoordinate(z);
+        SyncCoordinateEditors();
+    }
+
+    public void CompletePositionDrag(FormationPositionRow position)
+    {
+        if (_positionDragStartState is null)
+            return;
+
+        HistorySnapshot before = _positionDragStartState;
+        _positionDragStartState = null;
+        SyncCoordinateEditors();
+        CommitAction(before, $"Moved {position.DisplayName}.");
+    }
+
+    public void CancelPositionDrag(FormationPositionRow position)
+    {
+        if (_positionDragStartState is null)
+            return;
+        HistorySnapshot before = _positionDragStartState;
+        _positionDragStartState = null;
+        RestoreHistory(before);
+        Status = $"Cancelled moving {position.DisplayName}.";
+    }
+
+    public void Undo()
+    {
+        if (_undoHistory.Count == 0) return;
+        HistorySnapshot snapshot = _undoHistory.Pop();
+        _redoHistory.Push(CaptureSnapshot() with { Description = snapshot.Description });
+        RestoreHistory(snapshot);
+        Status = $"Undid: {snapshot.Description}";
+    }
+
+    public void Redo()
+    {
+        if (_redoHistory.Count == 0) return;
+        HistorySnapshot snapshot = _redoHistory.Pop();
+        _undoHistory.Push(CaptureSnapshot() with { Description = snapshot.Description });
+        RestoreHistory(snapshot);
+        Status = $"Redid: {snapshot.Description}";
+    }
+
+    public void UndoAll()
+    {
+        if (_loaded is null || !IsDirty) return;
+        int count = _undoHistory.Count;
+        while (_undoHistory.Count > 0)
+            Undo();
+        NotifyHistoryState();
+        Status = $"Undid all: {count} Battle Formation change{(count == 1 ? "" : "s")} since the last save.";
+    }
+
+    private void RestoreHistory(HistorySnapshot snapshot)
+    {
+        if (_loaded is null || SelectedFile is null) return;
+        BattleFormationFile parsed = BattleFormationParser.Read(snapshot.Bytes, SelectedFile.FullPath);
+        _restoringHistory = true;
+        _isLoading = true;
+        try
+        {
+            for (int i = 0; i < EnemySlots.Count; i++)
+            {
+                ushort id = parsed.EnemyIds[i];
+                EnemySlots[i].SelectedEnemy = EnemyOptions.FirstOrDefault(option => option.Id == id) ??
+                    new EnemyOption(id, "Unknown enemy");
+            }
+            foreach (FormationPositionRow oldRow in Positions)
+                oldRow.PropertyChanged -= PositionChanged;
+            Positions.Clear();
+            foreach (FormationPosition position in parsed.Positions)
+            {
+                var row = new FormationPositionRow(position);
+                row.PropertyChanged += PositionChanged;
+                Positions.Add(row);
+            }
+            _lastActiveEnemyCount = EnemySlots.Count(slot =>
+                slot.SelectedEnemy is { Id: not ushort.MaxValue });
+            _lastEnemyIds = EnemySlots.Select(slot =>
+                slot.SelectedEnemy?.Id ?? ushort.MaxValue).ToArray();
+            UpdateMonsterPositionNames();
+            RefreshGridPositions();
+            SelectedPosition = snapshot.SelectedKind is null
+                ? null
+                : GridPositions.FirstOrDefault(position =>
+                    position.Kind == snapshot.SelectedKind &&
+                    position.Index == snapshot.SelectedIndex);
+        }
+        finally
+        {
+            _isLoading = false;
+            _restoringHistory = false;
+        }
+        _historyState = BuildOutput();
+        IsDirty = !_historyState.SequenceEqual(_loaded.OriginalBytes);
+        OnPropertyChanged(nameof(ActiveEnemyCount));
+        NotifyHistoryState();
+    }
+
+    private HistorySnapshot CaptureSnapshot(byte[]? bytes = null) => new(
+        (bytes ?? BuildOutput()).ToArray(),
+        SelectedPosition?.Kind,
+        SelectedPosition?.Index ?? -1);
+
+    private void CommitAction(HistorySnapshot before, string message)
+    {
+        if (_isLoading || _restoringHistory || _loaded is null || ActiveEnemyCount == 0)
+            return;
+        byte[] after = BuildOutput();
+        if (!before.Bytes.SequenceEqual(after))
+        {
+            _undoHistory.Push(before with { Description = message.TrimEnd('.') });
+            _redoHistory.Clear();
+            _historyState = after.ToArray();
+            IsDirty = !after.SequenceEqual(_loaded.OriginalBytes);
+            Status = message;
+        }
+        NotifyHistoryState();
+    }
+
+    private void ApplyManualCoordinate(char axis, decimal? value)
+    {
+        if (_syncingCoordinateEditors || _isLoading || _restoringHistory ||
+            _positionDragStartState is not null || SelectedPosition is null || value is null)
+            return;
+        float coordinate = NormalizeCoordinate((float)value.Value);
+        float current = axis switch
+        {
+            'X' => SelectedPosition.X,
+            'Y' => SelectedPosition.Y,
+            _ => SelectedPosition.Z
+        };
+        if (current == coordinate)
+            return;
+        HistorySnapshot before = CaptureSnapshot();
+        switch (axis)
+        {
+            case 'X': SelectedPosition.X = coordinate; break;
+            case 'Y': SelectedPosition.Y = coordinate; break;
+            default: SelectedPosition.Z = coordinate; break;
+        }
+        SyncCoordinateEditors();
+        CommitAction(before, $"Changed {SelectedPosition.DisplayName}'s {axis} coordinate.");
+    }
+
+    private void SyncCoordinateEditors()
+    {
+        _syncingCoordinateEditors = true;
+        try
+        {
+            EditorX = SelectedPosition is null ? null : (decimal)SelectedPosition.X;
+            EditorY = SelectedPosition is null ? null : (decimal)SelectedPosition.Y;
+            EditorZ = SelectedPosition is null ? null : (decimal)SelectedPosition.Z;
+        }
+        finally { _syncingCoordinateEditors = false; }
+    }
+
+    private static float NormalizeCoordinate(float value) =>
+        (float)Math.Round(value, 3, MidpointRounding.AwayFromZero);
+
+    private void NotifyHistoryState()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        OnPropertyChanged(nameof(CanUndoAll));
     }
 
     private void SyncMonsterPositionsToEnemyParty()

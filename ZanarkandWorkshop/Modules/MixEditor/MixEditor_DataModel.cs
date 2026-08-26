@@ -21,6 +21,13 @@ internal partial class MixEditor_DataModel : ObservableObject
 
     private byte[] _file = Array.Empty<byte>();
     private byte[] _baselineFile = Array.Empty<byte>();
+    private byte[] _historyState = Array.Empty<byte>();
+    private readonly Stack<byte[]> _undoHistory = new();
+    private readonly Stack<byte[]> _redoHistory = new();
+    private bool _restoringHistory;
+    public bool CanUndo => _undoHistory.Count > 0;
+    public bool CanRedo => _redoHistory.Count > 0;
+    public bool CanUndoAll => IsDirty;
     public List<MixRecipeEntry> AllRecipes { get; } = new();
     public ObservableCollection<MixRecipeEntry> DisplayedRecipes { get; } = new();
     public IReadOnlyList<MixResultOption> ResultOptions { get; private set; } =
@@ -31,6 +38,7 @@ internal partial class MixEditor_DataModel : ObservableObject
 
     [ObservableProperty] private string filterText = "";
     [ObservableProperty] private string status = "";
+    [ObservableProperty] private string historyStatus = "";
     [ObservableProperty] private bool isDirty;
 
     public MixEditor_DataModel() => Load();
@@ -38,10 +46,17 @@ internal partial class MixEditor_DataModel : ObservableObject
     public void Load()
     {
         string path = Project_Service.Instance.Path_KernelMixRecipes;
-        _file = File.ReadAllBytes(path);
-        _baselineFile = _file.ToArray();
+        LoadFromBytes(File.ReadAllBytes(path), true);
+    }
+
+    private void LoadFromBytes(byte[] bytes, bool resetBaseline)
+    {
+        _file = bytes.ToArray();
+        if (resetBaseline)
+            _baselineFile = _file.ToArray();
         ValidateFile(_file);
-        ResultOptions = LoadResultOptions();
+        if (ResultOptions.Count == 0)
+            ResultOptions = LoadResultOptions();
         OnPropertyChanged(nameof(ResultOptions));
 
         AllRecipes.Clear();
@@ -52,8 +67,7 @@ internal partial class MixEditor_DataModel : ObservableObject
                 var recipe = new MixRecipeEntry(
                     IngredientOptions[low], IngredientOptions[high], _file, ResultOptions,
                     IngredientOptions);
-                recipe.PropertyChanged += (_, _) =>
-                    IsDirty = !_file.SequenceEqual(_baselineFile);
+                recipe.PropertyChanged += (_, _) => TrackHistory();
                 AllRecipes.Add(recipe);
             }
         }
@@ -62,6 +76,15 @@ internal partial class MixEditor_DataModel : ObservableObject
         Status = $"Loaded {AllRecipes.Count:N0} recipes using {IngredientCount} ingredients and " +
                  $"{ResultOptions.Count} Mix results.";
         IsDirty = false;
+        _historyState = _file.ToArray();
+        IsDirty = !_file.SequenceEqual(_baselineFile);
+        if (resetBaseline)
+        {
+            _undoHistory.Clear();
+            _redoHistory.Clear();
+            HistoryStatus = "";
+        }
+        NotifyHistoryState();
     }
 
     public void ApplyFilter()
@@ -96,7 +119,22 @@ internal partial class MixEditor_DataModel : ObservableObject
             throw new InvalidDataException("The saved Mix recipe file did not verify byte-for-byte.");
         Status = EditorSaveStatus.Success("Rikku Mix");
         _baselineFile = _file.ToArray();
+        _historyState = _file.ToArray();
+        _undoHistory.Clear();
+        _redoHistory.Clear();
         IsDirty = false;
+        HistoryStatus = "";
+        NotifyHistoryState();
+    }
+
+    public void SaveToMaster(string masterPath)
+    {
+        ValidateFile(_file);
+        foreach (MixRecipeEntry recipe in AllRecipes) recipe.Validate(ResultOptions);
+        string path = Path.Combine(masterPath, "jppc", "battle", "kernel", "prepare.bin");
+        File.WriteAllBytes(path, _file);
+        if (!File.ReadAllBytes(path).SequenceEqual(_file))
+            throw new InvalidDataException("The Save As Mix recipe file did not verify byte-for-byte.");
     }
 
     public void RestoreOriginalAndSave(string originalPath)
@@ -162,6 +200,73 @@ internal partial class MixEditor_DataModel : ObservableObject
         Item_Dictionary.Instance.TryGetValue((ushort)index, out string? name)
             ? name
             : $"Item {index}";
+
+    private void TrackHistory()
+    {
+        if (!_restoringHistory && !_historyState.SequenceEqual(_file))
+        {
+            _undoHistory.Push(_historyState.ToArray());
+            _redoHistory.Clear();
+            _historyState = _file.ToArray();
+        }
+        IsDirty = !_file.SequenceEqual(_baselineFile);
+        NotifyHistoryState();
+    }
+
+    public void Undo()
+    {
+        if (_undoHistory.Count == 0) return;
+        byte[] current = _file.ToArray();
+        byte[] target = _undoHistory.Pop();
+        _redoHistory.Push(current);
+        int changed = CountChangedBytes(target, current);
+        RestoreHistory(target);
+        HistoryStatus = $"Undid: Rikku Mix recipe data ({changed} byte{(changed == 1 ? "" : "s")} changed).";
+    }
+
+    public void Redo()
+    {
+        if (_redoHistory.Count == 0) return;
+        byte[] current = _file.ToArray();
+        byte[] target = _redoHistory.Pop();
+        _undoHistory.Push(current);
+        int changed = CountChangedBytes(current, target);
+        RestoreHistory(target);
+        HistoryStatus = $"Redid: Rikku Mix recipe data ({changed} byte{(changed == 1 ? "" : "s")} changed).";
+    }
+
+    public void UndoAll()
+    {
+        if (!IsDirty) return;
+        int count = _undoHistory.Count;
+        while (_undoHistory.Count > 0)
+            Undo();
+        NotifyHistoryState();
+        HistoryStatus = $"Undid all: {count} Rikku Mix change{(count == 1 ? "" : "s")} since the last save.";
+    }
+
+    private static int CountChangedBytes(byte[] left, byte[] right)
+    {
+        int count = Math.Abs(left.Length - right.Length);
+        for (int i = 0; i < Math.Min(left.Length, right.Length); i++) if (left[i] != right[i]) count++;
+        return count;
+    }
+
+    private void RestoreHistory(byte[] snapshot)
+    {
+        _restoringHistory = true;
+        try { LoadFromBytes(snapshot, false); }
+        finally { _restoringHistory = false; }
+        _historyState = _file.ToArray();
+        NotifyHistoryState();
+    }
+
+    private void NotifyHistoryState()
+    {
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        OnPropertyChanged(nameof(CanUndoAll));
+    }
 
 }
 

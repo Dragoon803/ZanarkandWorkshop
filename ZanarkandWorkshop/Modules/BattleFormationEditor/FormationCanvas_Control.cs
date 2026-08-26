@@ -15,6 +15,10 @@ namespace FFXProjectEditor.Modules.BattleFormationEditor;
 
 public sealed class FormationCanvas_Control : Control
 {
+    public event Action<FormationPositionRow>? PositionDragStarted;
+    public event Action<FormationPositionRow, float, float>? PositionDragPreviewRequested;
+    public event Action<FormationPositionRow>? PositionDragCompleted;
+    public event Action<FormationPositionRow>? PositionDragCanceled;
     // The normal editing camera matches the former 400% view. This keeps the
     // position markers comfortably separated while lower percentages remain
     // available for viewing the complete battlefield footprint.
@@ -95,6 +99,7 @@ public sealed class FormationCanvas_Control : Control
         PointerPressed += OnPointerPressed;
         PointerMoved += OnPointerMoved;
         PointerReleased += OnPointerReleased;
+        PointerCaptureLost += OnPointerCaptureLost;
         PointerExited += OnPointerExited;
         PointerWheelChanged += OnPointerWheelChanged;
         ToolTip.SetShowDelay(this, 150);
@@ -318,22 +323,33 @@ public sealed class FormationCanvas_Control : Control
             if (Distance(pointer, _dragStartPoint) < 4)
                 return;
             _dragStarted = true;
+            PositionDragStarted?.Invoke(_dragged);
         }
         Point target = pointer + _dragOffset;
         var boundedPointer = new Point(
             Math.Clamp(target.X, 0, Bounds.Width),
             Math.Clamp(target.Y, 0, Bounds.Height));
         (float x, float z) = _transform.ToWorld(boundedPointer);
-        _dragged.X = x;
-        _dragged.Z = z;
+        PositionDragPreviewRequested?.Invoke(_dragged, x, z);
     }
 
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        if (_dragStarted && _dragged is not null)
+            PositionDragCompleted?.Invoke(_dragged);
         _dragged = null;
         _dragStarted = false;
         _panning = false;
         e.Pointer.Capture(null);
+    }
+
+    private void OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        if (_dragStarted && _dragged is not null)
+            PositionDragCanceled?.Invoke(_dragged);
+        _dragged = null;
+        _dragStarted = false;
+        _panning = false;
     }
 
     private void OnPointerExited(object? sender, PointerEventArgs e) =>

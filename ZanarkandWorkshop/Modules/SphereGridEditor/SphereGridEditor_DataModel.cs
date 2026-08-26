@@ -22,8 +22,8 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     [ObservableProperty] private IReadOnlyDictionary<int, SphereGridCharacter>
         colorOverrides = new Dictionary<int, SphereGridCharacter>();
     [ObservableProperty] private bool isDirty;
-    [ObservableProperty] private bool hasPreview;
     [ObservableProperty] private string status = "";
+    [ObservableProperty] private string historyStatus = "";
     [ObservableProperty] private SphereGridNodeTypeInfo? findNodeType;
     [ObservableProperty] private SphereGridNodeTypeInfo? replacementNodeType;
     [ObservableProperty] private string findReplaceStatus = "Choose a node type to find.";
@@ -37,13 +37,14 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     [ObservableProperty] private decimal? pendingLinkNodeA;
     [ObservableProperty] private decimal? pendingLinkNodeB;
     [ObservableProperty] private decimal? pendingLinkAnchor;
-    [ObservableProperty] private bool canApplyExperimentalLink;
+    [ObservableProperty] private bool canCommitSelectedLink;
     [ObservableProperty] private bool experimentalLinkHighlightEnabled;
     [ObservableProperty] private bool hasSelectedExperimentalLink;
     private bool _updatingLinkControls;
+    private bool _updatingNodeControls;
     private bool _updatingCoordinateControls;
-    private int? _previewNodeIndex;
-    private bool _restoringSelection;
+    private EditSnapshot? _dragStartSnapshot;
+    private int _dragNodeIndex = -1;
     private int _lastFindIndex = -1;
 
     public IReadOnlyList<SphereGridNodeTypeInfo> NodeTypeOptions =>
@@ -77,13 +78,13 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         FindNodeType.Id != ReplacementNodeType.Id;
     public bool CanReplaceSelectedNode => HasSelectedNode && CanReplaceNodeTypes;
     public bool CanAddExperimentalNode =>
-        SelectedNode is not null && !HasPreview && Graph is not null &&
+        SelectedNode is not null && Graph is not null &&
         Graph.File.Nodes.Count < SphereGridValidator.MaximumGameCompatibleNodes;
     public bool CanAddExperimentalLink
     {
         get
         {
-            if (Graph is null || HasPreview ||
+            if (Graph is null ||
                 Graph.File.Links.Count >= CurrentGameCompatibleLinkLimit)
                 return false;
             if (PendingLinkNodeA is not decimal pendingA ||
@@ -106,7 +107,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     }
     public int CurrentGameCompatibleLinkLimit =>
         SphereGridValidator.GetGameCompatibleLinkLimit(SelectedGrid);
-    public bool CanCreateExperimentalLink => Graph is not null && !HasPreview &&
+    public bool CanCreateExperimentalLink => Graph is not null &&
         Graph.File.Links.Count < CurrentGameCompatibleLinkLimit;
     public string NodeCapacityText => Graph is null ? "Nodes: 0 / 860" :
         $"Nodes: {Graph.File.Nodes.Count} / {SphereGridValidator.MaximumGameCompatibleNodes:N0}";
@@ -163,6 +164,9 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             message = "Node A and Node B must be different nodes.";
             return false;
         }
+        if (!TryValidateNewLinkEndpoint(nodeA, out message) ||
+            !TryValidateNewLinkEndpoint(nodeB, out message))
+            return false;
         if (anchor != ushort.MaxValue && (anchor < 0 || anchor >= Graph.File.Nodes.Count))
         {
             message = $"Use a node number between 0 and {Graph.File.Nodes.Count - 1}, or 65535 for a straight link.";
@@ -181,6 +185,27 @@ public partial class SphereGridEditor_DataModel : ObservableObject
                       $"{SphereGridValidator.MaximumUsableLinksPerNode} links on one node.";
             return false;
         }
+        message = "";
+        return true;
+    }
+
+    public bool TryValidateNewLinkEndpoint(int nodeIndex, out string message)
+    {
+        if (Graph is null || nodeIndex < 0 || nodeIndex >= Graph.File.Nodes.Count)
+        {
+            message = "That node is not available in the current Sphere Grid.";
+            return false;
+        }
+
+        int connectionCount = Graph.File.Links.Count(link =>
+            link.NodeAIndex == nodeIndex || link.NodeBIndex == nodeIndex);
+        if (connectionCount >= SphereGridValidator.MaximumUsableLinksPerNode)
+        {
+            message = $"Node #{nodeIndex} already has the maximum " +
+                      $"{SphereGridValidator.MaximumUsableLinksPerNode} links.";
+            return false;
+        }
+
         message = "";
         return true;
     }
@@ -208,30 +233,20 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     public string ExperimentalConnectionSummary => SelectedNode is null
         ? "No connection node selected"
         : $"Node #{SelectedNode.Index}  ·  Cluster {SelectedNode.ClusterIndex}";
-    public bool CanApplySelectedNode
-    {
-        get
-        {
-            if (SelectedNode is null || PendingNodeType is null ||
-                PendingCharacter is null || PendingX is null || PendingY is null ||
-                !_sessions.TryGetValue(SelectedGrid, out EditSession? session))
-                return false;
-            SphereGridNode current = session.Graph.File.Nodes[SelectedNode.Index];
-            short targetX = (short)Math.Clamp(
-                decimal.ToInt32(decimal.Round(PendingX.Value)), short.MinValue, short.MaxValue);
-            short targetY = (short)Math.Clamp(
-                decimal.ToInt32(decimal.Round(PendingY.Value)), short.MinValue, short.MaxValue);
-            SphereGridCharacter currentCharacter = session.ColorOverrides.TryGetValue(
-                SelectedNode.Index, out SphereGridCharacter character)
-                ? character
-                : session.Graph.Routes.GetCharacter(SelectedNode.Index);
-            return current.Type != PendingNodeType.Id || current.X != targetX ||
-                   current.Y != targetY || currentCharacter != PendingCharacter;
-        }
-    }
-    public bool CanUndo => HasPreview ||
-        (_sessions.TryGetValue(SelectedGrid, out EditSession? session) && session.UndoHistory.Count > 0);
-    public bool CanUndoAll => HasPreview || IsDirty;
+    public bool CanUndo =>
+        _sessions.TryGetValue(SelectedGrid, out EditSession? session) &&
+        session.UndoHistory.Count > 0;
+    public bool CanRedo =>
+        _sessions.TryGetValue(SelectedGrid, out EditSession? session) &&
+        session.RedoHistory.Count > 0;
+    public bool CanUndoAll => IsDirty;
+    public bool IsGridDirty(SphereGridKind kind) =>
+        _sessions.TryGetValue(kind, out EditSession? session) &&
+        (session.DirtyNodes.Count > 0 || session.DirtyLinks.Count > 0 ||
+         session.Graph.File.Nodes.Count != session.SourceFile.Nodes.Count ||
+         session.Graph.File.Links.Count != session.SourceFile.Links.Count);
+    public bool HasAnyPendingChanges =>
+        IsDirty || _sessions.Keys.Any(IsGridDirty);
     public bool HasExperimentalStructureChanges =>
         _sessions.TryGetValue(SelectedGrid, out EditSession? session) &&
         (session.Graph.File.Nodes.Count != session.SourceFile.Nodes.Count ||
@@ -275,6 +290,11 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             File.Copy(originalFiles.ContentPath, projectFiles.ContentPath, true);
         }
 
+        SphereGridColorMetadata.Delete(
+            Project_Service.Instance.Path_ZanarkandWorkshopMetadata);
+        SphereGridColorMetadata.Delete(
+            Project_Service.Instance.Path_LegacyProjectMetadata);
+        SphereGridColorMetadata.Delete(Project_Service.Instance.Path_SphereGrid);
         _sessions.Clear();
         Load(selectedKind);
         Status = "Restored and reloaded the Original, Standard, and Expert Sphere Grids.";
@@ -282,18 +302,40 @@ public partial class SphereGridEditor_DataModel : ObservableObject
 
     public void Load(SphereGridKind kind)
     {
+        if (Project_Service.Instance.IsProjectRegistered)
+            SphereGridColorMetadata.MigrateLegacyLocation(
+                Project_Service.Instance.Path_ZanarkandWorkshopMetadata,
+                Project_Service.Instance.Path_PathHashedProjectMetadata);
+        SphereGridColorMetadata.MigrateLegacyLocation(
+            Project_Service.Instance.Path_ZanarkandWorkshopMetadata,
+            Project_Service.Instance.Path_LegacyProjectMetadata);
+        SphereGridColorMetadata.MigrateLegacyLocation(
+            Project_Service.Instance.Path_ZanarkandWorkshopMetadata,
+            Project_Service.Instance.Path_SphereGrid);
         if (!_sessions.TryGetValue(kind, out EditSession? session))
         {
             SphereGridFileSet files = SphereGridFileSet.FromDirectory(
                 Project_Service.Instance.Path_SphereGrid, kind);
             SphereGridFile file = SphereGridParser.Read(files);
-            session = new EditSession(file, new SphereGridGraph(file));
+            var graph = new SphereGridGraph(file);
+            session = new EditSession(file, graph);
+            foreach ((int nodeIndex, SphereGridCharacter character) in
+                     SphereGridColorMetadata.Load(
+                         Project_Service.Instance.Path_ZanarkandWorkshopMetadata, kind))
+            {
+                if ((uint)nodeIndex < (uint)file.Nodes.Count &&
+                    file.Nodes[nodeIndex].IsVisible &&
+                    character != SphereGridCharacter.Unassigned &&
+                    character != graph.Routes.GetCharacter(nodeIndex))
+                {
+                    session.ColorOverrides[nodeIndex] = character;
+                    session.SavedColorOverrides[nodeIndex] = character;
+                }
+            }
             _sessions.Add(kind, session);
         }
 
         Graph = session.Graph;
-        _previewNodeIndex = null;
-        HasPreview = false;
         ColorOverrides =
             new Dictionary<int, SphereGridCharacter>(session.ColorOverrides);
         IsDirty = session.DirtyNodes.Count > 0 || session.DirtyLinks.Count > 0;
@@ -301,10 +343,12 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         SelectedNode = null;
         ClearLinkSelection();
         OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
         OnPropertyChanged(nameof(CanUndoAll));
         OnPropertyChanged(nameof(HasExperimentalStructureChanges));
         _lastFindIndex = -1;
         RefreshFindReplaceStatus();
+        HistoryStatus = "";
         UpdateStatus();
     }
 
@@ -338,7 +382,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             return null;
 
         EditSession session = _sessions[SelectedGrid];
-        session.UndoHistory.Push(CaptureSnapshot(session));
+        RecordUndoCheckpoint(session, description: $"created node #{session.Graph.File.Nodes.Count} ({NewNodeType.Name})");
         SphereGridNode connection = session.Graph.File.Nodes[SelectedNode.Index];
         var nodes = session.Graph.File.Nodes.ToList();
         int nodeIndex = nodes.Count;
@@ -388,7 +432,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         if (!CanAddExperimentalLink || Graph is null)
             return null;
         EditSession session = _sessions[SelectedGrid];
-        session.UndoHistory.Push(CaptureSnapshot(session));
+        RecordUndoCheckpoint(session, description: $"created link #{session.Graph.File.Links.Count}");
         var links = session.Graph.File.Links.ToList();
         int linkIndex = links.Count;
         int linkBase = SphereGridParser.HeaderSize +
@@ -407,6 +451,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             session.Graph.File.Nodes,
             links);
         session.Graph = new SphereGridGraph(expanded, session.Graph.Routes);
+        session.DirtyLinks.Add(linkIndex);
         Graph = session.Graph;
         IsDirty = true;
         SelectExperimentalLink(linkIndex);
@@ -424,15 +469,17 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     {
         if (!TryValidateNewLink(nodeA, nodeB, anchor, out _))
             return null;
+        _updatingLinkControls = true;
         PendingLinkNodeA = nodeA;
         PendingLinkNodeB = nodeB;
         PendingLinkAnchor = anchor;
+        _updatingLinkControls = false;
         return AddExperimentalLink();
     }
 
-    public void ApplyExperimentalLink()
+    private void CommitSelectedLinkEdit()
     {
-        if (!CanApplyExperimentalLink || Graph is null)
+        if (!CanCommitSelectedLink || Graph is null)
             return;
         EditSession session = _sessions[SelectedGrid];
         int linkIndex = decimal.ToInt32(decimal.Round(SelectedExperimentalLinkIndex));
@@ -451,7 +498,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             session.Graph.File, session.Graph.File.Clusters,
             session.Graph.File.Nodes, links);
         SphereGridValidator.ValidateReferences(edited);
-        session.UndoHistory.Push(CaptureSnapshot(session));
+        RecordUndoCheckpoint(session, description: $"edited link #{linkIndex}: {nodeA} ↔ {nodeB}, anchor {anchor}");
         session.Graph = new SphereGridGraph(edited, session.Graph.Routes);
         session.DirtyLinks.Add(linkIndex);
         Graph = session.Graph;
@@ -459,7 +506,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         RefreshExperimentalLinkState();
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(CanUndoAll));
-        ExperimentalStatus = $"Applied link #{linkIndex}: {nodeA} ↔ {nodeB}, anchor {anchor}.";
+        ExperimentalStatus = $"Updated link #{linkIndex}: {nodeA} ↔ {nodeB}, anchor {anchor}.";
         UpdateStatus(ExperimentalStatus);
     }
 
@@ -468,7 +515,6 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         if (SelectedNode is null || ReplacementNodeType is null)
             return false;
         PendingNodeType = ReplacementNodeType;
-        ApplySelectedNode();
         RefreshFindReplaceStatus();
         return true;
     }
@@ -484,18 +530,19 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             .Where(node => node.Type == FindNodeType.Id)
             .Select(node => node.Index)
             .ToArray();
-        foreach (int nodeIndex in matches)
-        {
-            nodes[nodeIndex] = nodes[nodeIndex] with { Type = ReplacementNodeType.Id };
-            session.DirtyNodes.Add(nodeIndex);
-        }
         if (matches.Length == 0)
         {
             RefreshFindReplaceStatus();
             return 0;
         }
 
-        session.UndoHistory.Push(CaptureSnapshot(session));
+        RecordUndoCheckpoint(session, description:
+            $"Replace All: {matches.Length} {FindNodeType.Name} node{(matches.Length == 1 ? "" : "s")} → {ReplacementNodeType.Name}");
+        foreach (int nodeIndex in matches)
+        {
+            nodes[nodeIndex] = nodes[nodeIndex] with { Type = ReplacementNodeType.Id };
+            session.DirtyNodes.Add(nodeIndex);
+        }
         int? selectedIndex = SelectedNode?.Index;
         session.Graph = new SphereGridGraph(
             CopyWithNodes(session.Graph.File, nodes), session.Graph.Routes);
@@ -511,8 +558,10 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         return matches.Length;
     }
 
-    public void ApplySelectedNode()
+    private void CommitSelectedNodeControls()
     {
+        if (_updatingNodeControls || _dragStartSnapshot is not null)
+            return;
         if (SelectedNode is null || Graph is null || PendingNodeType is null ||
             PendingCharacter is null || PendingX is null || PendingY is null)
             return;
@@ -534,12 +583,11 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         bool nodeChanged = current.Type != PendingNodeType.Id ||
                            current.X != targetX || current.Y != targetY;
         if (!colorChanged && !nodeChanged)
-        {
-            DiscardPreview();
-            UpdateStatus($"Node #{nodeIndex} has no changes to apply");
             return;
-        }
-        session.UndoHistory.Push(CaptureSnapshot(session));
+        string nodeDetails = nodeChanged
+            ? $"node #{nodeIndex}: {current.TypeInfo.Name} at ({current.X}, {current.Y}) → {PendingNodeType.Name} at ({targetX}, {targetY})"
+            : $"node #{nodeIndex} section color: {GetEffectiveCharacter(nodeIndex)} → {PendingCharacter.Value}";
+        RecordUndoCheckpoint(session, description: nodeDetails);
 
         if (PendingCharacter.Value == defaultCharacter)
             session.ColorOverrides.Remove(nodeIndex);
@@ -559,8 +607,6 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             session.Graph = new SphereGridGraph(editedFile, session.Graph.Routes);
         }
 
-        _previewNodeIndex = null;
-        HasPreview = false;
         session.DirtyNodes.Add(nodeIndex);
         Graph = session.Graph;
         ColorOverrides =
@@ -569,80 +615,77 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         IsDirty = true;
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(CanUndoAll));
-        UpdateStatus($"Applied node #{nodeIndex} in memory");
-    }
-
-    public void DiscardPreview()
-    {
-        if (!HasPreview)
-            return;
-        EditSession session = _sessions[SelectedGrid];
-        int? nodeIndex = _previewNodeIndex;
-        Graph = session.Graph;
-        _previewNodeIndex = null;
-        HasPreview = false;
-        if (nodeIndex is int index)
-            SelectedNode = session.Graph.File.Nodes[index];
-        UpdateStatus("Discarded position preview");
-    }
-
-    public void RevertSelectedNode()
-    {
-        if (SelectedNode is null)
-            return;
-        DiscardPreview();
-        EditSession session = _sessions[SelectedGrid];
-        int nodeIndex = SelectedNode.Index;
-        SphereGridNode[] nodes = session.Graph.File.Nodes.ToArray();
-        nodes[nodeIndex] = session.SourceFile.Nodes[nodeIndex];
-        session.Graph = new SphereGridGraph(
-            CopyWithNodes(session.Graph.File, nodes),
-            session.DefaultRoutes);
-        session.ColorOverrides.Remove(nodeIndex);
-        session.DirtyNodes.Remove(nodeIndex);
-        Graph = session.Graph;
-        ColorOverrides =
-            new Dictionary<int, SphereGridCharacter>(session.ColorOverrides);
-        SelectedNode = session.Graph.File.Nodes[nodeIndex];
-        IsDirty = session.DirtyNodes.Count > 0 || session.DirtyLinks.Count > 0;
-        UpdateStatus($"Reverted node #{nodeIndex}");
+        UpdateStatus($"Updated node #{nodeIndex} in memory");
     }
 
     public void RevertAll()
     {
         EditSession session = _sessions[SelectedGrid];
+        int count = session.UndoHistory.Count;
+        while (session.UndoHistory.Count > 0)
+        {
+            EditSnapshot snapshot = session.UndoHistory.Pop();
+            session.RedoHistory.Push(CaptureSnapshot(session) with { Description = snapshot.Description });
+            RestoreSnapshot(session, snapshot);
+        }
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+        OnPropertyChanged(nameof(CanUndoAll));
+        OnPropertyChanged(nameof(HasExperimentalStructureChanges));
+        HistoryStatus = $"Undid all: {count} Sphere Grid change{(count == 1 ? "" : "s")} since the last save.";
+    }
+
+    public void DiscardCurrentGridChanges()
+    {
+        EditSession session = _sessions[SelectedGrid];
         session.Graph = new SphereGridGraph(session.SourceFile, session.DefaultRoutes);
         session.ColorOverrides.Clear();
+        foreach ((int index, SphereGridCharacter character) in session.SavedColorOverrides)
+            session.ColorOverrides[index] = character;
         session.DirtyNodes.Clear();
         session.DirtyLinks.Clear();
         session.UndoHistory.Clear();
+        session.RedoHistory.Clear();
+
         Graph = session.Graph;
-        ColorOverrides =
-            new Dictionary<int, SphereGridCharacter>(session.ColorOverrides);
-        _previewNodeIndex = null;
-        HasPreview = false;
+        ColorOverrides = new Dictionary<int, SphereGridCharacter>(session.ColorOverrides);
         SelectedNode = null;
-        IsDirty = false;
         ClearLinkSelection();
+        IsDirty = false;
+        HistoryStatus = "";
         OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
         OnPropertyChanged(nameof(CanUndoAll));
         OnPropertyChanged(nameof(HasExperimentalStructureChanges));
-        UpdateStatus("Reverted all in-memory changes");
+        _lastFindIndex = -1;
+        RefreshFindReplaceStatus();
+        UpdateStatus("Discarded unsaved Sphere Grid changes");
     }
 
     public void UndoLastChange()
     {
-        if (HasPreview)
-        {
-            DiscardPreview();
-            OnPropertyChanged(nameof(CanUndo));
-            OnPropertyChanged(nameof(CanUndoAll));
-            return;
-        }
         EditSession session = _sessions[SelectedGrid];
         if (session.UndoHistory.Count == 0)
             return;
         EditSnapshot snapshot = session.UndoHistory.Pop();
+        session.RedoHistory.Push(CaptureSnapshot(session) with { Description = snapshot.Description });
+        RestoreSnapshot(session, snapshot);
+        HistoryStatus = $"Undid: {snapshot.Description}.";
+    }
+
+    public void RedoLastChange()
+    {
+        EditSession session = _sessions[SelectedGrid];
+        if (session.RedoHistory.Count == 0)
+            return;
+        EditSnapshot snapshot = session.RedoHistory.Pop();
+        session.UndoHistory.Push(CaptureSnapshot(session) with { Description = snapshot.Description });
+        RestoreSnapshot(session, snapshot);
+        HistoryStatus = $"Redid: {snapshot.Description}.";
+    }
+
+    private void RestoreSnapshot(EditSession session, EditSnapshot snapshot)
+    {
         session.Graph = snapshot.Graph;
         session.ColorOverrides.Clear();
         foreach ((int index, SphereGridCharacter character) in snapshot.ColorOverrides)
@@ -659,19 +702,29 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             ? session.Graph.File.Nodes[selectedIndex]
             : null;
         IsDirty = session.DirtyNodes.Count > 0 || session.DirtyLinks.Count > 0;
-        SelectExperimentalLink(decimal.ToInt32(decimal.Round(SelectedExperimentalLinkIndex)));
+        if (snapshot.HasSelectedLink &&
+            snapshot.SelectedLinkIndex >= 0 &&
+            snapshot.SelectedLinkIndex < session.Graph.File.Links.Count)
+        {
+            SelectExperimentalLink(snapshot.SelectedLinkIndex);
+        }
+        else
+        {
+            ClearLinkSelection();
+        }
         OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
         OnPropertyChanged(nameof(CanUndoAll));
         OnPropertyChanged(nameof(HasExperimentalStructureChanges));
-        UpdateStatus("Undid the most recent Sphere Grid change");
+        _lastFindIndex = -1;
+        RefreshFindReplaceStatus();
     }
 
     public void SaveCurrentGrid()
     {
-        if (HasPreview)
+        if (_dragStartSnapshot is not null)
             throw new InvalidOperationException(
-                "The selected node still has an unapplied position preview. " +
-                "Apply or discard that preview before saving the grid.");
+                "Finish dragging the selected node before saving the grid.");
 
         EditSession session = _sessions[SelectedGrid];
         SphereGridValidator.ValidateGameCompatibleNodeCount(
@@ -697,6 +750,11 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             savedFile.LayoutPath,
             savedFile.ContentPath));
 
+        SphereGridColorMetadata.Save(
+            Project_Service.Instance.Path_ZanarkandWorkshopMetadata,
+            SelectedGrid,
+            session.ColorOverrides);
+
         int? selectedIndex = SelectedNode?.Index;
         SphereGridRouteMetadata routes = session.Graph.Routes;
         session.SourceFile = reloaded;
@@ -704,6 +762,10 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         session.DirtyNodes.Clear();
         session.DirtyLinks.Clear();
         session.UndoHistory.Clear();
+        session.RedoHistory.Clear();
+        session.SavedColorOverrides.Clear();
+        foreach ((int colorIndex, SphereGridCharacter character) in session.ColorOverrides)
+            session.SavedColorOverrides[colorIndex] = character;
         Graph = session.Graph;
         ColorOverrides =
             new Dictionary<int, SphereGridCharacter>(session.ColorOverrides);
@@ -712,9 +774,29 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             : null;
         IsDirty = false;
         OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
         OnPropertyChanged(nameof(CanUndoAll));
         OnPropertyChanged(nameof(HasExperimentalStructureChanges));
+        HistoryStatus = "";
         UpdateStatus(EditorSaveStatus.Success("Sphere Grid"));
+    }
+
+    public void SaveToMaster(string masterPath, string metadataPath)
+    {
+        if (_dragStartSnapshot is not null)
+            throw new InvalidOperationException(
+                "Finish dragging the selected node before using Save As.");
+        EditSession session = _sessions[SelectedGrid];
+        SphereGridValidator.ValidateGameCompatibleNodeCount(session.Graph.File.Nodes.Count);
+        SphereGridValidator.ValidateGameCompatibleLinkCount(SelectedGrid, session.Graph.File.Links.Count);
+        SphereGridValidator.ValidateGameCompatibleLinkDegree(session.Graph.File);
+        SphereGridWriteResult output = SphereGridWriter.Write(
+            session.SourceFile, session.Graph.File.Clusters, session.Graph.File.Nodes, session.Graph.File.Links);
+        SphereGridFileSet targetFiles = SphereGridFileSet.FromDirectory(
+            Path.Combine(masterPath, "jppc", "menu", "abmap"), SelectedGrid);
+        SphereGridFile targetSource = SphereGridParser.Read(targetFiles);
+        _ = SphereGridSaveTransaction.Save(targetSource, output);
+        SphereGridColorMetadata.Save(metadataPath, SelectedGrid, session.ColorOverrides);
     }
 
     public void ResetSelectedColor()
@@ -722,12 +804,19 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         if (SelectedNode is null)
             return;
         EditSession session = _sessions[SelectedGrid];
-        session.ColorOverrides.Remove(SelectedNode.Index);
-        session.DirtyNodes.Add(SelectedNode.Index);
+        int nodeIndex = SelectedNode.Index;
+        if (!session.ColorOverrides.TryGetValue(nodeIndex, out SphereGridCharacter previous))
+            return;
+        RecordUndoCheckpoint(session,
+            description: $"node #{nodeIndex} color: {previous} → default");
+        session.ColorOverrides.Remove(nodeIndex);
+        session.DirtyNodes.Add(nodeIndex);
         ColorOverrides =
             new Dictionary<int, SphereGridCharacter>(session.ColorOverrides);
         PendingCharacter = session.Graph.Routes.GetCharacter(SelectedNode.Index);
         IsDirty = true;
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanUndoAll));
         OnPropertyChanged(nameof(SelectedNodeSummary));
         UpdateStatus($"Reset node #{SelectedNode.Index} to its default color");
     }
@@ -743,29 +832,16 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     partial void OnSelectedNodeChanged(SphereGridNode? value)
     {
         OnPropertyChanged(nameof(SelectedNodeConnectionText));
-        if (!_restoringSelection &&
-            value is not null &&
-            _previewNodeIndex is int previewIndex &&
-            value.Index != previewIndex)
-        {
-            EditSession session = _sessions[SelectedGrid];
-            Graph = session.Graph;
-            _previewNodeIndex = null;
-            HasPreview = false;
-            _restoringSelection = true;
-            SelectedNode = session.Graph.File.Nodes[value.Index];
-            _restoringSelection = false;
-            return;
-        }
-
         if (value is not null)
         {
+            _updatingNodeControls = true;
             PendingNodeType = value.TypeInfo;
             PendingCharacter = GetEffectiveCharacter(value.Index);
             _updatingCoordinateControls = true;
             PendingX = value.X;
             PendingY = value.Y;
             _updatingCoordinateControls = false;
+            _updatingNodeControls = false;
 
         }
         OnPropertyChanged(nameof(HasSelectedNode));
@@ -774,7 +850,6 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         OnPropertyChanged(nameof(CanAddExperimentalNode));
         OnPropertyChanged(nameof(ExperimentalConnectionSummary));
         OnPropertyChanged(nameof(SelectedNodeSummary));
-        OnPropertyChanged(nameof(CanApplySelectedNode));
         if (value is not null)
         {
             NewNodeCharacter = GetEffectiveCharacter(value.Index);
@@ -785,12 +860,14 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         }
         else
         {
+            _updatingNodeControls = true;
             PendingNodeType = null;
             PendingCharacter = null;
             _updatingCoordinateControls = true;
             PendingX = null;
             PendingY = null;
             _updatingCoordinateControls = false;
+            _updatingNodeControls = false;
         }
     }
 
@@ -831,35 +908,27 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         RefreshFindReplaceStatus();
     }
 
-    partial void OnHasPreviewChanged(bool value)
-    {
-        OnPropertyChanged(nameof(CanUndo));
-        OnPropertyChanged(nameof(CanUndoAll));
-        OnPropertyChanged(nameof(CanAddExperimentalNode));
-        OnPropertyChanged(nameof(CanCreateExperimentalLink));
-    }
-
     partial void OnIsDirtyChanged(bool value) =>
         OnPropertyChanged(nameof(CanUndoAll));
 
-    partial void OnPendingNodeTypeChanged(SphereGridNodeTypeInfo? value) =>
-        OnPropertyChanged(nameof(CanApplySelectedNode));
+    partial void OnPendingNodeTypeChanged(SphereGridNodeTypeInfo? value)
+    {
+        CommitSelectedNodeControls();
+    }
 
-    partial void OnPendingCharacterChanged(SphereGridCharacter? value) =>
-        OnPropertyChanged(nameof(CanApplySelectedNode));
+    partial void OnPendingCharacterChanged(SphereGridCharacter? value)
+    {
+        CommitSelectedNodeControls();
+    }
 
     partial void OnPendingXChanged(decimal? value)
     {
-        if (value is decimal x && PendingY is decimal y)
-            MoveSelectedNode(x, y);
-        OnPropertyChanged(nameof(CanApplySelectedNode));
+        CommitSelectedNodeControls();
     }
 
     partial void OnPendingYChanged(decimal? value)
     {
-        if (PendingX is decimal x && value is decimal y)
-            MoveSelectedNode(x, y);
-        OnPropertyChanged(nameof(CanApplySelectedNode));
+        CommitSelectedNodeControls();
     }
 
     partial void OnNewNodeTypeChanged(SphereGridNodeTypeInfo? value) =>
@@ -888,17 +957,23 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     partial void OnPendingLinkNodeAChanged(decimal? value)
     {
         RefreshExperimentalLinkState();
+        if (CanCommitSelectedLink)
+            CommitSelectedLinkEdit();
         OnPropertyChanged(nameof(CanAddExperimentalLink));
     }
     partial void OnPendingLinkNodeBChanged(decimal? value)
     {
         RefreshExperimentalLinkState();
+        if (CanCommitSelectedLink)
+            CommitSelectedLinkEdit();
         OnPropertyChanged(nameof(CanAddExperimentalLink));
     }
     partial void OnPendingLinkAnchorChanged(decimal? value)
     {
         OnPropertyChanged(nameof(ExperimentalPreviewAnchorIndex));
         RefreshExperimentalLinkState();
+        if (CanCommitSelectedLink)
+            CommitSelectedLinkEdit();
         OnPropertyChanged(nameof(CanAddExperimentalLink));
     }
 
@@ -932,7 +1007,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         PendingLinkNodeB = null;
         PendingLinkAnchor = null;
         _updatingLinkControls = false;
-        CanApplyExperimentalLink = false;
+        CanCommitSelectedLink = false;
         OnPropertyChanged(nameof(ExperimentalPreviewAnchorIndex));
         OnPropertyChanged(nameof(CanAddExperimentalLink));
     }
@@ -941,7 +1016,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
     {
         if (_updatingLinkControls || Graph is null || Graph.File.Links.Count == 0)
         {
-            CanApplyExperimentalLink = false;
+            CanCommitSelectedLink = false;
             return;
         }
         int index = decimal.ToInt32(decimal.Round(SelectedExperimentalLinkIndex));
@@ -949,7 +1024,7 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             PendingLinkNodeB is not decimal pendingB ||
             PendingLinkAnchor is not decimal pendingAnchor)
         {
-            CanApplyExperimentalLink = false;
+            CanCommitSelectedLink = false;
             return;
         }
         int a = decimal.ToInt32(decimal.Round(pendingA));
@@ -960,43 +1035,87 @@ public partial class SphereGridEditor_DataModel : ObservableObject
             b < 0 || b >= Graph.File.Nodes.Count || a == b ||
             (anchor != ushort.MaxValue && (anchor < 0 || anchor >= Graph.File.Nodes.Count)))
         {
-            CanApplyExperimentalLink = false;
+            CanCommitSelectedLink = false;
             return;
         }
         SphereGridLink current = Graph.File.Links[index];
         if (!HasUsableEndpointCapacity(a, b, index))
         {
-            CanApplyExperimentalLink = false;
+            CanCommitSelectedLink = false;
             return;
         }
-        CanApplyExperimentalLink = current.NodeAIndex != a ||
+        CanCommitSelectedLink = current.NodeAIndex != a ||
             current.NodeBIndex != b || current.AnchorNodeIndex != anchor;
     }
 
-    private void MoveSelectedNode(decimal x, decimal y)
+    public void BeginNodeDrag(int nodeIndex)
     {
-        if (_updatingCoordinateControls || SelectedNode is null || Graph is null)
+        if (SelectedNode?.Index != nodeIndex || Graph is null ||
+            _dragStartSnapshot is not null)
             return;
+        EditSession session = _sessions[SelectedGrid];
+        _dragStartSnapshot = CaptureSnapshot(session);
+        _dragNodeIndex = nodeIndex;
+    }
 
-        short targetX = (short)Math.Clamp(
-            decimal.ToInt32(decimal.Round(x)), short.MinValue, short.MaxValue);
-        short targetY = (short)Math.Clamp(
-            decimal.ToInt32(decimal.Round(y)), short.MinValue, short.MaxValue);
+    public void CompleteNodeDrag(int nodeIndex)
+    {
+        if (_dragStartSnapshot is null || _dragNodeIndex != nodeIndex ||
+            !_sessions.TryGetValue(SelectedGrid, out EditSession? session))
+        {
+            _dragStartSnapshot = null;
+            _dragNodeIndex = -1;
+            return;
+        }
+
+        SphereGridNode before = _dragStartSnapshot.Graph.File.Nodes[nodeIndex];
+        SphereGridNode after = session.Graph.File.Nodes[nodeIndex];
+        if (before.X != after.X || before.Y != after.Y)
+        {
+            RecordUndoCheckpoint(session, _dragStartSnapshot,
+                $"moved node #{nodeIndex}: ({before.X}, {before.Y}) → ({after.X}, {after.Y})");
+            session.DirtyNodes.Add(nodeIndex);
+            IsDirty = true;
+            OnPropertyChanged(nameof(CanUndo));
+            OnPropertyChanged(nameof(CanUndoAll));
+            UpdateStatus($"Moved node #{nodeIndex} to {after.X}, {after.Y}");
+        }
+        _dragStartSnapshot = null;
+        _dragNodeIndex = -1;
+    }
+
+    private void PreviewNodeDragPosition(int nodeIndex, short targetX, short targetY)
+    {
+        if (_dragStartSnapshot is null || _dragNodeIndex != nodeIndex ||
+            SelectedNode?.Index != nodeIndex || Graph is null)
+            return;
         if (SelectedNode.X == targetX && SelectedNode.Y == targetY)
             return;
 
         EditSession session = _sessions[SelectedGrid];
-        int nodeIndex = SelectedNode.Index;
         SphereGridNode[] nodes = session.Graph.File.Nodes.ToArray();
         nodes[nodeIndex] = nodes[nodeIndex] with { X = targetX, Y = targetY };
-        SphereGridGraph previewGraph = new(
+        session.Graph = new SphereGridGraph(
             CopyWithNodes(session.Graph.File, nodes),
             session.Graph.Routes);
-        _previewNodeIndex = nodeIndex;
-        HasPreview = true;
-        Graph = previewGraph;
-        SelectedNode = previewGraph.File.Nodes[nodeIndex];
-        UpdateStatus($"Previewing node #{nodeIndex} at {targetX}, {targetY} — click Apply to keep");
+        Graph = session.Graph;
+        SelectedNode = session.Graph.File.Nodes[nodeIndex];
+    }
+
+    public void PreviewSelectedNodePosition(int nodeIndex, short x, short y)
+    {
+        if (SelectedNode?.Index != nodeIndex || Graph is null)
+            return;
+
+        // Keep the coordinate controls synchronized while the drag transaction
+        // records only the final release position as one Undo action.
+        _updatingNodeControls = true;
+        _updatingCoordinateControls = true;
+        PendingX = x;
+        PendingY = y;
+        _updatingCoordinateControls = false;
+        _updatingNodeControls = false;
+        PreviewNodeDragPosition(nodeIndex, x, y);
     }
 
     private void UpdateStatus(string? message = null)
@@ -1053,14 +1172,35 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         new Dictionary<int, SphereGridCharacter>(session.ColorOverrides),
         new HashSet<int>(session.DirtyNodes),
         new HashSet<int>(session.DirtyLinks),
-        SelectedNode?.Index);
+        SelectedNode?.Index,
+        HasSelectedExperimentalLink,
+        HasSelectedExperimentalLink
+            ? decimal.ToInt32(decimal.Round(SelectedExperimentalLinkIndex))
+            : -1);
+
+    private void RecordUndoCheckpoint(
+        EditSession session,
+        EditSnapshot? snapshot = null,
+        string description = "Sphere Grid change")
+    {
+        session.UndoHistory.Push((snapshot ?? CaptureSnapshot(session)) with
+        {
+            Description = description
+        });
+        session.RedoHistory.Clear();
+        OnPropertyChanged(nameof(CanUndo));
+        OnPropertyChanged(nameof(CanRedo));
+    }
 
     private sealed record EditSnapshot(
         SphereGridGraph Graph,
         IReadOnlyDictionary<int, SphereGridCharacter> ColorOverrides,
         IReadOnlySet<int> DirtyNodes,
         IReadOnlySet<int> DirtyLinks,
-        int? SelectedNodeIndex);
+        int? SelectedNodeIndex,
+        bool HasSelectedLink,
+        int SelectedLinkIndex,
+        string Description = "Sphere Grid change");
 
     private sealed class EditSession(
         SphereGridFile sourceFile,
@@ -1070,8 +1210,10 @@ public partial class SphereGridEditor_DataModel : ObservableObject
         public SphereGridRouteMetadata DefaultRoutes { get; } = graph.Routes;
         public SphereGridGraph Graph { get; set; } = graph;
         public Dictionary<int, SphereGridCharacter> ColorOverrides { get; } = new();
+        public Dictionary<int, SphereGridCharacter> SavedColorOverrides { get; } = new();
         public HashSet<int> DirtyNodes { get; } = new();
         public HashSet<int> DirtyLinks { get; } = new();
         public Stack<EditSnapshot> UndoHistory { get; } = new();
+        public Stack<EditSnapshot> RedoHistory { get; } = new();
     }
 }
