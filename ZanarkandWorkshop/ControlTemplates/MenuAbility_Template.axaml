@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:FFXProjectEditor">
+  <ControlTheme x:Key="{x:Type controls:MenuAbility_Template}" TargetType="controls:MenuAbility_Template">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Width="600" Margin="5" Padding="5" BorderThickness="1" BorderBrush="AliceBlue" CornerRadius="5">
+          <StackPanel>
+            <Label Content="{TemplateBinding AbilityLabel}"/>
+            <StackPanel Orientation="Horizontal">
+              <ComboBox x:Name="PART_Category" Width="220" MaxDropDownHeight="360"
+                        ToolTip.Tip="Choose the command file used by this menu ability. Type while open to jump to an entry."
+                        ItemsSource="{Binding Ability.MenuAbilityCategories, RelativeSource={RelativeSource TemplatedParent}}"
+                        SelectedItem="{Binding Ability.SelectedMenuAbilityCategory, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+              <ComboBox x:Name="PART_Command" Width="300" MaxDropDownHeight="360"
+                        ToolTip.Tip="Choose a command from the selected file. Type while open to search."
+                        IsEnabled="{Binding Ability.IsMenuAbilityCommandEnabled, RelativeSource={RelativeSource TemplatedParent}}"
+                        PlaceholderText="{Binding Ability.MenuAbilityPlaceholder, RelativeSource={RelativeSource TemplatedParent}}"
+                        ItemsSource="{Binding Ability.MenuAbilityOptions, RelativeSource={RelativeSource TemplatedParent}}"
+                        SelectedItem="{Binding Ability.SelectedMenuAbility, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

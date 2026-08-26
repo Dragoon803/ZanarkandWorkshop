@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:FFXProjectEditor">
+  <ControlTheme x:Key="{x:Type controls:AutoAbilityDrop_Template}" TargetType="controls:AutoAbilityDrop_Template">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Width="600" Margin="5" Padding="5" BorderThickness="0">
+          <StackPanel>
+            <Label Content="{TemplateBinding AbilityLabel}"/>
+            <StackPanel Orientation="Horizontal">
+              <ComboBox Width="220" IsEnabled="False" SelectedIndex="0">
+                <ComboBoxItem Content="Auto Abilities"/>
+              </ComboBox>
+              <ComboBox x:Name="PART_AutoAbility" Width="300" MaxDropDownHeight="360"
+                        ToolTip.Tip="Choose an Auto Ability. Type while open to search."
+                        IsEnabled="{Binding Ability.IsAutoAbilityDropEnabled, RelativeSource={RelativeSource TemplatedParent}}"
+                        PlaceholderText="{Binding Ability.AutoAbilityDropPlaceholder, RelativeSource={RelativeSource TemplatedParent}}"
+                        ItemsSource="{Binding Ability.AutoAbilityDropOptions, RelativeSource={RelativeSource TemplatedParent}}"
+                        SelectedItem="{Binding Ability.SelectedAutoAbilityDrop, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

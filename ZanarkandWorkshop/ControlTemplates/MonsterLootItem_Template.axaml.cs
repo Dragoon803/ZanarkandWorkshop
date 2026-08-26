@@ -47,6 +47,14 @@ internal class MonsterLootItem_Template : TemplatedControl
         set => SetValue(ItemOptionsProperty, value);
     }
 
+    public static readonly StyledProperty<double> ItemDropdownWidthProperty =
+        AvaloniaProperty.Register<MonsterLootItem_Template, double>(nameof(ItemDropdownWidth));
+    public double ItemDropdownWidth
+    {
+        get => GetValue(ItemDropdownWidthProperty);
+        set => SetValue(ItemDropdownWidthProperty, value);
+    }
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         if (_itemComboBox is not null)
@@ -68,6 +76,12 @@ internal class MonsterLootItem_Template : TemplatedControl
 
     private void ResizeItemComboBox()
     {
+        if (_itemComboBox is not null && ItemDropdownWidth > 0)
+        {
+            _itemComboBox.Width = ItemDropdownWidth;
+            return;
+        }
+
         if (_itemComboBox?.SelectedItem is not MonsterLootItemOption selectedItem)
             return;
 

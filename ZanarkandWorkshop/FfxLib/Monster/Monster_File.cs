@@ -94,7 +94,10 @@ namespace FFXProjectEditor.FfxLib.Monster
             {
                 MonsterHeaderFile header = new();
 
-                stream.Position = 0x30;
+                // MonsterHeaderFile is nine 32-bit values plus 16 padding bytes:
+                // 0x34 bytes total. Starting payload data at 0x30 allowed the last
+                // four header bytes to overwrite the first four AI bytes.
+                stream.Position = 0x34;
 
                 if(AiFile != null && AiFile.Length > 0)
                 {
