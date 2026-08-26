@@ -2,6 +2,37 @@
 
 All notable changes to Zanarkand Workshop will be documented here.
 
+## [0.4.2] - 2026-08-23
+
+- Made project switching prepare all fallible registry and metadata work before publishing the new active project.
+- Made multi-file folder Recovery transactional with verified staging and automatic rollback.
+- Re-verifies every Recovery input immediately before use and requires explicit approval for unverified files.
+
+### Added
+
+* Added named project registration, Known Projects management, and a project-level Save As workflow that copies the active project and its Workshop metadata.
+* Added shared Save, Discard, and Cancel prompts when leaving editors or selections with pending changes.
+* Added trusted Recovery-source verification, targeted diagnostics, and explicit warnings for unrecognized or extra recovery files.
+* Added per-project Sphere Grid section-color metadata and controls for assigning or resetting node colors without changing game-owned route data.
+* Added project-registry and Recovery-verification smoke coverage.
+
+### Changed
+
+* Made footer **Save As** available whenever its editor context is available, while keeping **Save** limited to pending changes.
+* Improved Monster command, item, and dropped Auto Ability selectors with current project names and clearer unknown-entry labels.
+* Improved project switching, recent-project handling, save routing, metadata migration, and active-editor ownership checks.
+* Expanded Monster section Recovery and validation so unrelated Status, Loot, Battle Script, Worker, and unknown data are preserved.
+
+### Fixed
+
+* Fixed Monster serialization reserving too little header space and overwriting the first four Battle Script bytes during unrelated saves.
+* Prevented opening a recovered Battle Script from mutating its source buffer.
+* Made localized Monster saves and Status Recovery transactional across `mXXX.bin` and `monsterN.bin`, with verified staging and automatic rollback.
+* Added transactional Sphere Grid saving so paired layout/content files roll back together after a failed write.
+* Fixed pending editor changes being silently lost during project, editor, and internal selection transitions.
+* Fixed numeric grid edits in Items and command editors not enabling Save or participating in dirty-state checks.
+* Made scrolling fully manual in Items and command editors so focusing or editing a cell never repositions the table, and kept only the compact Index column frozen.
+
 ## [0.4.1] - 2026-08-05
 
 ### Changed

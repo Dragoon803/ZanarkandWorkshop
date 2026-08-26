@@ -9,8 +9,9 @@ Zanarkand Workshop is under active development, with new tools, improved workflo
   
 Modify auto abilities, redesign monster battle AI, customize commands, adjust encounter formations, and more.
 
-The current release is **v0.4.1**, featuring Auto Ability editing, expanded
-Monster Editor controls, safer recovery workflows, and clearer validation.
+The current release is **v0.4.2**, featuring named project management and Save As,
+shared Undo/Redo history, verified Recovery, safer editing transitions, and
+expanded Sphere Grid, Treasure Map, Battle Formation, and Monster tools.
 
 ## Features
 * Monster Editor
@@ -28,17 +29,26 @@ Monster Editor controls, safer recovery workflows, and clearer validation.
 * Arena Tracker
 * Live Battle Tracker
 
-## Known Bugs  
-* Colors changes do not properly save to the sphere grid editor.  
+## Known limitation
 
-## Bug fixes
-* Added several safety features to prevent in-game crashes with Sphere Grid editor. See sphere grid section for more details.
-* Fixed the Previous Chest button in the Treasure Chest Editor. Users can now safely cycle between previous and next chest.
+* `Ctrl+Shift+Z` may invoke Undo instead of Redo outside text fields. Use
+  `Ctrl+Y` or the **Redo** button instead.
 
-## Future Updates planned  
-* Add a meta data folder.
+## v0.4.2 highlights
+
+* Added named project management and **File > Save As**, which creates a complete
+  copy in a new project folder.
+* Added consistent **Undo**, **Redo**, **Undo All**, and **Save** controls across
+  the editors, with detailed history feedback and pending-change protection.
+* Expanded Sphere Grid node/link creation, editing, search, colors, and safety
+  checks.
+* Improved Treasure Map navigation and filtering, command-editor view handling,
+  Monster history reporting, and Battle Formation battlefield previews.
+
+## Future updates planned
+
 * Add a weapon editor.
-* Add a ply_save Editor.
+* Add a `ply_save` editor.
 
 ## Getting Started
 
@@ -66,9 +76,17 @@ Click **Open Project Folder...** and select your master folder. The app detects
 the running game automatically; the **FFX Connected** indicator shows the
 connection status.
 
-<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop editor guide" width="720"/>
+<img src="ReadmeAssets/ZW_Home_Screen.png" alt="Zanarkand Workshop home screen" width="900"/>
 
-<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop text editing and project requirements guide" width="720"/>
+Most editor footers provide **Undo**, **Redo**, **Undo All**, and **Save**.
+`Ctrl+Z` and `Ctrl+Y` use the same editor history as those buttons. When leaving
+an editor with pending changes, choose **Save**, **Discard**, or **Cancel**.
+Use **File > Save As** to create a complete copy of the active project under a
+new project name.
+
+<img src="ReadmeAssets/ZW_Guide_1.png" alt="Zanarkand Workshop text editing and project requirements guide" width="720"/>
+
+<img src="ReadmeAssets/ZW_Guide_2.png" alt="Zanarkand Workshop editor guide" width="720"/>
 
 ### Monster Editor
 
@@ -76,7 +94,12 @@ connection status.
   monster file applies to the next encounter.
 
 Edit monster stats, elemental affinities, status resistances, loot drops, and
-other properties.
+other properties.  
+**Recovery > Restore Original Status** is a new recovery feature that allows you to return an  
+individual tab back to it's original game version. so if you've made a lot of changes in Battle Script  
+But need to reset status or loot you can do so without reverting Battle Script.
+
+<img src="ReadmeAssets/ZW_Monster_Editor1.png" alt="Zanarkand Workshop Monster Editor" width="900"/>
 
 The Battle Script editor can change attacks, targets, conditions, jumps, shared
 values, and other monster behavior. v0.2.0 adds safer structural copying,
@@ -84,7 +107,7 @@ insertion, replacement, and deletion; worker/function/jump navigation; protected
 `RETURN (3C)` handling; transactional manual hex validation; and recoverable
 rejected edits.
 
-<img src="ReadmeAssets/ZW_Battle_Script_Editor.png" alt="Zanarkand Workshop Battle Script Editor" width="900"/>
+<img src="ReadmeAssets/ZW_Monster_Editor2.png" alt="Zanarkand Workshop Monster Battle Script Editor" width="900"/>
 
 ### Items
 
@@ -104,6 +127,8 @@ from `jppc/battle/kernel/prepare.bin` and command names come from
 
 Search or sort the recipe list, choose ingredients and results from dropdowns,
 then save the updated Mix table.
+
+<img src="ReadmeAssets/ZW_Rikku_Mix_Editor.png" alt="Zanarkand Workshop Rikku Mix Editor" width="900"/>
 
 ### Auto Abilities
 
@@ -150,32 +175,39 @@ and Save rebuilds valid text offsets for the current file.
 
 Edit the commands used by the party and Aeons.
 
-<img src="ReadmeAssets/ZW_Commands_Editor.png" alt="Zanarkand Workshop Player and Aeon Command Editor" width="900"/>
+<img src="ReadmeAssets/ZW_Player_Aeon_Commands_Editor.png" alt="Zanarkand Workshop Player and Aeon Command Editor" width="900"/>
 
 ### Standard Monster Commands
 
 Edit commands used by standard enemies.
 
-<img src="ReadmeAssets/ZW_Monmagic1_Editor.png" alt="Zanarkand Workshop Standard Monster Command Editor" width="900"/>
+<img src="ReadmeAssets/ZW_Standard_Monster_Commands_Editor.png" alt="Zanarkand Workshop Standard Monster Command Editor" width="900"/>
 
 ### Boss Commands
 
 Edit commands used by bosses.
 
-<img src="ReadmeAssets/ZW_Monmagic2_Editor.png" alt="Zanarkand Workshop Boss Command Editor" width="900"/>
+<img src="ReadmeAssets/ZW_Boss_Commands_Editor.png" alt="Zanarkand Workshop Boss Command Editor" width="900"/>
 
 ### Battle Formations
 
-Edit which monsters appear in a battle and adjust their positions.
+Edit which monsters appear in a battle and adjust their positions. When the
+required clean Original Game Files are configured, the position layout displays
+the battlefield surface for encounters whose map data can be rendered.
 
 <img src="ReadmeAssets/ZW_Battle_Formation_Editor.png" alt="Zanarkand Workshop Battle Formation Editor" width="900"/>
 
 ### Sphere Grid Editor
 
 Visually edit the Original, Standard, and Expert Sphere Grids. Select a node to
-change its type, section color, or position, or select a connecting line to edit
-its link. The editor can also create nodes and links, find and replace node
-types, and undo changes before saving.
+change its type, section color, or position. You can also click and drag nodes to  
+change their location. Click on a connecting line to edit its link. Section colors  
+are saved as Zanarkand Workshop project metadata.
+
+The editor can create nodes and links and find/replace node types. Link creation
+uses a guided Node A then Node B workflow and defaults to a straight link. A new
+node or link can be removed with **Undo** as long as the grid has not been saved;
+after it is saved, the editor cannot delete it.
 
 For game stability, grids are limited to 860 nodes. Standard and Original grids
 support up to 1,021 total links, Expert supports up to 934, and each node can
@@ -184,27 +216,23 @@ have up to five usable connections.
 Use **Recovery** to restore the game's original grids. Start a new game when
 testing a redesigned Sphere Grid so the game loads the new grid data cleanly.  
 
-Current limitations:
-* Max of 860 nodes per grid.
-* Max of 1,021 links for the Standard grid.
-* Max of 934 links for the Expert grid.
-* Only 5 links can connect to a single node.
-
 <img src="ReadmeAssets/ZW_Sphere_Grid_Editor.png" alt="Zanarkand Workshop Sphere Grid Editor" width="900"/>
 
 ### Treasure Chest Editor
 
 View treasure chests on interactive maps reconstructed from your own game
-files. Select a field, click a chest icon, or use **Previous Chest** and
-**Next Chest** to inspect every detected chest—even one without a visible map
-icon. Change the reward type, reward, and quantity for Gil, items, key items,
-weapons, and armor. Chest positions are shown for reference and are not edited.
+files. Filter the field list, select a field, click a chest icon, or use
+**Previous Chest** and **Next Chest** to inspect every detected chest—even one
+without a visible map icon. Browsing fields, map states, chests, and conditional
+chest contents does not create an edit. Change the reward type, reward, and
+quantity for Gil, items, key items, weapons, and armor. Chest positions are
+shown for reference and are not edited.
 
 Required files: `jppc/battle/kernel/takara.bin`, `buki_get.bin`,
 `jppc/map` with `mapout.vpa` files, and `jppc/event/obj` with `.ebp` files.
 Only `takara.bin` is changed when you save.  
 
-<img src="ReadmeAssets/ZW_Treasure_Editor.png" alt="Zanarkand Workshop Treasure Editor" width="900"/>
+<img src="ReadmeAssets/ZW_Treasure_Map_Editor.png" alt="Zanarkand Workshop Treasure Map Editor" width="900"/>
 
 ## General text editing
 
@@ -295,11 +323,11 @@ To create the ready-to-distribute, self-contained Windows ZIP used for GitHub
 Releases:
 
 ```powershell
-.\scripts\build-release.ps1 -Version 0.4.1
+.\scripts\build-release.ps1 -Version 0.4.2
 ```
 
-The package is written to `artifacts/ZanarkandWorkshop-v0.4.1-win-x64.zip`.
-Pushing a version tag such as `v0.4.1` runs the same packaging process on
+The package is written to `artifacts/ZanarkandWorkshop-v0.4.2-win-x64.zip`.
+Pushing a version tag such as `v0.4.2` runs the same packaging process on
 GitHub and creates a draft release for review.
 
 ## Project status
