@@ -200,8 +200,8 @@ the battlefield surface for encounters whose map data can be rendered.
 ### Sphere Grid Editor
 
 Visually edit the Original, Standard, and Expert Sphere Grids. Select a node to
-change its type, section color, or position. You can also click and drag nodes to  
-change their location. Click on a connecting line to edit its link. Section colors  
+change its type, section color, or position. You can also click and drag nodes to 
+change their location. Click on a connecting line to edit its link. Section colors 
 are saved as Zanarkand Workshop project metadata.
 
 The editor can create nodes and links and find/replace node types. Link creation
