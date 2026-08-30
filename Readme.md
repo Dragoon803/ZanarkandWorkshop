@@ -28,11 +28,19 @@ expanded Sphere Grid, Treasure Map, Battle Formation, and Monster tools.
 * Inventory Tracker
 * Arena Tracker
 * Live Battle Tracker
+  
+  ### ⚠️ Compatibility Warning
 
+It is strongly recommended that you **do not edit game files with other modding tools and then load those same files into Zanarkand Workshop**.
+
+Different modding tools may modify or structure game data differently, which can cause compatibility issues, unexpected behavior, or errors when Zanarkand Workshop attempts to read or modify those files.
+
+For the most reliable experience, use **clean, unmodified game files** as the starting point when working with Zanarkand Workshop.
 ## Known limitation
 
 * `Ctrl+Shift+Z` may invoke Undo instead of Redo outside text fields. Use
   `Ctrl+Y` or the **Redo** button instead.
+
 
 ## v0.4.2 highlights
 
